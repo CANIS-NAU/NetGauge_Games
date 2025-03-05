@@ -1,4 +1,4 @@
-# internet_measurement_games_app
+# NetGauge_Games
 
 A new Flutter project.
 
