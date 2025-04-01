@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -85,38 +87,79 @@ class _WebViewPageState extends State<WebViewPage> {
             setState(() {
               isLoading = false;
             });
-            // inject a JavaScript shim into the WebView
-            // this shim creates a global AndroidBridge object that the web content can use
+            // inject JavaScript into the WebView to define the AndroidBridge interface
+            // this code sets up functions that the HTML can call to communicate with Flutter
             controller.runJavaScript('''
               window.AndroidBridge = {
-                // set player's name
                 setPlayerName: function(name) {
-                  // send a message to Flutter using the NativeBridge channel
                   NativeBridge.postMessage(JSON.stringify({command: 'setPlayerName', value: name}));
                 },
-                // request location data
                 getLocationJSON: function() {
-                  // send a message to Flutter using the NativeBridge channel
-                  NativeBridge.postMessage(JSON.stringify({command: 'getLocationJSON'}));
+                  return JSON.stringify({latitude: 35.185652, longitude: -111.657812});
                 }
               };
+              if (typeof window.onLocationJSON !== 'function') {
+                window.onLocationJSON = function(json) {
+                  console.log("Received location JSON from Flutter: " + json);
+                };
+              }
             ''');
           },
         ),
       )
-    // register a JavaScript channel with the name 'NativeBridge'
-    // this channel receives messages from the web content
+    // register a JavaScript channel named 'NativeBridge'
+    // to receives messages from the web content
       ..addJavaScriptChannel(
         'NativeBridge',
         onMessageReceived: (JavaScriptMessage message) {
-          // process messages from your HTML via the shim
-          // for example, handle "setPlayerName" or "getLocationJSON" commands.
-          print("Received from WebView: ${message.message}");
+          handleNativeMessage(message.message);
         },
       );
 
     // TODO: load your HTML file from the assets folder
     controller.loadFlutterAsset('assets/ScavengerHunt.html');
+  }
+
+  /// parses the incoming message from the JavaScript channel.
+  /// it decodes the JSON string and calls corresponding methods based on the 'command' field
+  void handleNativeMessage(String message) {
+    try {
+      final Map<String, dynamic> data = json.decode(message);
+      final String command = data['command'];
+      switch (command) {
+        case 'setPlayerName':
+          final String playerName = data['value'];
+          setPlayerName(playerName);
+          break;
+        case 'getLocationJSON':
+          sendLocationJSON();
+          break;
+        default:
+          print("Unknown command: $command");
+      }
+    } catch (e) {
+      print("Error decoding message: $e");
+    }
+  }
+
+  // TODO: store
+  void setPlayerName(String playerName) {
+    print("Player name set to: $playerName");
+  }
+
+  /// sends location data to the web content by calling a JavaScript function
+  void sendLocationJSON() async {
+    // integrate the location package, replace this with actual location data
+    final Map<String, dynamic> locationData = {
+      'latitude': 35.185652,
+      'longitude': -111.657812,
+    };
+
+    // convert the location data to JSON
+    final String locationJson = json.encode(locationData);
+    print("Sending location JSON: $locationJson");
+    // call the JavaScript function window.onLocationJSON with the JSON data
+    controller.runJavaScript("window.onLocationJSON('$locationJson')");
   }
 
   @override
