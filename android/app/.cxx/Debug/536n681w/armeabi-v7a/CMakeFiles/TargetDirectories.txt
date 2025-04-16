@@ -1,0 +1,2 @@
+C:/Users/cpend/OneDrive/Documents/GitHub/NetGauge_Games/android/app/.cxx/Debug/536n681w/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/cpend/OneDrive/Documents/GitHub/NetGauge_Games/android/app/.cxx/Debug/536n681w/armeabi-v7a/CMakeFiles/rebuild_cache.dir

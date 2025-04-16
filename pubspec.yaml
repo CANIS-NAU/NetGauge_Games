@@ -33,7 +33,8 @@ dependencies:
   webview_flutter: ^4.1.0
   webview_flutter_platform_interface: ^2.1.0
 
-
+  # Geolocation system
+  geolocator: ^13.0.4
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

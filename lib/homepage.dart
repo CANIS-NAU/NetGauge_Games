@@ -1,15 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:internet_measurement_games_app/location_test_page.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 // landing page of app
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
 
-  // helper function to build a tile that navigates to a WebView page when tapped
-  Widget _buildTile(String title, IconData icon, BuildContext context) {
+  // helper function to build a tile that navigates to a WebView page when tapped\
+  // Cole changes: removed hardcoding of WebView widget, now takes in Widget page to navigate to different widgets
+  Widget _buildTile(String title, IconData icon, BuildContext context, Widget page) {
     return Material(
       color: Colors.white,
       child: InkWell(
@@ -18,7 +19,7 @@ class HomePage extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => WebViewPage(title: title),
+              builder: (context) => page,
             ),
           );
         },
@@ -44,10 +45,11 @@ class HomePage extends StatelessWidget {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildTile('Scavenger Hunt', Icons.home, context),
-          _buildTile('Soul Seeker', Icons.settings, context),
-          _buildTile('Zombie Apocalypse', Icons.info, context),
-          _buildTile('Speed Tester', Icons.contact_mail, context),
+          _buildTile('Scavenger Hunt', Icons.home, context, const WebViewPage(title: 'Scavenger Hunt')),
+          _buildTile('Soul Seeker', Icons.settings, context, const WebViewPage(title: 'Soul Seeker')),
+          _buildTile('Zombie Apocalypse', Icons.info, context, const WebViewPage(title: 'Zombie Apocalypse')),
+          _buildTile('Speed Tester', Icons.contact_mail, context, const WebViewPage(title: 'Speed Tester')),
+          _buildTile('Test Location Service', Icons.my_location, context, const LocationTestPage())
         ],
       ),
     );
