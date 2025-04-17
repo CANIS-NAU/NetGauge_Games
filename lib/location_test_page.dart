@@ -10,20 +10,24 @@ class LocationTestPage extends StatefulWidget{
 
 class _LocationTestPageState extends State<LocationTestPage>
 {
-  String _locationMessage = 'Press the button to get location';
+  String _locationDataMessage = 'Press the button to get location';
 
-  Future<void> _getLocation() async
+  Future<void> _getLocationData() async
   {
     try 
     {
-      final position = await determinePosition();
+      final locationData = await determineLocationData();
       setState(()
       {
-        _locationMessage = 'Lat: ${position.latitude}, Lng: ${position.longitude}';
+        final lat = locationData.position.latitude.toStringAsFixed(6);
+        final lng = locationData.position.longitude.toStringAsFixed(6);
+        final heading = locationData.heading != null? '${locationData.heading!.toStringAsFixed(2)}°': 'N/A';
+
+        _locationDataMessage = 'Lat: $lat\nLng: $lng\nHeading: $heading';
       });
     } catch(e) {
       setState((){
-        _locationMessage = 'Error: $e';
+        _locationDataMessage = 'Error: $e';
       });
     }
   }
@@ -39,12 +43,12 @@ class _LocationTestPageState extends State<LocationTestPage>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: _getLocation,
+              onPressed: _getLocationData,
               child: const Text('GetCurrentLocation'),
             ),
             const SizedBox(height: 20),
             Text(
-              _locationMessage, 
+              _locationDataMessage, 
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16),
             ),

@@ -1,8 +1,16 @@
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 
-Future<Position> determinePosition() async
+class LocationData {
+  final Position position;
+  final double? heading;
+
+  LocationData({required this.position, this.heading});
+}
+
+Future<LocationData> determineLocationData() async
 {
   // Check if Location Services are enabled
   bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -38,9 +46,18 @@ Future<Position> determinePosition() async
   }
 
   // Grab the current position
-  return await Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(
-      accuracy: LocationAccuracy.high
-    )
-  );
+  Position position = await Geolocator.getCurrentPosition(
+    locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
+
+  // get the current heading
+  double? heading;
+  try {
+    CompassEvent compassEvent = await FlutterCompass.events!.first;
+    heading = compassEvent.heading;
+  } catch (e) {
+    heading = null; // Device doesn have a compass sensor
+  }
+
+  return LocationData(position: position, heading: heading);
 }
+

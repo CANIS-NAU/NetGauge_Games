@@ -5,7 +5,9 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs access to your location.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs acces to your location even when the app is in the background.</string>
+	<string>This app needs access to your location even when the app is in the background.</string>
+	<string>NSMotionUsageDescription</string>
+	<string>This app uses your motion data to determine deveice heading.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
