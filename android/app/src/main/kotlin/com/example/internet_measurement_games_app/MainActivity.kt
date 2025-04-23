@@ -37,9 +37,7 @@ class MainActivity: FlutterActivity() {
                 .command(
                     binaryPath,
                     "-duration", "1s",
-                    "-server.url",
-                    "ws://msak-mlab2-lax06.mlab-oti.measurement-lab.org/throughput/v1/download?access_token=eyJhbGciOiJFZERTQSIsImtpZCI6ImxvY2F0ZV8yMDIwMDQwOSJ9.eyJhdWQiOlsibWxhYjItbGF4MDYubWxhYi1vdGkubWVhc3VyZW1lbnQtbGFiLm9yZyJdLCJleHAiOjE3NDUzODQ5NzQsImlzcyI6ImxvY2F0ZSIsImp0aSI6IjM5M2Q0MmRkLWY5NjMtNGY0Ni1hYTdlLWM1MDNjZmNhZmQ4OCIsInN1YiI6Im1zYWsifQ.5ZOviw8DIsC_QLtrJOaJKHWIXlhKMMPlKUexCMrxzxNZXZaeEd_XqmBovq7j0fjvUnKnTRIa_yRV__QwTqibAA&index=0&locate_version=v2&metro_rank=0"
-                )
+                    )
                 .redirectErrorStream(true)
                 .start()
             return process.inputStream.bufferedReader().use { it.readText() }
