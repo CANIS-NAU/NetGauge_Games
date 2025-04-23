@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'homepage.dart';
 
+// void main() {
+//   runApp(const MyApp());
+// }
+
+// testing button for now
 void main() {
-  runApp(const MyApp());
+  runApp(MaterialApp(home: MsakTestPage()));
 }
 
 class MyApp extends StatelessWidget {

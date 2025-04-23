@@ -30,6 +30,16 @@ android {
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion "25.1.8937393"
 
+    aaptOptions {
+        noCompress "libminimal-download.so"
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -41,6 +51,9 @@ android {
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
     }
 
     defaultConfig {

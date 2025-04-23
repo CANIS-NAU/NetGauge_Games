@@ -96,8 +96,15 @@ class _WebViewPageState extends State<WebViewPage> {
                 },
                 getLocationJSON: function() {
                   return JSON.stringify({latitude: 35.185652, longitude: -111.657812});
+                },
+                generateMetrics: function() {
+                  return new Promise(function(resolve, reject) {
+                    NativeBridge.postMessage(JSON.stringify({command: 'generateMetrics'}));
+                    window.__resolveGenerateMetrics = resolve;
+                  });
                 }
               };
+            
               if (typeof window.onLocationJSON !== 'function') {
                 window.onLocationJSON = function(json) {
                   console.log("Received location JSON from Flutter: " + json);
@@ -134,6 +141,9 @@ class _WebViewPageState extends State<WebViewPage> {
         case 'getLocationJSON':
           sendLocationJSON();
           break;
+        case 'generateMetrics':
+          sendMsakMetrics();
+          break;
         default:
           print("Unknown command: $command");
       }
@@ -162,6 +172,34 @@ class _WebViewPageState extends State<WebViewPage> {
     controller.runJavaScript("window.onLocationJSON('$locationJson')");
   }
 
+  void sendMsakMetrics() async {
+    try {
+      final result = await const MethodChannel('msak_channel').invokeMethod<String>('runMsak');
+      print("Raw MSAK output: $result");
+
+      final metrics = parseMsakOutput(result ?? "");
+      final jsonString = json.encode(metrics);
+
+      print("Sending parsed metrics: $jsonString");
+      controller.runJavaScript("window.__resolveGenerateMetrics($jsonString)");
+    } catch (e) {
+      print("Error getting MSAK metrics: $e");
+    }
+  }
+
+  Map<String, dynamic> parseMsakOutput(String output) {
+    final downloadMatch = RegExp(r"rate\s+(\d+\.\d+)\s+Mbps").firstMatch(output);
+    final rttMatch = RegExp(r"rtt\s+(\d+\.\d+)ms").firstMatch(output);
+
+    return {
+      "uploadSpeed": 0.0, // minimal-download doesn’t measure upload
+      "downloadSpeed": downloadMatch != null ? double.parse(downloadMatch.group(1)!) : 0.0,
+      "latency": rttMatch != null ? double.parse(rttMatch.group(1)!) : 0.0,
+      "jitter": 0.0,
+      "packetLoss": 0.0,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,6 +212,34 @@ class _WebViewPageState extends State<WebViewPage> {
           if (isLoading)
             const Center(child: CircularProgressIndicator()),
         ],
+      ),
+    );
+  }
+}
+
+// testing class for run msak
+
+class MsakTestPage extends StatelessWidget {
+  static const platform = MethodChannel('msak_channel');
+
+  Future<void> runMsak() async {
+    try {
+      final result = await platform.invokeMethod('runMsak');
+      debugPrint("MSAK result:\n$result");
+    } catch (e) {
+      debugPrint("Error getting MSAK metrics: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("MSAK Test")),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: runMsak,
+          child: Text("Run MSAK Test"),
+        ),
       ),
     );
   }
