@@ -250,6 +250,38 @@ class _WebViewPageState extends State<WebViewPage> {
           SessionManager.setPlayerName(nickname);
           break;
 
+        case 'setPOIs':
+          // extract POI list from payload
+          final rawPOIs = data['payload'];
+
+          final poiList = (rawPOIs as List).map((entry) {
+            return {
+              'latitude': (entry['latitude'] as num).toDouble(),
+              'longitude': (entry['longitude'] as num).toDouble(),
+            };
+          }).toList();
+          
+          // store the POIs in the Sessionmanager
+          SessionManager.setPOIs(poiList);
+          break;
+
+        case 'POICheck':
+          // checks if the player is in collection vicinity of a POI
+          // uses player location
+          //checkPOI();
+
+          // TODO: checks if in clollection vicinity of a POI 
+          // if poi collected, need to remove POI from session manager and adjust vibration
+          // communicates back to JS via a callback function in JS
+          break;
+
+        case 'hintRequest':
+          // provides player with a hint directing them towards the nearest POI
+          //provideHint();
+
+          // Todo: communicates back to JS via callback in JS
+          break;
+
         default:
           print("Unknown command: $command");
       }
@@ -319,6 +351,18 @@ class _WebViewPageState extends State<WebViewPage> {
     // add payload to firestore
     final firestore = FirebaseFirestore.instance;
     await firestore.collection('Movement Data').doc(sessionId).collection('LikertData').add(payload);
+  }
+
+  // TODO: Function to perform POI check
+  void checkPOI()
+  {
+
+  }
+
+  // TODO: Callback function to perform hint generation
+  void provideHint()
+  {
+
   }
 
   @override
