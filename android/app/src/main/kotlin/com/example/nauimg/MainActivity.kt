@@ -1,4 +1,4 @@
-package com.example.internet_measurement_games_app
+package com.example.nauimg
 
 import io.flutter.embedding.android.FlutterActivity
 

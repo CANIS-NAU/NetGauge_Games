@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'location_service.dart';
 
+// THIS WAS A DEBUG FILE. IT AND CODE REFERENCING IT CAN BE REMOVED WHEN PROJECT IS COMPLETE
 class LocationTestPage extends StatefulWidget{
   const LocationTestPage({super.key});
 

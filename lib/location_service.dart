@@ -1,8 +1,8 @@
 import 'dart:async';
-
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 
+// stores a single piece of location data
 class LocationData {
   final Position position;
   final double? heading;
@@ -10,6 +10,20 @@ class LocationData {
   LocationData({required this.position, this.heading});
 }
 
+// class that makes a single location stream available for subscription by multiple functions
+class LocationDispatcher {
+  static final Stream<Position> _positionStream = 
+    Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+      ),
+    ).asBroadcastStream(); // enables multiple listeners
+
+  static Stream<Position> get stream => _positionStream;
+}
+
+// used to acquire the most recent coordinate position of the device
 Future<LocationData> determineLocationData() async
 {
   // Check if Location Services are enabled
@@ -60,4 +74,3 @@ Future<LocationData> determineLocationData() async
 
   return LocationData(position: position, heading: heading);
 }
-

@@ -215,95 +215,6 @@ urbanSpace = calculateHexagonVertices(35.19913, -111.648010, 0.7);
 let ruralSpace = [];
 ruralSpace = calculateHexagonVertices(35.234485, -111.666281, 0.7);
 
-// Function to grab location data collected in Android backend
-window.grabAndCheckLocation = function() {
-  
-  // Grab JSON string via the AndroidBridge
-  var locationData = AndroidBridge.getLocationJSON();
-  
-  // Parse the JSON string into a JavaScript object
-  // location contains date, timestamp, latitude, longitude
-  var location = JSON.parse(locationData);
-  console.log("User Lat: ", location.latitude);
-  console.log("User Lon: ", location.longitude);
-  
-  // Initialize location statuses as false
-  let insideCampus = false;
-  let insideUrban = false;
-  let insideRural = false;
-  
-  // Call isPointInsideHexagon on each hexagonal space to determine if the point is within said space
-  insideCampus = isPointInsideHexagon(location.latitude, location.longitude, campusSpace);
-  insideUrban = isPointInsideHexagon(location.latitude, location.longitude, urbanSpace);
-  insideRural = isPointInsideHexagon(location.latitude, location.longitude, ruralSpace);
-  
-  console.log("insideCampus", insideCampus);
-  console.log("insideUrban", insideUrban);
-  console.log("insideRural", insideRural);
-  
-  // Store data in state variables
-  State.variables.insideCampus = insideCampus;
-  State.variables.insideUrban = insideUrban;
-  State.variables.insideRural = insideRural;
-};
-
-window.grabMetricsAndWriteData = function() {
-    try {
-        console.log("Starting grabMetricsAndWriteData");
-
-        // Grab JSON string via the AndroidBridge
-        var metricsString = AndroidBridge.generateMetrics();
-        var locationData = AndroidBridge.getLocationJSON();
-        console.log("Metrics String: ", metricsString);
-        console.log("Location Data: ", locationData);
-
-        // Parse the JSON string into a JavaScript object
-        var metricsObject = JSON.parse(metricsString);
-        var location = JSON.parse(locationData);
-        console.log("Parsed Metrics Object: ", metricsObject);
-        console.log("Parsed Location: ", location);
-
-        // Store data in state variables
-        State.variables.uploadSpeed = metricsObject.uploadSpeed;
-        State.variables.downloadSpeed = metricsObject.downloadSpeed;
-        State.variables.jitter = metricsObject.jitter;
-        State.variables.packetLoss = metricsObject.packetLoss;
-        State.variables.latency = metricsObject.latency;
-
-        // Create an empty JSON object to be written to a JSON array on the user device
-        let checkData = {};
-
-        // Add data to JSON object
-      	checkData["nickname"] = State.variables.playerName;
-        checkData["datetime"] = new Date().toISOString();
-        checkData["latitude"] = location.latitude;
-        checkData["longitude"] = location.longitude;
-      	checkData["game"] = "ScavengerHunt.html";
-        checkData["androidId"] = location.androidId;
-        if (State.variables.insideCampus) {
-              checkData["hexagon"] = "campus";
-          } else if (State.variables.insideUrban) {
-              checkData["hexagon"] = "urban";
-          } else if (State.variables.insideRural) {
-              checkData["hexagon"] = "rural";
-          } else {
-              checkData["hexagon"] = "none";
-          }
-		checkData["question"] = State.variables.hintAnswered;
-
-        // Convert the JavaScript object to a JSON string
-        var jsonString = JSON.stringify(checkData);
-        console.log("JSON String to be written: ", jsonString);
-
-        // Call the Android method to write the data to Firestore
-        AndroidBridge.writeTwineData(jsonString);
-
-        console.log("Data written to Firestore");
-    } catch (error) {
-        console.error("Error in grabMetricsAndWriteData: ", error);
-    }
-};
-
 // CUSTOM ALERT BOXES//
 function showCustomAlert(title, message, callback) {
   var alertBox = document.getElementById('customAlert');
@@ -329,54 +240,170 @@ window.hideCustomAlert = function() {
   document.getElementById('customAlert').style.display = 'none';
 };
 
-// Function to display internet metrics collected at user request. Only works if grabMetricsAndWriteMetrics has been run previously.
+// Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
 window.displayMetrics = function() {
 	
   // Display the measurement values to the user
   showCustomAlert("Internet Metrics", "Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
 };
 
-// Function to handle submission of Likert scale answers
-window.submitLikertAnswers = function() {
-    // Get the selected value for environment connection
-    var envConnection = document.querySelector('input[name="envConnection"]:checked');
-    var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
-  	
-    // Check if both questions have been answered
-    if (envConnection && playerConnection) {
-        var envValue = envConnection.value;
-        var playerValue = playerConnection.value;
-		
-      	let likertData = {};
-      	
-      	likertData["nickname"] = State.variables.playerName;
-      	likertData["game"] = "ScavengerHunt.html";
-        likertData["envconnection"] = envValue;
-      	likertData["plrconnection"] = playerValue;
-      
-      	var jsonString = JSON.stringify(likertData);
-      	AndroidBridge.writeLikertData(jsonString);
-      
-      	showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
-        Engine.play("AfterForm");
-    } else {
-      	showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
-    }
+
+// FLUTTER BRIDGE FUNCTIONS //
+// TODO: UPDATE FUNCTION USAGE IN GAMEPLAY TO USE NEW EVENT MESSAGING LOGIC
+
+// Updated communication bridge to use event messaging instead of
+// native function calls
+
+// Function to request location data from Flutter
+// context dictates what to do with the data once 
+// received.
+window.requestLocation = function(context)
+{
+  // post a message to the flutter bridge requesting location data
+  // and the context in which to use the location data
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "getLocation", // runs getLocation in Flutter
+    context: context // what to do with returned location data
+  }));
 };
 
-window.sendPlayerNameToAndroid = function() {
-  	if(AndroidBridge && State.variables.playerName)
-    {
-     	AndroidBridge.setPlayerName(State.variables.playerName); 
+// Callback function that receives location JSON from
+// flutter and uses context to decide what to do with that
+// data
+window.onLocationJSON = function(json)
+{
+  const data = JSON.parse(json);
+  const context = data.context;
+  
+  // determine what needs to be done with the returned location
+  // data
+  switch(context) {
+    case 'zoneCheck': // determining if the player is in a valid zone
+      const lat = data.latitude;
+      const lon = data.longitude;
+      
+      // log for debugging
+      console.log("User Lat: ", lat);
+      console.log("User Lon: ", lon);
+      
+      // initialize location statuses as false
+      let insideCampus = false;
+      let insideUrban = false;
+      let insideRural = false;
+      
+      insideCampus = isPointInsideHexagon(lat, lon, campusSpace);
+      insideUrban = isPointInsideHexagon(lat, lon, urbanSpace);
+      insideRural = isPointInsideHexagon(lat, lon, ruralSpace);
+      
+      // debug logs
+      console.log("insideCampus", insideCampus);
+      console.log("insideUrban", insideUrban);
+      console.log("insideRural", insideRural);
+      
+      State.variables.insideCampus = insideCampus;
+      State.variables.insideUrban = insideUrban;
+      State.variables.insideRural = insideRural;
+      break;
+      
+    default: // unrecognized context
+      console.warn("Unrecognized location context: ", context);
+  }
+};
+
+// function to request metrics data from Flutter bridge
+window.requestMetricsAndWriteData = function()
+{ 
+  // check current player site
+  var site;
+  
+  if(State.variables.insideCampus)
+  {
+	site = "campus";
+  } else if (State.variables.insideUrban) {
+   	site = "urban"; 
+  } else if (State.variables.insideRural) {
+   	site = "rural"; 
+  } else {
+   	site = "unidentifiedSite"; 
+  }
+  
+  // post a message to the FlutterBbridge requesting internet metrics
+  // include data payload for Firestore data writing
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "requestMetricsAndWriteData",
+    payload: {
+      nickname: State.variables.playerName,
+      datetime: new Date().toISOString(),
+      game: "ScavengerHunt.html",
+      hexagon: site,
+      question: State.variables.hintAnswered
     }
-};</script><tw-passagedata pid="1" name="Start" tags="" position="800,250" size="100,100">Hello, and welcome to NetPlay&#39;s Flagstaff Scavenger Hunt!
+  }));
+};
+
+// callback function that receives metrics json from flutter
+window.onMetrics = function(json)
+{
+  // extract metrics
+  const metrics = JSON.parse(json);
+  
+  // store in state variables
+  State.variables.uploadSpeed = metrics.uploadSpeed;
+  State.variables.downloadSpeed = metrics.downloadSpeed;
+  State.variables.jitter = metrics.jitter;
+  State.variables.packetLoss = metrics.packetLoss;
+  State.variables.latency = metrics.latency;
+};
+
+// post a message to FlutterBridge to write Likert data payload to firestore
+window.publishLikertResponses = function()
+{
+  // create variables to load into payload
+  var envConnection = document.querySelector('input[name="envConnection"]:checked');
+  var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
+  
+  // verify both questions have been answered
+  if(envConnection && playerConnection)
+  {
+    var envValue = envConnection.value;
+    var playerValue = playerConnection.value;
+    
+    var playerName = State.variables.playerName;
+    var currentGame = "ScavengerHunt.html";
+    
+    showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
+    Engine.play("AfterForm");
+    
+    // send the payload and command to Flutter
+   	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishLikertResponses",
+      payload: {
+      	nickname: playerName,
+        game: currentGame,
+        envConnection: envValue,
+        plrConnection: playerValue
+      }
+    }));
+  } else {
+    showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
+  }
+}; // no callback needed, this function only sends
+
+// sends the player to JS
+window.publishPlayerName = function()
+{
+	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishPlayerName",
+      playerName: State.variables.playerName
+    }));
+}; // no callback needed, only sends</script><tw-passagedata pid="1" name="Start" tags="" position="800,250" size="100,100">Hello, and welcome to NetPlay&#39;s Flagstaff Scavenger Hunt!
 
 Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
-	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;  
-    &lt;&lt;run sendPlayerNameToAndroid()&gt;&gt;
-	&lt;&lt;run grabAndCheckLocation()&gt;&gt;
+	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
+    &lt;&lt;run publishPlayerName()&gt;&gt;
+	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;   
     &lt;&lt;goto &quot;Instructions&quot;&gt;&gt;
 &lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="UrbanLocation" tags="" position="800,500" size="100,100">It seems you are in the vicinty of Heritage Square! You can find the Scavenger Hunt clues relating to this area below.
 
@@ -607,7 +634,7 @@ Please start by entering your experiment nickname in the box below.
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NetPlay Games app access to location data.
 
 &lt;&lt;link &quot;Check my location&quot;&gt;&gt;
-	&lt;&lt;run grabAndCheckLocation()&gt;&gt;
+	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
 
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
         &lt;&lt;goto &quot;CampusLocation&quot;&gt;&gt;
@@ -618,7 +645,6 @@ If the issue persists, please ensure that you have location services enabled on 
     &lt;&lt;else&gt;&gt;
         &lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-    
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="CampusLocation" tags="" position="400,500" size="100,100">It seems you are in the vicinty of NAU&#39;s School of Informatics, Security, and Cyber Systems! You can find the Scavenger Hunt clues relating to this area below.
 
 &lt;&lt;if $campusLocation_Hint1&gt;&gt;
@@ -731,17 +757,7 @@ If the issue persists, please ensure that you have location services enabled on 
 
 &lt;&lt;if $campusLocation_Hint1 and $campusLocation_Hint2 and $campusLocation_Hint3 and $campusLocation_Hint4 and $campusLocation_Hint5 and $campusLocation_Hint6&gt;&gt;
 	&lt;&lt;goto &quot;HintsComplete_CL&quot;&gt;&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="IncorrectResponse_CL" tags="" position="500,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!
-
-&lt;&lt;link &quot;Return to clues.&quot;&gt;&gt;
-	&lt;&lt;goto &quot;CampusLocation&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;
-
-&lt;&lt;link &quot;Interested in seeing the internet data you collected? Click here!&quot;&gt;&gt;
-	&lt;&lt;run displayMetrics()&gt;&gt;
-&lt;&lt;/link&gt;&gt;
-
-&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="CorrectResponse_CL" tags="" position="300,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="IncorrectResponse_CL" tags="" position="500,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 
 &lt;&lt;link &quot;Return to clues.&quot;&gt;&gt;
 	&lt;&lt;goto &quot;CampusLocation&quot;&gt;&gt;
@@ -757,7 +773,23 @@ If the issue persists, please ensure that you have location services enabled on 
     &lt;p&gt;Your message goes here.&lt;/p&gt;
     &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
   &lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="8" name="CorrectResponse_RL" tags="" position="1100,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="7" name="CorrectResponse_CL" tags="" position="300,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
+
+&lt;&lt;link &quot;Return to clues.&quot;&gt;&gt;
+	&lt;&lt;goto &quot;CampusLocation&quot;&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+&lt;&lt;link &quot;Interested in seeing the internet data you collected? Click here!&quot;&gt;&gt;
+	&lt;&lt;run displayMetrics()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+&lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
+  &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
+  &lt;div class=&quot;alert-body&quot;&gt;
+    &lt;p&gt;Your message goes here.&lt;/p&gt;
+    &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="8" name="CorrectResponse_RL" tags="" position="1100,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 
 &lt;&lt;link &quot;Return to hints.&quot;&gt;&gt;
 	&lt;&lt;goto &quot;RuralLocation&quot;&gt;&gt;
@@ -773,11 +805,23 @@ If the issue persists, please ensure that you have location services enabled on 
     &lt;p&gt;Your message goes here.&lt;/p&gt;
     &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
   &lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="9" name="IncorrectResponse_RL" tags="" position="1300,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="9" name="IncorrectResponse_RL" tags="" position="1300,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 
 &lt;&lt;link &quot;Return to hints.&quot;&gt;&gt;
 	&lt;&lt;goto &quot;RuralLocation&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="10" name="CorrectResponse_UL" tags="" position="700,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+&lt;&lt;link &quot;Interested in seeing the internet data you collected? Click here!&quot;&gt;&gt;
+	&lt;&lt;run displayMetrics()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+&lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
+  &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
+  &lt;div class=&quot;alert-body&quot;&gt;
+    &lt;p&gt;Your message goes here.&lt;/p&gt;
+    &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="10" name="CorrectResponse_UL" tags="" position="700,700" size="100,100">Well done $playerName, that answer was correct!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 
 &lt;&lt;link &quot;Return to hints.&quot;&gt;&gt;
 	&lt;&lt;goto &quot;UrbanLocation&quot;&gt;&gt;
@@ -793,11 +837,23 @@ If the issue persists, please ensure that you have location services enabled on 
     &lt;p&gt;Your message goes here.&lt;/p&gt;
     &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
   &lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="11" name="IncorrectResponse_UL" tags="" position="900,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="11" name="IncorrectResponse_UL" tags="" position="900,700" size="100,100">Sorry $playerName, that wasn&#39;t quite right! Please try again!&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 
 &lt;&lt;link &quot;Return to hints.&quot;&gt;&gt;
 	&lt;&lt;goto &quot;UrbanLocation&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="HintsComplete_CL" tags="" position="400,900" size="100,100">Well done $playerName, you have correctly answered all the hints for the Campus Location!
+&lt;&lt;/link&gt;&gt;
+
+&lt;&lt;link &quot;Interested in seeing the internet data you collected? Click here!&quot;&gt;&gt;
+	&lt;&lt;run displayMetrics()&gt;&gt;
+&lt;&lt;/link&gt;&gt;
+
+&lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
+  &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
+  &lt;div class=&quot;alert-body&quot;&gt;
+    &lt;p&gt;Your message goes here.&lt;/p&gt;
+    &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="12" name="HintsComplete_CL" tags="" position="400,900" size="100,100">Well done $playerName, you have correctly answered all the hints for the Campus Location!
 
 [[Fill out the post-game form.|EndgameForm]]</tw-passagedata><tw-passagedata pid="13" name="HintsComplete_RL" tags="" position="1200,900" size="100,100">Well done $playerName, you have correctly answered all the hints for the Rural Location!
 
@@ -860,7 +916,7 @@ That&#39;s all, enjoy the game!
     &lt;br&gt;
 
     &lt;!-- Button to submit the answers --&gt;
-    &lt;button class=&quot;button-link&quot; onclick=&quot;submitLikertAnswers()&quot;&gt;Submit&lt;/button&gt;
+    &lt;button class=&quot;button-link&quot; onclick=&quot;publishLikertResponses()&quot;&gt;Submit&lt;/button&gt;
     
     &lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
   &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
