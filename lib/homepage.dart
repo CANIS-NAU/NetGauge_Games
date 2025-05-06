@@ -6,6 +6,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
+import 'vibration_controller.dart';
+
+// TODO: Add remaining games
 
 // class to manage session data that needs to be accessible across functions/files
 
@@ -93,6 +96,8 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     // start location logger
     LocationLogger.start();
+    // terminate vibration controller on the homepage
+    VibrationController.stop();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Landing Page'),

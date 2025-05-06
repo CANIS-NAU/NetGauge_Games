@@ -13,6 +13,7 @@ class SessionManager {
   static String? get sessionId => _sessionId;
   static String? get playerName => _playerName;
   static String? get currentGame => _currentGame;
+  static List<Map<String, double>> get poiList => _poiList;
 
   // sets the session ID
   static void setSessionId(String id) {

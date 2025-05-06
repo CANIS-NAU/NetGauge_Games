@@ -404,7 +404,11 @@ Please start by entering your experiment nickname in the box below.
     &lt;&lt;run publishPlayerName()&gt;&gt;
 	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;   
     &lt;&lt;goto &quot;Instructions&quot;&gt;&gt;
-&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="UrbanLocation" tags="" position="800,500" size="100,100">It seems you are in the vicinty of Heritage Square! You can find the Scavenger Hunt clues relating to this area below.
+&lt;&lt;/button&gt;&gt;
+
+&lt;&lt;link &quot;Goto Rural&quot;&gt;&gt;
+&lt;&lt;goto &quot;ruralLocation&quot;&gt;&gt;
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="UrbanLocation" tags="" position="800,500" size="100,100">It seems you are in the vicinty of Heritage Square! You can find the Scavenger Hunt clues relating to this area below.
 
 &lt;&lt;if $urbanLocation_Hint1&gt;&gt;
 	&lt;&lt;print &quot;You have solved this item!&quot;&gt;&gt;
