@@ -61,7 +61,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildTile(String title, IconData icon, BuildContext context, Widget page) {
+  Widget _buildTile(String title, IconData icon, String gameFile, BuildContext context) {
     return Material(
       color: Colors.white,
       child: InkWell(
@@ -72,7 +72,7 @@ class _HomePageState extends State<HomePage>
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => page,
+              builder: (context) => WebViewPage(title: title, gameFile: gameFile),
             ),
           ).then((_) {
             // log the game end with the session manager
@@ -107,11 +107,12 @@ class _HomePageState extends State<HomePage>
           ListView(
             padding: EdgeInsets.zero,
             children: [
-              _buildTile('Scavenger Hunt', Icons.home, context, const WebViewPage(title: 'Scavenger Hunt')),
-              _buildTile('Soul Seeker', Icons.settings, context, const WebViewPage(title: 'Soul Seeker')),
-              _buildTile('Zombie Apocalypse', Icons.info, context, const WebViewPage(title: 'Zombie Apocalypse')),
-              _buildTile('Speed Tester', Icons.contact_mail, context, const WebViewPage(title: 'Speed Tester')),
-              _buildTile('Test Location Service', Icons.my_location, context, const LocationTestPage())
+              // TODO: This could be more dynamic. Iterate over assets and build a 
+              // tile for each 
+              _buildTile('Scavenger Hunt', Icons.home, 'ScavengerHunt.html', context),
+              _buildTile('Soul Seeker', Icons.settings, 'SoulSeeker.html', context),
+              _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
+              // TODO: build page for speed tester
             ],
           ),
           Align(
@@ -140,8 +141,9 @@ class _HomePageState extends State<HomePage>
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
   final String title;
+  final String gameFile; // holds the html file to be loaded into webview
 
-  const WebViewPage({Key? key, required this.title}) : super(key: key);
+  const WebViewPage({Key? key, required this.title, required this.gameFile}) : super(key: key);
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -170,15 +172,11 @@ class _WebViewPageState extends State<WebViewPage> {
             setState(() {
               isLoading = false;
             });
-            // previously injected a 'fake' JS window here, but we are updating that method
-            // to instead use a more dynamic event-based messaging system.
-            // JS now uses FlutterBridge.postMessage(...) directly instead of original
-            // Android Bridge calls
           },
         ),
       )
-    // register a JavaScript channel named 'NativeBridge'
-    // to receives messages from the web content
+      // register a JavaScript channel named 'NativeBridge'
+      // to receives messages from the web content
       ..addJavaScriptChannel(
         'FlutterBridge',
         onMessageReceived: (JavaScriptMessage message) {
@@ -186,8 +184,8 @@ class _WebViewPageState extends State<WebViewPage> {
         },
       );
 
-    // TODO: load your HTML file from the assets folder
-    controller.loadFlutterAsset('assets/ScavengerHunt.html');
+    // Load gameFile associated with tile that created the webview
+    controller.loadFlutterAsset('assets/${widget.gameFile}');
   }
 
   /// parses the incoming message from the JavaScript channel.
@@ -358,7 +356,7 @@ class _WebViewPageState extends State<WebViewPage> {
     await firestore.collection('Movement Data').doc(sessionId).collection('LikertData').add(payload);
   }
 
-  // TODO: Function to perform POI check
+  // TODO: Callback function to perform POI check
   void checkPOI()
   {
 
