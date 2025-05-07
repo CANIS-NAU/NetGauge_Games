@@ -2,6 +2,7 @@ import 'location_service.dart';
 import 'session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/material.dart';
 
 // class that manages logging of persistent location data to firestore
 class LocationLogger {
@@ -24,9 +25,9 @@ class LocationLogger {
             'game': SessionManager.currentGame,
             'player': SessionManager.playerName,
           });
-        print("Location Logged");
+        debugPrint("[LOCATION_LOGGER] Location Logged");
       } else {
-        print("Skipped Location Logging");
+        debugPrint("[LOCATION_LOGGER] Skipped Location Logging");
       }
     });
   }

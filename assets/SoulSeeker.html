@@ -722,7 +722,7 @@ window.startVibrationService = function()
 
 window.stopVibrationService = function()
 {
-  FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"})):
+  FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"}));
 };
 
 // END OF POI-RELATED FUNCTIONS //
@@ -962,19 +962,11 @@ How do you respond?
 
 &lt;&lt;link &quot;\&quot;I am. What&#39;s it to you?\&quot; {Int + 1}&quot;&gt;&gt;
 	&lt;&lt;set $intelligence to $intelligence + 1&gt;&gt;
-	&lt;&lt;set State.variables.sourcePassage to &quot;Eldra(NPC)&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;I am. What&#39;s it to you? {Int + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;goto Eldradialogue&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;*Prepare yourself to fight the creature.* {Str + 1}&quot;&gt;&gt;
 	&lt;&lt;set $strength to $strength + 1&gt;&gt;
-	&lt;&lt;set State.variables.sourcePassage to &quot;Eldra(NPC)&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Prepare yourself to fight the creature. {Str + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;goto Eldradialogue&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
@@ -1600,10 +1592,6 @@ Your mirror self attacks swiftly, with movements that mirror your own. You are f
 
 &lt;&lt;link &quot;You call upon all your might and unleash a flurry of blows upon the reflection. {Str + 2}&quot;&gt;&gt;
 	&lt;&lt;set $strength to $strength + 2&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;HallOfReflectionsP2&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;You call upon all your might and unleash a flurry of blows upon the reflection. {Str + 2}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;run dynamicUpdate()&gt;&gt;
     &lt;&lt;goto &quot;HallOfReflectionsP3&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
@@ -1757,10 +1745,6 @@ Despite your best efforts, the mirror self still manages to parry every punch yo
 
 &lt;&lt;link &quot;You ignore the instinct to fight back, and instead lower your defenses and speak honestly. \“Are we not all afraid? Have we not all felt doubt? Have we not all failed? These are parts of life, and I am ready to accept them.\&quot; {Int + 2}&quot; &gt;&gt;
 	&lt;&lt;set $intelligence to $intelligence + 2&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;HallOfReflectionsP4&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;You ignore the instinct to fight back, and instead lower your defenses and speak honestly. \“Are we not all afraid? Have we not all felt doubt? Have we not all failed? These are parts of life, and I am ready to accept them.\&quot; {Int + 2}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
     &lt;&lt;run dynamicUpdate()&gt;&gt;
     &lt;&lt;goto &quot;HallOfReflectionsP5&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="68" name="HallOfReflectionsP5" tags="" position="1550,1550" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
@@ -1770,10 +1754,6 @@ The reflection falters, its form flickering for a moment. It is no longer an equ
 
 &lt;&lt;link &quot;You do not fight back, instead you reach out to the reflection and catch it in a tender embrace. {Str + 1, Int + 1}&quot;&gt;&gt;
 	&lt;&lt;set $intelligence to $intelligence + 1&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;HallOfReflectionsP5&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;You do not fight back, instead you reach out to the reflection and catch it in a tender embrace. {Str + 1, Int + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
     &lt;&lt;set $strength to $strength + 1&gt;&gt;
     &lt;&lt;run dynamicUpdate()&gt;&gt;
     &lt;&lt;goto &quot;HallOfReflectionsP6&quot;&gt;&gt;

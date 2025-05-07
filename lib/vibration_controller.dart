@@ -3,8 +3,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:vibration/vibration.dart';
 import 'location_service.dart';
 import 'session_manager.dart';
+import 'package:flutter/material.dart';
 
 // controls incremental vibration in games that require searching for POIs
+
+// Vibration controller is started from within the game by posting a 'startVibrationService'
+// message. It may also be stopped/cleared in the game files, but is also stopped whenever
+// the player closes a game.
 
   class VibrationController {
     static StreamSubscription<Position>? _locationSub;
@@ -13,10 +18,10 @@ import 'session_manager.dart';
     static void start() {
       // If no POIS are set, don't do anything
       if (SessionManager.poiList.isEmpty) {
-        print("No POIs detected. VibrationController not started");
+        debugPrint("[VIBRATION_CONTROLLER] No POIs detected. VibrationController not started");
         return;
       }else{
-        print("Vibration manager started");
+        debugPrint("[VIBRATION_CONTROLLER] Vibration manager started");
       }
 
       // subscribe to location stream
@@ -58,7 +63,7 @@ import 'session_manager.dart';
         });
       });
 
-      print("VibrationController started");
+      debugPrint("[VIBRATION_CONTROLLER] VibrationController started");
     }
 
     // function to stop the vibration service
@@ -71,7 +76,7 @@ import 'session_manager.dart';
       _vibrationTimer?.cancel();
       _vibrationTimer = null;
 
-      print("VibrationController stopped");
+      debugPrint("[VIBRATION_CONTROLLER] VibrationController stopped");
     }
 
     // handles determining delay between vibration pulses based on distance

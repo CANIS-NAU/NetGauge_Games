@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
+import 'name_entry_page.dart';
+import 'dart:async';
 
 // class to manage session data that needs to be accessible across functions/files
 
@@ -59,6 +61,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  // constructor for tiles that launch games into the webview
   Widget _buildTile(String title, IconData icon, String gameFile, BuildContext context) {
     return Material(
       color: Colors.white,
@@ -66,6 +69,8 @@ class _HomePageState extends State<HomePage>
         onTap: () {
           // log the game start with the session manager
           SessionManager.startGame(title);
+          // begin location logging
+          LocationLogger.start();
           // navigate to the WebViewPage when tapped
           Navigator.push(
             context,
@@ -74,8 +79,43 @@ class _HomePageState extends State<HomePage>
             ),
           ).then((_) {
             // log the game end with the session manager
+            SessionManager.endGame(); // also will stop logging location
+            // Stop the vibration service, in case the game started it
             VibrationController.stop();
-            SessionManager.endGame();
+          });
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.all(16.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18.0),
+            leading: Icon(icon, size: 40.0, color: Theme.of(context).primaryColor),
+            title: Text(title, style: const TextStyle(fontSize: 18)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // constructor for tiles that launch games in dedicated flutter pages
+  Widget _buildPageTile(String title, IconData icon, Widget page, BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          // log the game start with the session manager
+          SessionManager.startGame(title);
+          // begin location logging
+          LocationLogger.start();
+          // navigate to page
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => page),
+          ).then((_){
+            // log the game end with the session manager
+            SessionManager.endGame(); // also will stop logging location
+            // Stop the vibration service, in case the game started it
+            VibrationController.stop();
           });
         },
         child: Container(
@@ -93,9 +133,6 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    // start location logger
-    LocationLogger.start();
-    // terminate vibration controller on the homepage
     return Scaffold(
       appBar: AppBar(
         title: const Text('Landing Page'),
@@ -110,7 +147,7 @@ class _HomePageState extends State<HomePage>
               _buildTile('Scavenger Hunt', Icons.home, 'ScavengerHunt.html', context),
               _buildTile('Soul Seeker', Icons.settings, 'SoulSeeker.html', context),
               _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
-              // TODO: build page for speed tester
+              _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context)
             ],
           ),
           Align(
@@ -151,12 +188,14 @@ class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
 
+
+
   @override
   void initState() {
     super.initState();
 
     // create parameters for the platform-specific WebView controller
-    final PlatformWebViewControllerCreationParams params =
+    const PlatformWebViewControllerCreationParams params =
     PlatformWebViewControllerCreationParams();
 
     // create the WebView controller from the platform-specific parameters
@@ -211,7 +250,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
           if(sessionId == null)
           {
-            print("Firestore write failed- SessionID is NULL");
+            debugPrint("[HANDLENATIVEMESSAGE] Firestore write failed- SessionID is NULL");
             return;
           }
 
@@ -233,7 +272,7 @@ class _WebViewPageState extends State<WebViewPage> {
           // ensure that session id is non null
           if(sessionId == null)
           {
-            print("Firestore write failed- SessionID is NULL");
+            debugPrint("[HANDLENATIVEMESSAGE] Firestore write failed- SessionID is NULL");
             return;
           }
 
@@ -262,7 +301,7 @@ class _WebViewPageState extends State<WebViewPage> {
             };
           }).toList();
 
-          print("POI list set: ${poiList}");
+          debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
           
           // store the POIs in the Sessionmanager
           SessionManager.setPOIs(poiList);
@@ -299,10 +338,10 @@ class _WebViewPageState extends State<WebViewPage> {
           break;
 
         default:
-          print("Unknown command: $command");
+          debugPrint("[HANDLENATIVEMESSAGE] Unknown command: $command");
       }
     } catch (e) {
-      print("Error decoding message: $e");
+      debugPrint("[HANDLENATIVEMESSAGE] Error decoding message: $e");
     }
   }
 
@@ -343,8 +382,8 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<void> writeCheckData(Map<String, dynamic> payload, String? sessionId) async
   {
     // debug
-    print('Writing to Firestore with session: $sessionId');
-    print('Payload: $payload');
+    debugPrint('[WRITECHECKDATA] Writing to Firestore with session: $sessionId');
+    debugPrint('[WRITECHECKDATA] Payload: $payload');
 
     // get location
     final loc = await determineLocationData();
@@ -403,9 +442,10 @@ class _WebViewPageState extends State<WebViewPage> {
     if(collected)
     {
       SessionManager.poiList.removeAt(indexToRemove);
-      print("POI collected at index $indexToRemove");
+      debugPrint("[CHECKPOI] POI collected at index $indexToRemove");
+      debugPrint("[CHECKPOI] Updated POI list: ${SessionManager.poiList}");
     }else{
-      print("No POI within range.");
+      debugPrint("[CHECKPOI] No POI within range.");
     }
 
     // send results back to JS

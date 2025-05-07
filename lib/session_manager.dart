@@ -1,10 +1,8 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/material.dart';
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
-  // TODO: Add logic to
-    // Remove POIs (both singular and multiple POIs)
-
   static String? _sessionId;
   static String? _playerName;
   static String? _currentGame; 
@@ -23,18 +21,18 @@ class SessionManager {
   // stores the nickname of the current player
   static void setPlayerName(String name){
     _playerName = name;
-    print('Player name set to $_playerName');
+    debugPrint('[SESSION_MANAGER] Player name set to $_playerName');
   }
 
   // updates current game when game is started
   static void startGame(String gameTitle){
     _currentGame = gameTitle;
-    print('Game started: $_currentGame');
+    debugPrint('[SESSION_MANAGER] Game started: $_currentGame');
   }
 
   // updates current game to null when game is closed
   static void endGame(){
-    print('Game ended: $_currentGame');
+    debugPrint('[SESSION_MANAGER] Game ended: $_currentGame');
     _currentGame = null;
   }
 
@@ -64,6 +62,8 @@ class SessionManager {
         closest['latitude']!,
         closest['longitude']!,
       );
+
+      debugPrint("[SESSION_MANAGER] Nearest POI: $closest");
 
       return distToCurrent < distToClosest ? current : closest;
     });
