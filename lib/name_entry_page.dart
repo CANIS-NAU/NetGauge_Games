@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'session_manager.dart';
 import 'speed_test_page.dart';
+import 'location_logger.dart';
 
 // name entry page that runs before the speed tester page
 
@@ -18,6 +19,7 @@ class NameEntryState extends State<NameEntry> {
     final name = _nameController.text.trim();
     if(name.isNotEmpty) {
       SessionManager.setPlayerName(name);
+      LocationLogger.start();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const SpeedTestPage()),

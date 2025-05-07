@@ -103,10 +103,6 @@ class _HomePageState extends State<HomePage>
       color: Colors.white,
       child: InkWell(
         onTap: () {
-          // log the game start with the session manager
-          SessionManager.startGame(title);
-          // begin location logging
-          LocationLogger.start();
           // navigate to page
           Navigator.push(
             context,
@@ -114,8 +110,6 @@ class _HomePageState extends State<HomePage>
           ).then((_){
             // log the game end with the session manager
             SessionManager.endGame(); // also will stop logging location
-            // Stop the vibration service, in case the game started it
-            VibrationController.stop();
           });
         },
         child: Container(

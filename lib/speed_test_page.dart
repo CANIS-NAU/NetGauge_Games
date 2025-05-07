@@ -12,7 +12,6 @@ class SpeedTestPage extends StatefulWidget{
 }
 
 class SpeedTestPageState extends State<SpeedTestPage> {
-  // Placeholder values
   String downloadSpeed = '---';
   String uploadSpeed = '---';
   String latency = '---';
@@ -69,6 +68,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   // overall page constructor
   @override
   Widget build(BuildContext context) {
+    SessionManager.startGame('Speed Tester');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Internet Speed Test'),

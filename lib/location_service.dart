@@ -15,8 +15,8 @@ class LocationDispatcher {
   static final Stream<Position> _positionStream = 
     Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 5,
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 0,
       ),
     ).asBroadcastStream(); // enables multiple listeners
 

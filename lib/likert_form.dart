@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'homepage.dart';
+//import 'homepage.dart';
 
 class LikertForm extends StatefulWidget {
   const LikertForm({Key? key}) : super(key: key);
@@ -101,14 +101,16 @@ class _LikertFormState extends State<LikertForm> {
             const Spacer(),
             Center(
               child: ElevatedButton(
+                /*
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(builder: (context) => const HomePage()),
                     (route) => false,
                   );
-                },
-                child: const Text('Return to Main Menu'),
+                }*/
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Return to Speed Test'),
               ),
             )
           ],
