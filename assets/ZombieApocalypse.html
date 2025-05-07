@@ -206,38 +206,7 @@ body {
 .alert-box button:hover {
   background-color: #555;
 }
-/* END CUSTOM ALERT BOX STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// Add stats bar to the body element only in certain passages
-$(document).on(':passagestart', function () {
-    // Get the current passage tags
-    var currentPassageTags = Story.get(State.passage).tags;
-
-    // Check if the passage has the 'show-stats' tag
-    if (currentPassageTags.includes('show-stats')) {
-        // If the stats bar doesn't exist, create it
-        if ($('#persistent-stats').length === 0) {
-            $('body').prepend('<div id="persistent-stats"><div>Antidotes: <span id="antidotes-val"></span></div><div>Samples: <span id="samples-val"></span></div></div>');
-        }
-        // Update the stats
-        updateStats();
-        $('#persistent-stats').show(); // Ensure the stats bar is visible
-    } else {
-        // Hide the stats bar if it exists in passages without the 'show-stats' tag
-        $('#persistent-stats').hide();
-    }
-});
-
-// Function to update the displayed stats
-function updateStats() {
-    $('#antidotes-val').text(variables().antidoteCount); // Update Strength
-    $('#samples-val').text(State.variables.sampleCount + '/4'); // Update Intelligence
-}
-
-window.dynamicUpdate = function()
-{
-  $('#antidotes-val').text(variables().antidoteCount + '/2');
-  $('#samples-val').text(State.variables.sampleCount + '/4'); 
-};
-
+/* END CUSTOM ALERT BOX STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
 function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
     // Calculate side length using the area of a regular hexagon
@@ -335,196 +304,53 @@ window.grabAndCheckLocation = function() {
   State.variables.insideRural = insideRural;
 };
 
-// Determine which group of POIs to send to android based on the hexagon the user is in
-window.sendPOIData = function(){
-  // Point of Interest lists for each of the three locations
-  var campusPoiTutorial = JSON.stringify([
-    {latitude: 35.185980, longitude: -111.658405} // SICCS Patio
-  ]);
-  
-  var campusPois = JSON.stringify([
-    {latitude: 35.186191, longitude: -111.658219}, // SICCS entrance
-    {latitude: 35.185980, longitude: -111.658405}, // SICCS patio
-    {latitude: 35.185765, longitude: -111.658330}, // SICCS small lot
-    {latitude: 35.185564, longitude: -111.658066}  // ISB Lot
-  ]);
-  
-  var urbanPoiTutorial = JSON.stringify([
-    {latitude: 35.198521, longitude:-111.648314}  // Mozelle's Bakery Sign
-  ]);
-  
-  var urbanPois = JSON.stringify([
-    {latitude: 35.198773, longitude:-111.648046}, // Green tables near cat sculpture
-    {latitude: 35.198600, longitude:-111.647828}, // Hello sugar salon
-    {latitude: 35.198521, longitude:-111.648314},  // Mozelle's Bakery Sign
-    {latitude: 35.198444, longitude:-111.647922} // Forum Center
-  ]);
-  
-  var ruralPoiTutorial = JSON.stringify([
-    {latitude: 35.234288, longitude: -111.665135} // Progression sculpture
-  ]);
-  
-  var ruralPois = JSON.stringify([
-    {latitude: 35.234288, longitude: -111.665135}, // Progression sculpture
-    {latitude: 35.234222, longitude: -111.665501}, // Museum entrance
-    {latitude: 35.234671, longitude: -111.665116}, // Parking lot
-    {latitude: 35.234244, longitude: -111.665822}  // Left of the entrance, around back
-  ]);
-      
-  if(State.variables.insideCampus) {
-    if(State.variables.tutorialComplete)
-    {
-    	console.log("Campus POIs sent to Android");
-    	AndroidBridge.setPOIData(campusPois);
+// END OF PLAYER SPACE DETERMINATION FUNCTIONS
+
+
+
+
+
+// FUNCTIONS THAT MANAGE STATS DISPLAY //
+
+// Add stats bar to the body element only in certain passages
+$(document).on(':passagestart', function () {
+    // Get the current passage tags
+    var currentPassageTags = Story.get(State.passage).tags;
+
+    // Check if the passage has the 'show-stats' tag
+    if (currentPassageTags.includes('show-stats')) {
+        // If the stats bar doesn't exist, create it
+        if ($('#persistent-stats').length === 0) {
+            $('body').prepend('<div id="persistent-stats"><div>Antidotes: <span id="antidotes-val"></span></div><div>Samples: <span id="samples-val"></span></div></div>');
+        }
+        // Update the stats
+        updateStats();
+        $('#persistent-stats').show(); // Ensure the stats bar is visible
     } else {
-     	console.log("Campus Tutorial POI sent to Android");
-      	AndroidBridge.setPOIData(campusPoiTutorial);
+        // Hide the stats bar if it exists in passages without the 'show-stats' tag
+        $('#persistent-stats').hide();
     }
-  } else if (State.variables.insideUrban) {
-    if(State.variables.tutorialComplete)
-    {
-      	console.log("Urban POIs sent to Android");
-  		AndroidBridge.setPOIData(urbanPois);
-    }else{
-      	console.log("Urban Tutorial POI sent to Android");
-      	AndroidBridge.setPOIData(urbanPoiTutorial);
-    }
-  } else if (State.variables.insideRural) {
-    if(State.variables.tutorialComplete)
-    {
-      	console.log("Rural POIs sent to Android");
-    	AndroidBridge.setPOIData(ruralPois);
-    }else{
-      	console.log("Rural POI tutorial sent to Android");
-      	AndroidBridge.setPOIData(ruralPoiTutorial);
-    }
-  } else {
-    console.log("Not in a play area, no POIs sent");
-  }
+});
 
+// Function to update the displayed stats
+function updateStats() {
+    $('#antidotes-val').text(variables().antidoteCount); // Update Strength
+    $('#samples-val').text(State.variables.sampleCount + '/4'); // Update Intelligence
+}
+
+window.dynamicUpdate = function()
+{
+  $('#antidotes-val').text(variables().antidoteCount + '/2');
+  $('#samples-val').text(State.variables.sampleCount + '/4'); 
 };
 
-window.sendControlPOI = function() {
-  	var controlPOI = JSON.stringify([
-    {latitude: 35.248184, longitude:-111.542985} // Coles house
-  ]);
-  
-  	console.log("Control POI sent to Android");
-    AndroidBridge.setPOIData(controlPOI);
-};
-
-// Request a POI check from android
-window.requestPOICheck = function() {
-  console.log("Requesting POI check from Android.");
-  AndroidBridge.POICheck();
-};
-
-// Receive the POI check from android
-window.receivePOICheck = function(isAtPOI) {
-  if (isAtPOI) {
-    console.log("POI Found!");
-    showCustomAlert("Search Results", "You have found a sample!", function() {
-      if (!State.variables.tutorialComplete) {
-        State.variables.tutorialComplete = true;
-        Engine.play(State.variables.previousPassage);
-      } else {
-        State.variables.sampleCount += 1;
-        Engine.play(State.variables.previousPassage, false, function() {});
-      }
-    });
-  } else {
-    console.log("No POI found.");
-    showCustomAlert("Search Results", "No sample found, keep looking!", function() {
-      Engine.play(State.variables.previousPassage, false, function() {});
-    });
-  }
-};
-
-// Request orientation hint from Android
-window.requestHint = function() {
-  console.log("Requesting hint from Android.");
-  AndroidBridge.requestHint();
-};
-
-// Receive the orientation hint returned from Android
-window.receiveHint = function(hint) {
-  console.log("Hint received from Android: " + hint);
-  // Show custom alert with callback
-  showCustomAlert("Orientation Results", "The nearest vaccine sample " + hint, function() {
-    // Callback to transition after the alert is closed
-    Engine.play(State.variables.previousPassage, false, function() {});
-  });
-};
-
-window.grabMetricsAndWriteData = function() {
-    try {
-        console.log("Starting grabMetricsAndWriteData");
-
-        // Grab JSON string via the AndroidBridge
-        var metricsString = AndroidBridge.generateMetrics();
-        var locationData = AndroidBridge.getLocationJSON();
-        console.log("Metrics String: ", metricsString);
-        console.log("Location Data: ", locationData);
-
-        // Parse the JSON string into a JavaScript object
-        var metricsObject = JSON.parse(metricsString);
-        var location = JSON.parse(locationData);
-        console.log("Parsed Metrics Object: ", metricsObject);
-        console.log("Parsed Location: ", location);
-
-        // Store data in state variables
-        State.variables.uploadSpeed = metricsObject.uploadSpeed;
-        State.variables.downloadSpeed = metricsObject.downloadSpeed;
-        State.variables.jitter = metricsObject.jitter;
-        State.variables.packetLoss = metricsObject.packetLoss;
-        State.variables.latency = metricsObject.latency;
-
-        // Create an empty JSON object to be written to a JSON array on the user device
-        let checkData = {};
-
-        // Add data to JSON object
-      	checkData["nickname"] = State.variables.playerName;
-        checkData["datetime"] = new Date().toISOString();
-        checkData["latitude"] = location.latitude;
-        checkData["longitude"] = location.longitude;
-      	checkData["game"] = "Zombie Apocalypse.html";
-        checkData["androidId"] = location.androidId;
-        if (State.variables.insideCampus) {
-              checkData["hexagon"] = "campus";
-          } else if (State.variables.insideUrban) {
-              checkData["hexagon"] = "urban";
-          } else if (State.variables.insideRural) {
-              checkData["hexagon"] = "rural";
-          } else {
-              checkData["hexagon"] = "none";
-          }
-      	checkData["role"] = State.variables.role;
-
-        // Convert the JavaScript object to a JSON string
-        var jsonString = JSON.stringify(checkData);
-        console.log("JSON String to be written: ", jsonString);
-
-        // Call the Android method to write the data to Firestore
-        AndroidBridge.writeTwineData(jsonString);
-
-        console.log("Data written to Firestore");
-    } catch (error) {
-        console.error("Error in grabMetricsAndWriteData: ", error);
-    }
-};
+// END OF STATS FUNCTIONS //
 
 
-window.updateDynamicText = function(elementId, newText) {
-    // Find the element by its ID and update its innerHTML
-    var element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = newText;
-    } else {
-        console.warn("Element with ID '" + elementId + "' not found.");
-    }
-};
 
-// CUSTOM ALERT BOXES//
+
+
+// FUNCTIONS FOR CUSTOM ALERT BOXES//
 function showCustomAlert(title, message, callback) {
   var alertBox = document.getElementById('customAlert');
   alertBox.querySelector('.alert-header').textContent = title;
@@ -545,14 +371,308 @@ window.hideCustomAlert = function() {
   document.getElementById('customAlert').style.display = 'none';
 };
 
-// UI BUTTON LOGIC //
+// END OF ALERT BOX FUNCTIONS //
 
-// Define a function to handle the "Search" button logic
+
+
+
+
+// FLUTTER BRIDGE FUNCTIONS
+// TODO: REFACTOR GAME TO UTILIZE NEW FUNCTIONS
+// TODO: CLEAR CALLS TO writeTaylenData
+// FUNCTIONS FOR COLLECTING AND UTILIZING LOCATION INFORMATION AND INTERNET MEASUREMENTS //
+
+// Function to request location data from flutter
+// context dictates what to do with received location data
+window.requestLocation = function(context)
+{
+  // post a message to the flutter bridge requesting location data
+  // and the context in which to use the location data
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "getLocation", // runs getLocation in Flutter
+    context: context // what to do with returned location data
+  }));
+};
+
+// Callback function that receives location JSON from
+// flutter and uses context to decide what to do with that
+// data
+window.onLocationJSON = function(json)
+{
+  const data = JSON.parse(json);
+  const context = data.context;
+  
+  // determine what needs to be done with the returned location
+  // data
+  switch(context) {
+    case 'zoneCheck': // determining if the player is in a valid zone
+      const lat = data.latitude;
+      const lon = data.longitude;
+      
+      // log for debugging
+      console.log("User Lat: ", lat);
+      console.log("User Lon: ", lon);
+      
+      // initialize location statuses as false
+      let insideCampus = false;
+      let insideUrban = false;
+      let insideRural = false;
+      
+      insideCampus = isPointInsideHexagon(lat, lon, campusSpace);
+      insideUrban = isPointInsideHexagon(lat, lon, urbanSpace);
+      insideRural = isPointInsideHexagon(lat, lon, ruralSpace);
+      
+      // debug logs
+      console.log("insideCampus", insideCampus);
+      console.log("insideUrban", insideUrban);
+      console.log("insideRural", insideRural);
+      
+      State.variables.insideCampus = insideCampus;
+      State.variables.insideUrban = insideUrban;
+      State.variables.insideRural = insideRural;
+      break;
+      
+    default: // unrecognized context
+      console.warn("Unrecognized location context: ", context);
+  }
+};
+
+// function to request metrics data from Flutter bridge
+window.requestMetricsAndWriteData = function()
+{ 
+  // check current player site
+  var site;
+  
+  if(State.variables.insideCampus)
+  {
+	site = "campus";
+  } else if (State.variables.insideUrban) {
+   	site = "urban"; 
+  } else if (State.variables.insideRural) {
+   	site = "rural"; 
+  } else {
+   	site = "unidentifiedSite"; 
+  }
+  
+  // post a message to the FlutterBbridge requesting internet metrics
+  // include data payload for Firestore data writing
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "requestMetricsAndWriteData",
+    payload: {
+      nickname: State.variables.playerName,
+      datetime: new Date().toISOString(),
+      game: "ZombieApocalypse.html",
+      hexagon: site,
+    }
+  }));
+};
+
+// callback function that receives metrics json from flutter
+window.onMetrics = function(json)
+{
+  // extract metrics
+  const metrics = JSON.parse(json);
+  
+  // store in state variables
+  State.variables.uploadSpeed = metrics.uploadSpeed;
+  State.variables.downloadSpeed = metrics.downloadSpeed;
+  State.variables.jitter = metrics.jitter;
+  State.variables.packetLoss = metrics.packetLoss;
+  State.variables.latency = metrics.latency;
+};
+
+// Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
+window.displayMetrics = function() {
+  
+  // Display the measurement values to the user
+  alert("Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
+};
+
+window.publishPlayerName = function()
+{
+	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishPlayerName",
+      playerName: State.variables.playerName
+    }));
+}; // no callback needed, only sends
+
+// END OF FUNCTIONS FOR COLLECTING LOCATION/INTERNET METRICS //
+
+
+
+
+
+// FUNCTIONS RELATED TO SETTING AND COLLECTING POIs //
+
+// Determine which group of POIs to send to android based on the hexagon the user is in
+window.sendPOIData = function(){
+  // Point of Interest lists for each of the three locations
+  var campusPoiTutorial = [
+    {latitude: 35.185980, longitude: -111.658405} // SICCS Patio
+  ];
+  
+  var campusPois = [
+    {latitude: 35.186191, longitude: -111.658219}, // SICCS entrance
+    {latitude: 35.185980, longitude: -111.658405}, // SICCS patio
+    {latitude: 35.185765, longitude: -111.658330}, // SICCS small lot
+    {latitude: 35.185564, longitude: -111.658066}  // ISB Lot
+  ];
+  
+  var urbanPoiTutorial = [
+    {latitude: 35.198521, longitude:-111.648314}  // Mozelle's Bakery Sign
+  ];
+  
+  var urbanPois = [
+    {latitude: 35.198773, longitude:-111.648046}, // Green tables near cat sculpture
+    {latitude: 35.198600, longitude:-111.647828}, // Hello sugar salon
+    {latitude: 35.198521, longitude:-111.648314},  // Mozelle's Bakery Sign
+    {latitude: 35.198444, longitude:-111.647922} // Forum Center
+  ];
+  
+  var ruralPoiTutorial = [
+    {latitude: 35.234288, longitude: -111.665135} // Progression sculpture
+  ];
+  
+  var ruralPois = [
+    {latitude: 35.234288, longitude: -111.665135}, // Progression sculpture
+    {latitude: 35.234222, longitude: -111.665501}, // Museum entrance
+    {latitude: 35.234671, longitude: -111.665116}, // Parking lot
+    {latitude: 35.234244, longitude: -111.665822}  // Left of the entrance, around back
+  ];
+      
+  if(State.variables.insideCampus) {
+    if(State.variables.tutorialComplete)
+    {
+    	console.log("Campus POIs sent to Flutter");
+    	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: campusPois
+        }));
+    } else {
+     	console.log("Campus Tutorial POI sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: campusPoiTutorial
+        }));
+    }
+  } else if (State.variables.insideUrban) {
+    if(State.variables.tutorialComplete)
+    {
+      	console.log("Urban POIs sent to Flutter");
+  		FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: urbanPois
+        }));
+    }else{
+      	console.log("Urban Tutorial POI sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: urbanPoiTutorial
+        }));
+    }
+  } else if (State.variables.insideRural) {
+    if(State.variables.tutorialComplete)
+    {
+      	console.log("Rural POIs sent to Flutter");
+    	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: ruralPois
+        }));
+    }else{
+      	console.log("Rural POI tutorial sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: ruralPoiTutorial
+        }));
+    }
+  } else {
+    console.log("Not in a play area, no POIs sent");
+  }
+};
+
+// Handler for the search button
 window.handleSearchButtonClick = function() {
-    grabMetricsAndWriteData(); 
+    requestMetricsAndWriteData(); 
     State.variables.previousPassage = State.passage; // Set the SugarCube variable
     Engine.play('Searching'); // Navigate to the 'Searching' passage
 };
+
+// request a poi check from flutter
+window.requestPOICheck = function(){
+  FlutterBridge.postMessage(JSON.stringify({command: "POICheck"}));
+};
+
+// callback function to handle the POI check returned from flutter
+window.onPOICheck = function(json){
+  //const data = JSON.parse(json);
+  if (json.collected) {
+    console.log("POI Found!");
+    showCustomAlert("Search Results", "You have found a sample!", function() {
+      if (!State.variables.tutorialComplete) {
+        State.variables.tutorialComplete = true;
+        Engine.play(State.variables.previousPassage);
+      } else {
+        State.variables.fragmentCounter += 1;
+        Engine.play(State.variables.previousPassage, false, function() {});
+      }
+    });
+  } else {
+    console.log("No POI found.");
+    showCustomAlert("Search Results", "No sample, keep looking!", function() {
+      Engine.play(State.variables.previousPassage, false, function() {});
+    });
+  }
+};
+
+window.startVibrationService = function()
+{
+  FlutterBridge.postMessage(JSON.stringify({command: "startVibrationService"}));
+};
+
+window.stopVibrationService = function()
+{
+  FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"})):
+};
+
+// END OF POI-RELATED FUNCTIONS //
+
+
+
+
+
+// FUNCTIONS RELATED TO PROVIDING ORIENTATION HINTS //
+
+// Orientatio Button logic
+window.handleOrientationButtonClick = function() {
+ 	requestMetricsAndWriteData();
+  	State.variables.previousPassage = State.passage;
+  	Engine.play("HintProcessing");
+};
+
+// requests an orientation hint from Flutter
+window.requestHint = function() {
+  FlutterBridge.postMessage(JSON.stringify({command: "hintRequest"}));
+};
+
+// callback function to handle the orientation information returned from flutter
+window.onHint = function(json){
+  //const data = JSON.parse(json);
+  const hint = json.hint;
+  console.log("Hint received from Flutter: " + hint);
+  // show custom alert
+  showCustomAlert("Orientation Results", "The nearest vaccine sample is " + hint, function() {
+    // callback to transition after the alert is closed
+    Engine.play(State.variables.previousPassage, false, function() {});
+  });
+};
+
+// END OF HINT RELATED FUNCTIONS //
+
+
+
+
+
+// SCIENTIST BUTTON LOGIC //
 
 window.handleAntidoteButtonClick = function() {
     if (State.variables.antidoteCount > 0) {
@@ -580,18 +700,30 @@ function updateAntidoteButtonIcon() {
     }
 }
 
+window.updateDynamicText = function(elementId, newText) {
+    // Find the element by its ID and update its innerHTML
+    var element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = newText;
+    } else {
+        console.warn("Element with ID '" + elementId + "' not found.");
+    }
+};
+
 // Update the antidote button icon whenever the page loads or the antidote count changes
 $(document).on('story:loaded', updateAntidoteButtonIcon);
 
-// Orientatio Button logic
-window.handleOrientationButtonClick = function() {
- 	grabMetricsAndWriteData();
-  	State.variables.previousPassage = State.passage;
-  	Engine.play("HintProcessing");
-};
+// END OF SCIENTIST BUTTON LOGIC //
+
+
+
+
+
+// ZOMBIE BUTTON LOGIC //
 
 // Movement button logic for Speed Zombie
 window.handleMovementButtonClick_Speed = function() {
+  	requestMetricsAndWriteData();
 	var randomNumber = Math.floor(Math.random() * 6) + 1;
 	var totalSteps = randomNumber + 4;
   	showCustomAlert("Movement Roll",  "You can take " + totalSteps + " steps!");
@@ -599,6 +731,7 @@ window.handleMovementButtonClick_Speed = function() {
 
 // Movement button logic for Strength Zombie
 window.handleMovementButtonClick_Strength = function() {
+  	requestMetricsAndWriteData();
   	var randomNumber = Math.floor(Math.random() * 6) + 1;
 	var totalSteps = randomNumber + 2;
   	showCustomAlert("Movement Roll",  "You can take " + totalSteps + " steps!");
@@ -606,6 +739,7 @@ window.handleMovementButtonClick_Strength = function() {
 
 // Attack button logic for Strength Zombie
 window.handleAttackButtonClick_Strength = function() {
+  	requestMetricsAndWriteData();
   	var randomNumber = Math.floor(Math.random() * 6) + 1;
   	if(randomNumber == 3 || randomNumber == 4 || randomNumber == 5 || randomNumber == 6)
     {
@@ -619,6 +753,7 @@ window.handleAttackButtonClick_Strength = function() {
 
 // Attack button logic for Speed Zombie
 window.handleAttackButtonClick_Speed = function() {
+  	requestMetricsAndWriteData();
   	var randomNumber = Math.floor(Math.random() * 6) + 1;
   	if(randomNumber == 5 || randomNumber == 6)
     {
@@ -641,6 +776,12 @@ window.handleAdaptButtonClick = function() {
      	Engine.play("ZombieSpeed"); 
     }
 };
+
+// END ZOMBIE BUTTON LOGIC //
+
+
+
+
 
 // AUDIO LOGIC - Not implemented //
 // Cache audio files
@@ -686,41 +827,50 @@ window.handleNoiseButtonClick = function() {
     }
 };
 
-// Likert form logic
-// Function to handle submission of Likert scale answers
-window.submitLikertAnswers = function() {
-    // Get the selected value for environment connection
-    var envConnection = document.querySelector('input[name="envConnection"]:checked');
-    var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
-  	
-    // Check if both questions have been answered
-    if (envConnection && playerConnection) {
-        var envValue = envConnection.value;
-        var playerValue = playerConnection.value;
-		
-      	let likertData = {};
-      	
-      	likertData["nickname"] = State.variables.playerName;
-      	likertData["game"] = "Zombie Apocalypse.html";
-        likertData["envconnection"] = envValue;
-      	likertData["plrconnection"] = playerValue;
-      
-      	var jsonString = JSON.stringify(likertData);
-      	AndroidBridge.writeLikertData(jsonString);
-      
-      	showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
-        Engine.play("AfterForm");
-    } else {
-      	showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
-    }
-};
+// END AUDIO LOGIC //
 
-window.sendPlayerNameToAndroid = function() {
-  	if(AndroidBridge && State.variables.playerName)
-    {
-     	AndroidBridge.setPlayerName(State.variables.playerName); 
-    }
-};</script><tw-passagedata pid="1" name="ScientistStart" tags="" position="900,450" size="100,100">Welcome to the war against the zombie plague, Doctor. We have recently identified new plant life that contains antibodies with a natural resistance to the Zombie disease. As a new recruit, you are tasked with locating samples of this substance so that we may synthesize a vaccine. Speak with your dispatcher, they will be able to provide you with information regarding the supposed location of the plant materials we are looking for. Be warned, though, as the zombies have begun attacking our field recruits en mass. If you see a zombie, do not engage. You will not win. 
+
+
+
+
+// FUNCTIONS RELATED TO POST-GAME LIKERT FORM //
+
+// Function to handle submission of Likert scale answers
+// post a message to FlutterBridge to write Likert data payload to firestore
+window.publishLikertResponses = function()
+{
+  // create variables to load into payload
+  var envConnection = document.querySelector('input[name="envConnection"]:checked');
+  var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
+  
+  // verify both questions have been answered
+  if(envConnection && playerConnection)
+  {
+    var envValue = envConnection.value;
+    var playerValue = playerConnection.value;
+    
+    var playerName = State.variables.playerName;
+    var currentGame = "ZombieApocalypse.html";
+    
+    showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
+    Engine.play("AfterForm");
+    
+    // send the payload and command to Flutter
+   	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishLikertResponses",
+      payload: {
+      	nickname: playerName,
+        game: currentGame,
+        envConnection: envValue,
+        plrConnection: playerValue
+      }
+    }));
+  } else {
+    showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
+  }
+}; // no callback needed, this function only sends
+
+// END OF LIKERT FORM FUNCTIONS //</script><tw-passagedata pid="1" name="ScientistStart" tags="" position="900,450" size="100,100">Welcome to the war against the zombie plague, Doctor. We have recently identified new plant life that contains antibodies with a natural resistance to the Zombie disease. As a new recruit, you are tasked with locating samples of this substance so that we may synthesize a vaccine. Speak with your dispatcher, they will be able to provide you with information regarding the supposed location of the plant materials we are looking for. Be warned, though, as the zombies have begun attacking our field recruits en mass. If you see a zombie, do not engage. You will not win. 
 
 Are you prepared to put your life on the line to save human civilization?
 
@@ -735,11 +885,13 @@ MUST. EAT. BRAINS.
 To begin, you and your fellow players need to coordinate about who will play what role in the game. There should be more Zombies than Scientists for proper balance- three Zombies for every one Scientist is a good goal to aim for. 
 
 &lt;&lt;link &quot;Scientist&quot;&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set State.variables.role to &quot;Scientist&quot;&gt;&gt;
 	&lt;&lt;goto &quot;ScientistStart&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;Zombie&quot;&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set State.variables.role to &quot;Zombie&quot;&gt;&gt;
 	&lt;&lt;goto &quot;ZombieStart&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="ScientistInstructions" tags="show-stats" position="900,650" size="100,100">Before we get into the game, let&#39;s walk you through the User Interface so you have a better understanding of how to play!
@@ -777,20 +929,20 @@ To begin, you and your fellow players need to coordinate about who will play wha
   &lt;button id=&quot;antidote-button&quot; class=&quot;button-link&quot; onclick=&quot;handleAntidoteButtonClick()&quot;&gt;
     &lt;img src=&quot;icons/antidote-icon.png&quot; alt=&quot;Antidote&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="7" name="ScientistDeath" tags="" position="1000,1700" size="100,100">Your vision blurs as you feel the zombie virus course through your veins. YYour thoughts fade and are replaced by a ravenous desire to consume brains.
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="7" name="ScientistDeath" tags="" position="1000,1700" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;Your vision blurs as you feel the zombie virus course through your veins. YYour thoughts fade and are replaced by a ravenous desire to consume brains.
 
 [[If all Scientists are defeated, please select this link to fill out the post-game form!|EndgameForm]]
 
-[[If at least one Scientist remains, you now become a zombie!|ZombieStart]]</tw-passagedata><tw-passagedata pid="8" name="ScientistSuccess" tags="" position="800,1700" size="100,100">You&#39;ve done it, Doctor! We have secured enough antibody samples to produce a vaccine and eradicate the zombie virus from Earth! Your name will go down in history as one of the key individuals in defending humanity from extinction.
+[[If at least one Scientist remains, you now become a zombie!|ZombieStart]]</tw-passagedata><tw-passagedata pid="8" name="ScientistSuccess" tags="" position="800,1700" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;You&#39;ve done it, Doctor! We have secured enough antibody samples to produce a vaccine and eradicate the zombie virus from Earth! Your name will go down in history as one of the key individuals in defending humanity from extinction.
 
-[[Thanks for playing! Please fill out this brief form about the game.|EndgameForm]]</tw-passagedata><tw-passagedata pid="9" name="Setup" tags="" position="1200,150" size="100,100">Hello, and welcome to NetPlay&#39;s Zombie Apocalypse game!
+[[Thanks for playing! Please fill out this brief form about the game.|EndgameForm]]</tw-passagedata><tw-passagedata pid="9" name="Setup" tags="" position="1200,150" size="100,100">Hello, and welcome to NetPlay&#39;s Zombie Apocalypse game!&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
 
 Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
 	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-    &lt;&lt;run sendPlayerNameToAndroid()&gt;&gt;
-    &lt;&lt;run grabAndCheckLocation()&gt;&gt;
+    &lt;&lt;run publishPlayerName()&gt;&gt;
+    &lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
         &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
@@ -821,15 +973,19 @@ Please start by entering your experiment nickname in the box below.
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 
 &lt;&lt;link &quot;Check my location&quot;&gt;&gt;
-	&lt;&lt;run grabAndCheckLocation()&gt;&gt;
+	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
+    &lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
         &lt;&lt;goto &quot;RoleSelect&quot;&gt;&gt;
     &lt;&lt;elseif State.variables.insideUrban&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you at Heritage Square.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;of the &#39;Mozzelle&#39;s Bakery&#39; hanging sign&quot;&gt;&gt;
         &lt;&lt;goto &quot;RoleSelect&quot;&gt;&gt;
     &lt;&lt;elseif State.variables.insideRural&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you at Museum of Northern Arizona.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;;arge yellow sculpture near the museum entrance&quot;&gt;&gt;
         &lt;&lt;goto &quot;RoleSelect&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
@@ -952,13 +1108,14 @@ Now that you have been introduced to the UI, we can do a full tutorial of the Sa
 &lt;&lt;link &quot;Give me the tutorial!&quot;&gt;&gt;
 	&lt;&lt;set State.variables.tutorialComplete to false&gt;&gt;
 	&lt;&lt;run sendPOIData()&gt;&gt;
+    &lt;&lt;run startVibrationService()&gt;&gt;
 	&lt;&lt;goto &quot;TutorialS&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;Skip the tutorial!&quot;&gt;&gt;
 	&lt;&lt;set State.variables.tutorialComplete to true&gt;&gt;
 	&lt;&lt;goto &quot;TutorialComplete&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="21" name="TutorialComplete" tags="" position="900,1400" size="100,100">Well done, you have completed the Tutorial! If you feel comfortable with the Sample Searching system, then you can wait on this page for all other players to express they are ready to play. Please do not proceed without ensuring that everyone else is ready.
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="21" name="TutorialComplete" tags="" position="900,1400" size="100,100">&lt;&lt;run stopVibrationService&gt;&gt;Well done, you have completed the Tutorial! If you feel comfortable with the Sample Searching system, then you can wait on this page for all other players to express they are ready to play. Please do not proceed without ensuring that everyone else is ready.
 
 Once everyone is ready, the Zombie players will choose their starting positions first, then the Scientist player will choose their starting position. After that, you can begin the game!
 
@@ -966,6 +1123,7 @@ Alternatively, you can replay the previous tutorial again if you don&#39;t feel 
 
 &lt;&lt;link &quot;Everyone is ready, let&#39;s play!&quot;&gt;&gt;
 	&lt;&lt;run sendPOIData()&gt;&gt;
+    &lt;&lt;run startVibrationService()&gt;&gt;
     &lt;&lt;goto &quot;ScientistGameplay&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 

@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
-import 'package:internet_measurement_games_app/location_test_page.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
-
-// TODO: Add remaining games
 
 // class to manage session data that needs to be accessible across functions/files
 
@@ -76,6 +74,7 @@ class _HomePageState extends State<HomePage>
             ),
           ).then((_) {
             // log the game end with the session manager
+            VibrationController.stop();
             SessionManager.endGame();
           });
         },
@@ -97,7 +96,6 @@ class _HomePageState extends State<HomePage>
     // start location logger
     LocationLogger.start();
     // terminate vibration controller on the homepage
-    VibrationController.stop();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Landing Page'),
@@ -263,6 +261,8 @@ class _WebViewPageState extends State<WebViewPage> {
               'longitude': (entry['longitude'] as num).toDouble(),
             };
           }).toList();
+
+          print("POI list set: ${poiList}");
           
           // store the POIs in the Sessionmanager
           SessionManager.setPOIs(poiList);
@@ -270,19 +270,32 @@ class _WebViewPageState extends State<WebViewPage> {
 
         case 'POICheck':
           // checks if the player is in collection vicinity of a POI
-          // uses player location
-          //checkPOI();
+          // collects the PoI if so.
+          checkPOI();
+          break;
 
-          // TODO: checks if in clollection vicinity of a POI 
-          // if poi collected, need to remove POI from session manager and adjust vibration
-          // communicates back to JS via a callback function in JS
+        case "clearPOIList":
+          // clears the current list of POIs in the SessionManager
+          for(int i = 0; i < SessionManager.poiList.length; i++)
+          {
+            SessionManager.poiList.removeAt(i);
+          }
+
           break;
 
         case 'hintRequest':
           // provides player with a hint directing them towards the nearest POI
-          //provideHint();
+          provideHint();
+          break;
 
-          // Todo: communicates back to JS via callback in JS
+        case 'startVibrationService':
+          // starts the vibration service for the current game
+          VibrationController.start();
+          break;
+
+        case 'stopVibrationService':
+          // stops the vibration system
+          VibrationController.stop();
           break;
 
         default:
@@ -356,16 +369,98 @@ class _WebViewPageState extends State<WebViewPage> {
     await firestore.collection('Movement Data').doc(sessionId).collection('LikertData').add(payload);
   }
 
-  // TODO: Callback function to perform POI check
-  void checkPOI()
-  {
+  // Check if the player can collect a POI and return true/false to JS
+  Future<void> checkPOI() async{
+    // grab players current position
+    final loc = await determineLocationData();
 
+    // grab the current poi list in the session manager
+    final poiList = SessionManager.poiList;
+    // create a variable to store the index of the poi to be removed if it exists
+    int indexToRemove = -1;
+
+    // iterate over PoIs and determine if one is within collection vicinity
+    for(int i = 0; i < poiList.length; i++){
+      final poi = poiList[i];
+      final distance = Geolocator.distanceBetween(
+        loc.position.latitude,
+        loc.position.longitude,
+        poi['latitude']!,
+        poi['longitude']!
+      );
+
+      // a poi can be collected within 7 meters of the player
+      if(distance <= 7){
+        indexToRemove = i;
+        break;
+      }
+    }
+
+    // use a boolean to track if a poi has been found or not
+    final bool collected = indexToRemove != -1;
+    
+    // if a poi was collected, remove it from the list
+    if(collected)
+    {
+      SessionManager.poiList.removeAt(indexToRemove);
+      print("POI collected at index $indexToRemove");
+    }else{
+      print("No POI within range.");
+    }
+
+    // send results back to JS
+    final resultJson = jsonEncode({'collected': collected});
+    controller.runJavaScript("window.onPOICheck($resultJson)");
   }
 
-  // TODO: Callback function to perform hint generation
-  void provideHint()
-  {
+  // Callback function to perform hint generation
+  Future<void> provideHint() async{
+    // get user current position and heading
+    final loc = await determineLocationData();
+    final userPos = loc.position;
+    final heading = loc.heading;
 
+    // verify that a heading was received
+    if (heading == null) {
+      controller.runJavaScript("window.onHint(JSON.stringify({hint: 'No compass available'}));");
+      return;
+    }
+
+    // get the nearest POI
+    final nearestPOI = SessionManager.getNearestPOI(userPos);
+    // verify POI exists
+    if (nearestPOI == null) {
+      controller.runJavaScript("window.onHint(JSON.stringify({hint: 'No POIs available'}));");
+      return;
+    }
+
+    // calculate bearing from user to POI
+    final bearingToPOI = Geolocator.bearingBetween(
+      userPos.latitude,
+      userPos.longitude,
+      nearestPOI['latitude']!,
+      nearestPOI['longitude']!
+    );
+
+    // Normalize and compare to user heading
+    double relativeBearing = (bearingToPOI - heading) % 360;
+    if(relativeBearing < 0) relativeBearing += 360;
+
+    // produce a hint based on the relative bearing
+    String hint;
+    if(relativeBearing >= 330 || relativeBearing < 30){
+      hint = "in front of you";
+    } else if (relativeBearing >= 30 && relativeBearing < 150) {
+      hint = "to your right";
+    } else if (relativeBearing >= 150 && relativeBearing < 210){
+      hint = "behind you";
+    } else {
+      hint = "to your left";
+    }
+
+    // send the hint back to the game
+    final resultJson = jsonEncode({'hint': hint});
+    controller.runJavaScript("window.onHint($resultJson);");
   }
 
   @override

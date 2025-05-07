@@ -15,6 +15,8 @@ import 'session_manager.dart';
       if (SessionManager.poiList.isEmpty) {
         print("No POIs detected. VibrationController not started");
         return;
+      }else{
+        print("Vibration manager started");
       }
 
       // subscribe to location stream
@@ -50,7 +52,7 @@ import 'session_manager.dart';
         // reset vibration timer
         _vibrationTimer?.cancel();
         _vibrationTimer = Timer.periodic(delay, (_) async {
-          if(await Vibration.hasVibrator() ?? false) {
+          if(await Vibration.hasVibrator()) {
             Vibration.vibrate(duration: 100);
           }
         });

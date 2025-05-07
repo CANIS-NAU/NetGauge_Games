@@ -83,6 +83,49 @@ flutter:
     - assets/SoulSeeker.html
     - assets/ZombieApocalypse.html
     - assets/ScavengerHunt.html
+    - assets/icons/ability-icon.png
+    - assets/icons/antidote-icon.png
+    - assets/icons/attack-icon.png
+    - assets/icons/help-icon.png
+    - assets/icons/movement-icon.png
+    - assets/icons/no-antidote-icon.png
+    - assets/icons/noise-icon.png
+    - assets/icons/orientation-icon.png
+    - assets/icons/search-icon.png
+    - assets/icons/victory-icon.png
+    - assets/maps/Campus-PlayArea.png
+    - assets/maps/Rural-PlayArea.png
+    - assets/maps/Urban-PlayArea.png
+    - assets/images/cathedral_chamber_with_figure.png
+    - assets/images/cathedral_chamber.png
+    - assets/images/cathedral_hallway.png
+    - assets/images/cathedral_of_lost_truths.png
+    - assets/images/COE_entrance.png
+    - assets/images/COE_interior.png
+    - assets/images/crystal_golem_attacking.png
+    - assets/images/crystallized_glasses.png
+    - assets/images/dark_angel_reveal.png
+    - assets/images/defunct_lighthouse.png
+    - assets/images/eldra.png
+    - assets/images/five_skeletal_pirates.png
+    - assets/images/glorious_cavern.png
+    - assets/images/mask_of_undrowning.png
+    - assets/images/normal_sized_golden_feather.png
+    - assets/images/omni.png
+    - assets/images/open_treasure_chest_with_cutlass.png
+    - assets/images/pirate_ship_wreck.png
+    - assets/images/sea_of_shadows.png
+    - assets/images/sunken_ship_graveyard.png
+    - assets/images/top_of_defunct_lighthouse.png
+    - assets/images/treasure_chest_in_pirate_ship.png
+    - assets/images/treasure_filled_ship_interior.png
+    - assets/images/underwater_cave_mouth.png
+    - assets/images/underwater_skeletal_pirate.png
+    - assets/images/wasteland.png
+    - assets/sounds/zombieSound1.mp3
+    - assets/sounds/zombieSound2.mp3
+    - assets/sounds/zombieSound3.mp3
+    - assets/sounds/zombieSound4.mp3
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

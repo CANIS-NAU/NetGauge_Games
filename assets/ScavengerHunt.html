@@ -150,7 +150,9 @@ input[type="text"] {
 .alert-box button:hover {
   background-color: #555;
 }
-/* END CUSTOM ALERT BOX STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
+/* END CUSTOM ALERT BOX STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE
+
+// Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
 function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
     // Calculate side length using the area of a regular hexagon
     const radius = Math.sqrt((2 * area) / (3 * Math.sqrt(3)));
@@ -215,7 +217,13 @@ urbanSpace = calculateHexagonVertices(35.19913, -111.648010, 0.7);
 let ruralSpace = [];
 ruralSpace = calculateHexagonVertices(35.234485, -111.666281, 0.7);
 
-// CUSTOM ALERT BOXES//
+// END OF PLAYER SPACE DETERMINATION FUNCTIONS //
+
+
+
+
+
+// FUNCTIONS FOR CUSTOM ALERT BOXES //
 function showCustomAlert(title, message, callback) {
   var alertBox = document.getElementById('customAlert');
   alertBox.querySelector('.alert-header').textContent = title;
@@ -240,18 +248,13 @@ window.hideCustomAlert = function() {
   document.getElementById('customAlert').style.display = 'none';
 };
 
-// Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
-window.displayMetrics = function() {
-	
-  // Display the measurement values to the user
-  showCustomAlert("Internet Metrics", "Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
-};
+// END OF CUSTOM ALERT BOX FUNCTIONS //
 
 
-// FLUTTER BRIDGE FUNCTIONS //
 
-// Updated communication bridge to use event messaging instead of
-// native function calls
+
+
+// FUNCTIONS FOR COLLECTING AND UTILIZING LOCATION INFORMATION AND INTERNET MEASUREMENTS //
 
 // Function to request location data from Flutter
 // context dictates what to do with the data once 
@@ -354,6 +357,30 @@ window.onMetrics = function(json)
   State.variables.latency = metrics.latency;
 };
 
+// Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
+window.displayMetrics = function() {
+	
+  // Display the measurement values to the user
+  showCustomAlert("Internet Metrics", "Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
+};
+
+// sends the player name to Flutter
+window.publishPlayerName = function()
+{
+	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishPlayerName",
+      playerName: State.variables.playerName
+    }));
+}; // no callback needed, only sends
+
+// END OF FUNCTIONS FOR COLLECTING LOCATION/INTERNET METRICS //
+
+
+
+
+
+// FUNCTIONS RELATED TO POST-GAME LIKERT FORM //
+
 // post a message to FlutterBridge to write Likert data payload to firestore
 window.publishLikertResponses = function()
 {
@@ -388,14 +415,7 @@ window.publishLikertResponses = function()
   }
 }; // no callback needed, this function only sends
 
-// sends the player to JS
-window.publishPlayerName = function()
-{
-	FlutterBridge.postMessage(JSON.stringify({
-      command: "publishPlayerName",
-      playerName: State.variables.playerName
-    }));
-}; // no callback needed, only sends</script><tw-passagedata pid="1" name="Start" tags="" position="800,250" size="100,100">Hello, and welcome to NetPlay&#39;s Flagstaff Scavenger Hunt!
+// END OF LIKERT FORM FUNCTIONS //</script><tw-passagedata pid="1" name="Start" tags="" position="800,250" size="100,100">Hello, and welcome to NetPlay&#39;s Flagstaff Scavenger Hunt!
 
 Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
@@ -404,11 +424,7 @@ Please start by entering your experiment nickname in the box below.
     &lt;&lt;run publishPlayerName()&gt;&gt;
 	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;   
     &lt;&lt;goto &quot;Instructions&quot;&gt;&gt;
-&lt;&lt;/button&gt;&gt;
-
-&lt;&lt;link &quot;Goto Rural&quot;&gt;&gt;
-&lt;&lt;goto &quot;ruralLocation&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="UrbanLocation" tags="" position="800,500" size="100,100">It seems you are in the vicinty of Heritage Square! You can find the Scavenger Hunt clues relating to this area below.
+&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="UrbanLocation" tags="" position="800,500" size="100,100">It seems you are in the vicinty of Heritage Square! You can find the Scavenger Hunt clues relating to this area below.
 
 &lt;&lt;if $urbanLocation_Hint1&gt;&gt;
 	&lt;&lt;print &quot;You have solved this item!&quot;&gt;&gt;

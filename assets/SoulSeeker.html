@@ -206,27 +206,7 @@ body {
 .button-link:hover {
     background-color: #45a049;
 }
-/* END BUTTON STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// Add stats bar to the body element
-$(document).on(':passagestart', function () {
-    if ($('#persistent-stats').length === 0) {
-        $('body').prepend('<div id="persistent-stats"><div>Str: <span id="strength-val"></span></div><div>Int: <span id="intelligence-val"></span></div><div>Souls: <span id="fragments-val"></span></div></div>');
-    }
-    updateStats(); // Call function to update the displayed stats
-});
-
-// Function to update the displayed stats
-function updateStats() {
-    $('#strength-val').text(variables().strength); // Update Strength
-    $('#intelligence-val').text(variables().intelligence); // Update Dexterity
-  	$('#fragments-val').text(State.variables.fragmentCounter + '/3');
-}
-
-window.dynamicUpdate = function()
-{
-  $('#strength-val').text(variables().strength); // Update Strength
-  $('#intelligence-val').text(variables().intelligence); // Update Dexterity
-  $('#fragments-val').text(State.variables.fragmentCounter + '/3');
-};
+/* END BUTTON STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
 function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
@@ -293,323 +273,46 @@ urbanSpace = calculateHexagonVertices(35.19913, -111.648010, 0.7);
 let ruralSpace = [];
 ruralSpace = calculateHexagonVertices(35.234485, -111.666281, 0.7);
 
-// Function to grab location data collected in Android backend
-window.grabAndCheckLocation = function() {
-  
-  // Grab JSON string via the AndroidBridge
-  var locationData = AndroidBridge.getLocationJSON();
-  
-  // Parse the JSON string into a JavaScript object
-  // location contains date, timestamp, latitude, longitude
-  var location = JSON.parse(locationData);
-  console.log("User Lat: ", location.latitude);
-  console.log("User Lon: ", location.longitude);
-  
-  // Initialize location statuses as false
-  let insideCampus = false;
-  let insideUrban = false;
-  let insideRural = false;
-  
-  // Call isPointInsideHexagon on each hexagonal space to determine if the point is within said space
-  insideCampus = isPointInsideHexagon(location.latitude, location.longitude, campusSpace);
-  insideUrban = isPointInsideHexagon(location.latitude, location.longitude, urbanSpace);
-  insideRural = isPointInsideHexagon(location.latitude, location.longitude, ruralSpace);
- 
-  console.log("insideCampus", insideCampus);
-  console.log("insideUrban", insideUrban);
-  console.log("insideRural", insideRural);
-  
-  // Store data in state variables
-  State.variables.insideCampus = insideCampus;
-  State.variables.insideUrban = insideUrban;
-  State.variables.insideRural = insideRural;
-};
+// END OF PLAYER SPACE DETERMINATION FUNCTIONS //
 
-// Function to grab location data collected in Android backend
-window.displayLocation = function() {
-  
-  // Grab JSON string via the AndroidBridge
-  var locationData = AndroidBridge.getLocationJSON();
-  
-  // Parse the JSON string into a JavaScript object
-  var location = JSON.parse(locationData);
-  
-  // Store data in state variables
-  State.variables.latitude = location.latitude;
-  State.variables.longitude = location.longitude;
-};
 
-window.grabMetricsAndWriteData = function() {
-    try {
-        console.log("Starting grabMetricsAndWriteData");
 
-        // Grab JSON string via the AndroidBridge
-        var metricsString = AndroidBridge.generateMetrics();
-        var locationData = AndroidBridge.getLocationJSON();
-        console.log("Metrics String: ", metricsString);
-        console.log("Location Data: ", locationData);
 
-        // Parse the JSON string into a JavaScript object
-        var metricsObject = JSON.parse(metricsString);
-        var location = JSON.parse(locationData);
-        console.log("Parsed Metrics Object: ", metricsObject);
-        console.log("Parsed Location: ", location);
 
-        // Store data in state variables
-        State.variables.uploadSpeed = metricsObject.uploadSpeed;
-        State.variables.downloadSpeed = metricsObject.downloadSpeed;
-        State.variables.jitter = metricsObject.jitter;
-        State.variables.packetLoss = metricsObject.packetLoss;
-        State.variables.latency = metricsObject.latency;
+// FUNCTIONS THAT MANAGE THE STATS DISPLAY //
 
-        // Create an empty JSON object to be written to a JSON array on the user device
-        let checkData = {};
-
-        // Add data to JSON object
-      	checkData["nickname"] = State.variables.playerName;
-        checkData["datetime"] = new Date().toISOString();
-        checkData["latitude"] = location.latitude;
-        checkData["longitude"] = location.longitude;
-      	checkData["game"] = "Soul Seeker.html";
-        checkData["androidId"] = location.androidId;
-        if (State.variables.insideCampus) {
-              checkData["hexagon"] = "campus";
-          } else if (State.variables.insideUrban) {
-              checkData["hexagon"] = "urban";
-          } else if (State.variables.insideRural) {
-              checkData["hexagon"] = "rural";
-          } else {
-              checkData["hexagon"] = "none";
-          }
-
-        // Convert the JavaScript object to a JSON string
-        var jsonString = JSON.stringify(checkData);
-        console.log("JSON String to be written: ", jsonString);
-
-        // Call the Android method to write the data to Firestore
-        AndroidBridge.writeTwineData(jsonString);
-
-        console.log("Data written to Firestore");
-    } catch (error) {
-        console.error("Error in grabMetricsAndWriteData: ", error);
+// Add stats bar to the body element
+$(document).on(':passagestart', function () {
+    if ($('#persistent-stats').length === 0) {
+        $('body').prepend('<div id="persistent-stats"><div>Str: <span id="strength-val"></span></div><div>Int: <span id="intelligence-val"></span></div><div>Souls: <span id="fragments-val"></span></div></div>');
     }
-};
+    updateStats(); // Call function to update the displayed stats
+});
 
-window.writeTaylenData = function() {
-    try {
-        console.log("Starting writeTaylenData");
+// Function to update the displayed stats
+function updateStats() {
+    $('#strength-val').text(variables().strength); // Update Strength
+    $('#intelligence-val').text(variables().intelligence); // Update Dexterity
+  	$('#fragments-val').text(State.variables.fragmentCounter + '/3');
+}
 
-        // Grab JSON string via the AndroidBridge
-        var locationData = AndroidBridge.getLocationJSON();
-        console.log("Location Data: ", locationData);
-
-        // Parse the JSON string into a JavaScript object
-        var location = JSON.parse(locationData);
-        console.log("Parsed Location: ", location);
-
-        // Create an empty JSON object to be written to a JSON array on the user device
-        let taylenData = {};
-
-        // Add data to JSON object
-      	taylenData["nickname"] = State.variables.playerName;
-        taylenData["datetime"] = new Date().toISOString();
-        taylenData["latitude"] = location.latitude;
-        taylenData["longitude"] = location.longitude;
-      	taylenData["game"] = "Soul Seeker.html";
-        taylenData["androidId"] = location.androidId;
-      	taylenData["passage"] = State.variables.sourcePassage;
-      	taylenData["choice"] = State.variables.playerChoice;
-      	taylenData["type"] = State.variables.choiceType;
-
-        // Convert the JavaScript object to a JSON string
-        var jsonString = JSON.stringify(taylenData);
-        console.log("JSON String to be written: ", jsonString);
-
-        // Call the Android method to write the data to Firestore
-        AndroidBridge.writeDataLocallyJSON("TaylenData", jsonString);;
-
-        console.log("Data written to Local Storage");
-    } catch (error) {
-        console.error("Error in writeTaylenData ", error);
-    }
+window.dynamicUpdate = function()
+{
+  $('#strength-val').text(variables().strength); // Update Strength
+  $('#intelligence-val').text(variables().intelligence); // Update Dexterity
+  $('#fragments-val').text(State.variables.fragmentCounter + '/3');
 };
 
 
-// Function to display internet metrics collected at user request. Only works if grabMetricsAndWriteData has been run previously.
-window.displayMetrics = function() {
-  
-  // Display the measurement values to the user
-  alert("Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
-};
+// END OF FUNCTIONS MANAGING THE STATS DISPLAY //
 
-// Determine which group of POIs to send to android based on the hexagon the user is in
-window.sendPOIData = function(){
-  // Point of Interest for each realm in each of the 3 testing locations
-  var campusPoiTutorial = JSON.stringify([
-    {latitude: 35.185980, longitude: -111.658405} // SICCS Patio
-  ]);
-  
-  var campusPoiFirstRealm = JSON.stringify([
-    {latitude: 35.186191, longitude: -111.658219} // SICCS entrance
-  ]);
-  
-  var campusPoiSecondRealm = JSON.stringify([
-    {latitude: 35.185980, longitude: -111.658405} // SICCS patio
-  ]);
-  
-  var campusPoiThirdRealm = JSON.stringify([
-    {latitude: 35.185564, longitude: -111.658066}  // ISB Lot
-  ]);
-  
-  var urbanPoiTutorial = JSON.stringify([
-    {latitude: 35.198521, longitude:-111.648314}  // Mozelle's Bakery Sign
-  ]);
-  
-  var urbanPoiFirstRealm = JSON.stringify([
-    {latitude: 35.198773, longitude:-111.648046} // Green tables near cat sculpture
-  ]);
-  
-  var urbanPoiSecondRealm = JSON.stringify([
-    {latitude: 35.198444, longitude:-111.647922} // Forum Center
-  ]);
-  
-  var urbanPoiThirdRealm = JSON.stringify([
-    {latitude: 35.198521, longitude:-111.648314}  // Mozelle's Bakery Sign
-  ]);
-  
-  var ruralPoiTutorial = JSON.stringify([
-    {latitude: 35.234288, longitude: -111.665135} // progression sculpture
-  ]);
-  
-  var ruralPoiFirstRealm = JSON.stringify([
-    {latitude: 35.234222, longitude: -111.665501} // Museum entrance
-  ]);
-  
-  var ruralPoiSecondRealm = JSON.stringify([
-    {latitude: 35.234288, longitude: -111.665135} // Progression sculpture
-  ]);
-  
-  var ruralPoiThirdRealm = JSON.stringify([
-    {latitude: 35.234671, longitude: -111.665116} // Parking lot
-  ]);
-      
-  if(State.variables.insideCampus) {
-    if(State.variables.tutorialComplete)
-    {
-      if(State.variables.fragmentCounter == 0) {
-        console.log("Campus FirstRealm POI sent to Android");
-        AndroidBridge.setPOIData(campusPoiFirstRealm);
-        State.variables.FirstRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 1) {
-        console.log("Campus SecondRealm POI sent to Android");
-        AndroidBridge.setPOIData(campusPoiSecondRealm);
-        State.variables.SecondRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 2) {
-        console.log("Campus ThirdRealm POI sent to Android");
-        AndroidBridge.setPOIData(campusPoiThirdRealm);
-        State.variables.ThirdRealm = false;
-      }
-    } else {
-      console.log("Campus Tutorial POI sent to Android");
-      AndroidBridge.setPOIData(campusPoiTutorial);
-    }
-  
-  } else if (State.variables.insideUrban) {
-    if(State.variables.tutorialComplete)
-    {
-      if(State.variables.fragmentCounter == 0) {
-        console.log("Urban FirstRealm POI sent to Android");
-        AndroidBridge.setPOIData(urbanPoiFirstRealm);
-        State.variables.FirstRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 1) {
-        console.log("Urban SecondRealm POI sent to Android");
-        AndroidBridge.setPOIData(urbanPoiSecondRealm);
-        State.variables.SecondRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 2) {
-        console.log("Urban ThirdRealm POI sent to Android");
-        AndroidBridge.setPOIData(urbanPoiThirdRealm);
-        State.variables.ThirdRealm = false;
-      }
-    } else {
-     console.log("Urban Tutorial POI sent to Android");
-     AndroidBridge.setPOIData(urbanPoiTutorial);
-    }
-    
-  } else if (State.variables.insideRural) {
-    if(State.variables.tutorialComplete)
-    {
-      if(State.variables.fragmentCounter == 0) {
-        console.log("Rural FirstRealm POI sent to Android");
-        AndroidBridge.setPOIData(ruralPoiFirstRealm);
-        State.variables.FirstRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 1) {
-        console.log("Rural SecondRealm POI sent to Android");
-        AndroidBridge.setPOIData(ruralPoiSecondRealm);
-        State.variables.SecondRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 2) {
-        console.log("Rural ThirdRealm POI sent to Android");
-        AndroidBridge.setPOIData(ruralPoiThirdRealm);
-        State.variables.ThirdRealm = false;
-      }
-    } else {
-     console.log("Rural Tutorial POI sent to Android");
-     AndroidBridge.setPOIData(ruralPoiTutorial);
-    }
-  } else {
-    console.log("Not in a play area, no POIs sent");
-  }
 
-};
 
-window.requestPOICheck = function() {
-  console.log("Requesting POI check from Android.");
-  AndroidBridge.POICheck();
-};
 
-// This function will be called by Android to send the result back
-// Receive the POI check from android
-window.receivePOICheck = function(isAtPOI) {
-  if (isAtPOI) {
-    console.log("POI Found!");
-    showCustomAlert("Search Results", "You have found a soul fragment!", function() {
-      if (!State.variables.tutorialComplete) {
-        State.variables.tutorialComplete = true;
-        Engine.play(State.variables.previousPassage);
-      } else {
-        State.variables.fragmentCounter += 1;
-        Engine.play(State.variables.previousPassage, false, function() {});
-      }
-    });
-  } else {
-    console.log("No POI found.");
-    showCustomAlert("Search Results", "No soul found, keep looking!", function() {
-      Engine.play(State.variables.previousPassage, false, function() {});
-    });
-  }
-};
 
-window.requestHint = function() {
-  console.log("Requesting hint from Android.");
-  AndroidBridge.requestHint();
-};
+// FUNCTIONS FOR CUSTOM ALERT BOXES //
 
-// Receive the orientation hint returned from Android
-window.receiveHint = function(hint) {
-  console.log("Hint received from Android: " + hint);
-  // Show custom alert with callback
-  showCustomAlert("Orientation Results", "The nearest soul fragment " + hint, function() {
-    // Callback to transition after the alert is closed
-    Engine.play(State.variables.previousPassage, false, function() {});
-  });
-};
-
-// CUSTOM ALERT BOXES//
+// outlines the construction of custom alert boxes
 function showCustomAlert(title, message, callback) {
   var alertBox = document.getElementById('customAlert');
   alertBox.querySelector('.alert-header').textContent = title;
@@ -630,61 +333,431 @@ window.hideCustomAlert = function() {
   document.getElementById('customAlert').style.display = 'none';
 };
 
-// Likert form logic
-// Function to handle submission of Likert scale answers
-window.submitLikertAnswers = function() {
-    // Get the selected value for environment connection
-    var envConnection = document.querySelector('input[name="envConnection"]:checked');
-    var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
-  	
-    // Check if both questions have been answered
-    if (envConnection && playerConnection) {
-        var envValue = envConnection.value;
-        var playerValue = playerConnection.value;
-		
-      	let likertData = {};
-      	
-      	likertData["nickname"] = State.variables.playerName;
-      	likertData["game"] = "Soul Seeker.html";
-        likertData["envconnection"] = envValue;
-      	likertData["plrconnection"] = playerValue;
-      
-      	var jsonString = JSON.stringify(likertData);
-      	AndroidBridge.writeLikertData(jsonString);
-      
-      	showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
-        Engine.play("AfterForm");
-    } else {
-      	showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
-    }
+// END OF ALERT BOX FUNCTIONS //
+
+
+
+
+
+// FLUTTER BRIDGE FUNCTIONS
+// TODO: REFACTOR GAME TO UTILIZE NEW FUNCTIONS
+// TODO: CLEAR CALLS TO writeTaylenData
+// FUNCTIONS FOR COLLECTING AND UTILIZING LOCATION INFORMATION AND INTERNET MEASUREMENTS //
+
+// Function to request location data from flutter
+// context dictates what to do with received location data
+window.requestLocation = function(context)
+{
+  // post a message to the flutter bridge requesting location data
+  // and the context in which to use the location data
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "getLocation", // runs getLocation in Flutter
+    context: context // what to do with returned location data
+  }));
 };
 
+// Callback function that receives location JSON from
+// flutter and uses context to decide what to do with that
+// data
+window.onLocationJSON = function(json)
+{
+  const data = JSON.parse(json);
+  const context = data.context;
+  
+  // determine what needs to be done with the returned location
+  // data
+  switch(context) {
+    case 'zoneCheck': // determining if the player is in a valid zone
+      const lat = data.latitude;
+      const lon = data.longitude;
+      
+      // log for debugging
+      console.log("User Lat: ", lat);
+      console.log("User Lon: ", lon);
+      
+      // initialize location statuses as false
+      let insideCampus = false;
+      let insideUrban = false;
+      let insideRural = false;
+      
+      insideCampus = isPointInsideHexagon(lat, lon, campusSpace);
+      insideUrban = isPointInsideHexagon(lat, lon, urbanSpace);
+      insideRural = isPointInsideHexagon(lat, lon, ruralSpace);
+      
+      // debug logs
+      console.log("insideCampus", insideCampus);
+      console.log("insideUrban", insideUrban);
+      console.log("insideRural", insideRural);
+      
+      State.variables.insideCampus = insideCampus;
+      State.variables.insideUrban = insideUrban;
+      State.variables.insideRural = insideRural;
+      break;
+      
+    default: // unrecognized context
+      console.warn("Unrecognized location context: ", context);
+  }
+};
+
+// function to request metrics data from Flutter bridge
+window.requestMetricsAndWriteData = function()
+{ 
+  // check current player site
+  var site;
+  
+  if(State.variables.insideCampus)
+  {
+	site = "campus";
+  } else if (State.variables.insideUrban) {
+   	site = "urban"; 
+  } else if (State.variables.insideRural) {
+   	site = "rural"; 
+  } else {
+   	site = "unidentifiedSite"; 
+  }
+  
+  // post a message to the FlutterBbridge requesting internet metrics
+  // include data payload for Firestore data writing
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "requestMetricsAndWriteData",
+    payload: {
+      nickname: State.variables.playerName,
+      datetime: new Date().toISOString(),
+      game: "SoulSeeker.html",
+      hexagon: site,
+    }
+  }));
+};
+
+// callback function that receives metrics json from flutter
+window.onMetrics = function(json)
+{
+  // extract metrics
+  const metrics = JSON.parse(json);
+  
+  // store in state variables
+  State.variables.uploadSpeed = metrics.uploadSpeed;
+  State.variables.downloadSpeed = metrics.downloadSpeed;
+  State.variables.jitter = metrics.jitter;
+  State.variables.packetLoss = metrics.packetLoss;
+  State.variables.latency = metrics.latency;
+};
+
+// Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
+window.displayMetrics = function() {
+  
+  // Display the measurement values to the user
+  alert("Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
+};
+
+window.publishPlayerName = function()
+{
+	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishPlayerName",
+      playerName: State.variables.playerName
+    }));
+}; // no callback needed, only sends
+
+// END OF FUNCTIONS FOR COLLECTING LOCATION/INTERNET METRICS //
+
+
+
+
+
+// FUNCTIONS RELATED TO SETTING AND COLLECTING POIs //
+
+// Determine which group of POIs to send to android based on the hexagon the user is in
+window.sendPOIData = function(){
+  
+  // Send point of Interest for each realm in each of the 3 testing locations
+  if(State.variables.insideCampus) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Campus FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.186191, longitude: -111.658219}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Campus SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.185980, longitude: -111.658405}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Campus ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.185564, longitude: -111.658066}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+      console.log("Campus Tutorial POI sent to Flutter");
+      
+      // vibration system designed to work with a list of POIs
+      const poiList = [
+        { latitude: 35.185980, longitude: -111.658405}
+      ];
+      
+      // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+    }
+  
+  } else if (State.variables.insideUrban) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Urban FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198773, longitude: -111.648046}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Urban SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198444, longitude: -111.647922}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Urban ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198521, longitude: -111.648314}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+       console.log("Urban Tutorial POI sent to Flutter");
+
+       // vibration system designed to work with a list of POIs
+       const poiList = [
+         { latitude: 35.198521, longitude: -111.648314}
+       ];
+      
+       // Send the POI set to Flutter
+       FlutterBridge.postMessage(JSON.stringify({
+         command: "setPOIs",
+         payload: poiList
+       }));
+    }
+    
+  } else if (State.variables.insideRural) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Rural FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234222, longitude: -111.665501}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Rural SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234288, longitude: -111.665135}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Rural ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234671, longitude: -111.665116}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+     
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+     	console.log("Rural Tutorial POI sent to Flutter");
+      
+      	// vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234288, longitude: -111.665135}
+       	];
+      
+      	// Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+    }
+    
+  } else {
+    console.log("Not in a play area, no POIs sent");
+  }
+
+};
+
+// Handler for the search button
 window.handleSearchButtonClick = function() {
-    grabMetricsAndWriteData(); 
+    requestMetricsAndWriteData(); 
     State.variables.previousPassage = State.passage; // Set the SugarCube variable
     Engine.play('Searching'); // Navigate to the 'Searching' passage
 };
 
+// request a poi check from flutter
+window.requestPOICheck = function(){
+  FlutterBridge.postMessage(JSON.stringify({command: "POICheck"}));
+};
+
+// callback function to handle the POI check returned from flutter
+window.onPOICheck = function(json){
+  //const data = JSON.parse(json);
+  if (json.collected) {
+    console.log("POI Found!");
+    showCustomAlert("Search Results", "You have found a soul fragment!", function() {
+      if (!State.variables.tutorialComplete) {
+        State.variables.tutorialComplete = true;
+        Engine.play(State.variables.previousPassage);
+      } else {
+        State.variables.fragmentCounter += 1;
+        Engine.play(State.variables.previousPassage, false, function() {});
+      }
+    });
+  } else {
+    console.log("No POI found.");
+    showCustomAlert("Search Results", "No soul found, keep looking!", function() {
+      Engine.play(State.variables.previousPassage, false, function() {});
+    });
+  }
+};
+
+// clears any pois being searched for in case the user skips the search
+window.clearPOIList = function()
+{
+  FlutterBridge.postMessage(JSON.stringify({command: "clearPOIList"}));
+};
+
+window.startVibrationService = function()
+{
+  FlutterBridge.postMessage(JSON.stringify({command: "startVibrationService"}));
+};
+
+window.stopVibrationService = function()
+{
+  FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"})):
+};
+
+// END OF POI-RELATED FUNCTIONS //
+
+
+
+
+
+// FUNCTIONS RELATED TO PROVIDING ORIENTATION HINTS //
 
 // Orientatio Button logic
 window.handleOrientationButtonClick = function() {
- 	grabMetricsAndWriteData();
+ 	requestMetricsAndWriteData();
   	State.variables.previousPassage = State.passage;
   	Engine.play("HintProcessing");
 };
 
-window.sendPlayerNameToAndroid = function() {
-  	if(AndroidBridge && State.variables.playerName)
-    {
-     	AndroidBridge.setPlayerName(State.variables.playerName); 
-    }
+// requests an orientation hint from Flutter
+window.requestHint = function() {
+  FlutterBridge.postMessage(JSON.stringify({command: "hintRequest"}));
 };
 
-window.clearPOIList = function()
-{
-	AndroidBridge.clearPOIs(); 
+// callback function to handle the orientation information returned from flutter
+window.onHint = function(json){
+  //const data = JSON.parse(json);
+  const hint = json.hint;
+  console.log("Hint received from Flutter: " + hint);
+  // show custom alert
+  showCustomAlert("Orientation Results", "The nearest soul fragment is " + hint, function() {
+    // callback to transition after the alert is closed
+    Engine.play(State.variables.previousPassage, false, function() {});
+  });
 };
 
+// Provides an exact location of a PoI if the user is really struggling
 window.providePreciseHint = function()
 {
   if(State.variables.insideCampus)
@@ -755,7 +828,75 @@ window.providePreciseHint = function()
      showCustomAlert("Precise Hint", "The Soul Fragment is somewhere in the main parking lot."); 
     }
   }
-};</script><tw-passagedata pid="1" name="Story Init" tags="" position="900,0" size="100,100">&lt;&lt;set $inventory to []&gt;&gt;
+};
+
+// END OF HINT-RELATED FUNCTIONS //
+
+
+
+
+
+// FUNCTIONS RELATED TO POST-GAME LIKERT FORM //
+
+// Function to handle submission of Likert scale answers
+// post a message to FlutterBridge to write Likert data payload to firestore
+window.publishLikertResponses = function()
+{
+  // create variables to load into payload
+  var envConnection = document.querySelector('input[name="envConnection"]:checked');
+  var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
+  
+  // verify both questions have been answered
+  if(envConnection && playerConnection)
+  {
+    var envValue = envConnection.value;
+    var playerValue = playerConnection.value;
+    
+    var playerName = State.variables.playerName;
+    var currentGame = "SoulSeeker.html";
+    
+    showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
+    Engine.play("AfterForm");
+    
+    // send the payload and command to Flutter
+   	FlutterBridge.postMessage(JSON.stringify({
+      command: "publishLikertResponses",
+      payload: {
+      	nickname: playerName,
+        game: currentGame,
+        envConnection: envValue,
+        plrConnection: playerValue
+      }
+    }));
+  } else {
+    showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
+  }
+}; // no callback needed, this function only sends
+
+// END OF LIKERT FORM FUNCTIONS //
+
+
+
+
+
+/*
+// TODO: Figure out what this is for
+// Function to grab location data collected in Android backend
+// what is this for??
+window.displayLocation = function() {
+  
+  // Grab JSON string via the AndroidBridge
+  var locationData = AndroidBridge.getLocationJSON();
+  
+  // Parse the JSON string into a JavaScript object
+  var location = JSON.parse(locationData);
+  
+  // Store data in state variables
+  State.variables.latitude = location.latitude;
+  State.variables.longitude = location.longitude;
+};
+*/
+</script><tw-passagedata pid="1" name="Story Init" tags="" position="900,0" size="100,100">&lt;&lt;set $inventory to []&gt;&gt;
 
 &lt;&lt;set $strength to 0&gt;&gt;
 &lt;&lt;set $intelligence to 0&gt;&gt;
@@ -770,7 +911,8 @@ window.providePreciseHint = function()
 &lt;!-- Location Message to display the detected location of the user --&gt;
 &lt;&lt;set $locationMessage to &quot;Null&quot;&gt;&gt;
 
-&lt;&lt;goto &quot;Setup&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Angel" tags="" position="900,1000" size="100,100">&lt;&lt;if State.variables.fragmentCounter is 0&gt;&gt; 
+&lt;&lt;goto &quot;Setup&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Angel" tags="" position="900,1000" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;
+&lt;&lt;if State.variables.fragmentCounter is 0&gt;&gt; 
 &lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/omni.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
 	&lt;/div&gt;
@@ -933,7 +1075,7 @@ You are now walking in the depths of the Cavern of Echoes. From your perspective
 </tw-passagedata><tw-passagedata pid="15" name="challenge1.2" tags="" position="150,2025" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/eldra.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
 	&lt;/div&gt;
-After you put on the glasses the invisible walls and pathways become apparent to you. It seems the correct path is to &lt;&lt;link &quot;the right&quot;&gt;&gt;&lt;&lt;run sendPOIData()&gt;&gt;&lt;&lt;goto &quot;FindSoulR1&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
+After you put on the glasses the invisible walls and pathways become apparent to you. It seems the correct path is to &lt;&lt;link &quot;the right&quot;&gt;&gt;&lt;&lt;run sendPOIData()&gt;&gt;&lt;&lt;run startVibrationService()&gt;&gt;&lt;&lt;goto &quot;FindSoulR1&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;
 
 </tw-passagedata><tw-passagedata pid="16" name="end.ch1" tags="" position="225,2575" size="100,100">&lt;&lt;set $inventory to []&gt;&gt;
 &lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
@@ -942,7 +1084,7 @@ After you put on the glasses the invisible walls and pathways become apparent to
 You retun to the place where found your soul fragment.
 
 &lt;&lt;linkreplace &quot;Pick up the fragment of your shattered soul.&quot;&gt;&gt;&lt;&lt;run $inventory.push (&quot;Your Shattered Soul&quot;)&gt;&gt;Call out to &lt;&lt;link &quot;Omni&quot;&gt;&gt;&lt;&lt;goto Angel&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/linkreplace&gt;&gt;
-</tw-passagedata><tw-passagedata pid="17" name="fight.ch1" tags="" position="225,2275" size="100,100">You&#39;ve done it! Within a golden crystal you find the first fragment of your soul. As you reach out to grab it, though, a crystal golem comes smashing through the wall behind you! It is running straight for you, you have no choice but to engage it in combat!
+</tw-passagedata><tw-passagedata pid="17" name="fight.ch1" tags="" position="225,2275" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;You&#39;ve done it! Within a golden crystal you find the first fragment of your soul. As you reach out to grab it, though, a crystal golem comes smashing through the wall behind you! It is running straight for you, you have no choice but to engage it in combat!
 
 &lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/crystal_golem_attacking.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
@@ -951,11 +1093,7 @@ You retun to the place where found your soul fragment.
 How do you approach defeating the golem?
 
 &lt;&lt;link &quot;I use my intelligence to outsmart the golem! {Int Check - 7 to pass}&quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;fight.ch1&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;I use my intelligence to outsmart the golem! {Int Check - 7 to pass}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set $roll to random(1, 20)&gt;&gt;
     &lt;&lt;set $check to $roll + $intelligence&gt;&gt;
 	&lt;&lt;if $check &gt;= 7&gt;&gt;
@@ -966,11 +1104,7 @@ How do you approach defeating the golem?
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;I use my brute strength to force the golem off the nearest cliff! {Str Check - need 20 to pass} &quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;fight.ch1&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;I use my brute strength to force the golem off the nearest cliff! {Str Check - need 20 to pass}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set $roll to random(1, 20)&gt;&gt;
     &lt;&lt;set $check to $roll + $strength&gt;&gt;
 	&lt;&lt;if $check &gt;= 20&gt;&gt;
@@ -978,14 +1112,13 @@ How do you approach defeating the golem?
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;ch1FightStrFail&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker!
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker! &lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
 
 Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
 	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-    &lt;&lt;run sendPlayerNameToAndroid()&gt;&gt;
-    &lt;&lt;run grabAndCheckLocation()&gt;&gt;
+    &lt;&lt;run publishPlayerName()&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
         &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
@@ -1010,15 +1143,18 @@ Before you begin, please read over the instructions!
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 
 &lt;&lt;link &quot;Check my location&quot;&gt;&gt;
-	&lt;&lt;run grabAndCheckLocation()&gt;&gt;
+	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
         &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
     &lt;&lt;elseif State.variables.insideUrban&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you at Heritage Square.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;of the &#39;Mozelle&#39;s Bakery&#39; hanging sign&quot;&gt;&gt;
         &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
     &lt;&lt;elseif State.variables.insideRural&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you at Museum of Northern Arizona.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;of the large yellow sculpture near the museum entrance&quot;&gt;&gt;
         &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
@@ -1137,20 +1273,12 @@ You are free—but at what cost?
 Do you reconsider?
 
 &lt;&lt;link &quot;I care not, monster. I wil suffer here for an eternity with you if it means saving the land of living.&quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
- 	&lt;&lt;set State.variables.sourcePassage to &quot;RejectOmni&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;I care not, monster. I wil suffer here for an eternity with you if it means saving the land of living.&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - RejectOmni&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;...Very well, you have convinced me. I will serve you, monster, just free me from this hell.&quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
- 	&lt;&lt;set State.variables.sourcePassage to &quot;RejectOmni&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;...Very well, you have convinced me. I will serve you, monster, just free me from this hell.&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - ServeOmni&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Epilogue - RejectOmni" tags="" position="1750,2700" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|EndgameForm]]. But first, you can view your epilogue below!
 
@@ -1223,20 +1351,12 @@ Frozen in fear, you don&#39;t know what to do. You need to act fast:
 
 &lt;&lt;link &quot;Attack the creature before it can attack you! {Str + 1}&quot;&gt;&gt;
 	&lt;&lt;set $strength to $strength + 1&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;dead.sailor&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Attack the creature before it can attack you! {Str + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
     &lt;&lt;set $sailorChoice to 0&gt;&gt;
     &lt;&lt;goto dead.sailor.2&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;Attempt to communicate with the creature. {Int + 1}&quot;&gt;&gt;
 	&lt;&lt;set $intelligence to $intelligence + 1&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;dead.sailor&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Attempt to communicate with the creature. {Int + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
     &lt;&lt;set $sailorChoice to 1&gt;&gt;
     &lt;&lt;goto dead.sailor.2&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="32" name="dead.sailor.2" tags="" position="900,2175" size="100,100">&lt;&lt;if $sailorChoice == 0&gt;&gt;
@@ -1257,11 +1377,7 @@ As he finishes speaking an additional group of skeletons appear out of the shado
 	&lt;/div&gt;
 
 &lt;&lt;link &quot;Grab the sword and attack, this blade is too good to part with! {Str check - 13 to pass - keep sword}&quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;dead.sailor.2&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Grab the sword and attack, this blade is too good to part with! {Str check - 13 to pass - keep sword}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set $roll to random(1, 20)&gt;&gt;
     &lt;&lt;set $check to $roll + $strength&gt;&gt;
     &lt;&lt;if $check &gt;= 13&gt;&gt;
@@ -1273,11 +1389,7 @@ As he finishes speaking an additional group of skeletons appear out of the shado
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;Wait, allow me to propose an alternative. I will give you the sword willingly, but in return you must guide me to the lighthouse. {Int check - 5 to pass - lose sword}&quot;&gt;&gt;
-	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;dead.sailor.2&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Wait, allow me to propose an alternative. I will give you the sword willingly, but in return you must guide me to the lighthouse. {Int check - 5 to pass - lose sword}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set $roll to random(1, 20)&gt;&gt;
     &lt;&lt;set $check to $roll + $intelligence&gt;&gt;
     &lt;&lt;if $check &gt;= 5&gt;&gt;
@@ -1297,7 +1409,7 @@ Your skeletal companion leads you from the ship towards a rock formation under t
 
 You nod to the creature, and then turn to the staircase. You begin to ascend step by step, eventually emerging from the water, though continuing on the staircase.
 
-After an hour of ascending the stairs, you finally find yourself in the top of the lighthouse when the same feeling you had in the Cave of Echoes washes over you - &lt;&lt;link &quot;another fragment of your soul is nearby.&quot;&gt;&gt;&lt;&lt;run sendPOIData()&gt;&gt;&lt;&lt;goto &quot;FindSoulR2&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="34" name="Searching" tags="" position="500,0" size="100,100">
+After an hour of ascending the stairs, you finally find yourself in the top of the lighthouse when the same feeling you had in the Cave of Echoes washes over you - &lt;&lt;link &quot;another fragment of your soul is nearby.&quot;&gt;&gt;&lt;&lt;run sendPOIData()&gt;&gt;&lt;&lt;run startVibrationService()&gt;&gt;&lt;&lt;goto &quot;FindSoulR2&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="34" name="Searching" tags="" position="500,0" size="100,100">
 
 You are searching the area for your soul fragment...
 
@@ -1330,7 +1442,7 @@ Now you end up in a very beautiful, but also alarming room filled with crystals.
 &lt;&lt;timed 120s&gt;&gt;&lt;&lt;link &quot;Press me for a more precise hint!&quot;&gt;&gt;&lt;&lt;run providePreciseHint()&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 &lt;!-- Provide an option to skip the search if the player hasn&#39;t found the point after 5 minutes --&gt;
-&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to skip this search!&quot;&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 1&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;fight.ch1&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
+&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to skip this search!&quot;&gt;&gt;&lt;&lt;run stopVibrationService()&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 1&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;fight.ch1&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
     &lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
   &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
@@ -1461,7 +1573,7 @@ You wander around the top of the lighthouse, seeking the point where the pull of
 &lt;&lt;timed 120s&gt;&gt;&lt;&lt;link &quot;Press me for a more precise hint!&quot;&gt;&gt;&lt;&lt;run providePreciseHint()&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 &lt;!-- Provide an option to skip the search if the player hasn&#39;t found the point after 5 minutes --&gt;
-&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 2&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;Angel&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
+&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run stopVibrationService()&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 2&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;Angel&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
     &lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
   &lt;div class=&quot;alert-header&quot;&gt;Your Custom Title Here&lt;/div&gt;
@@ -1517,7 +1629,7 @@ You wander around the Hall of Reflection, seeking the point where the pull of yo
 &lt;&lt;timed 120s&gt;&gt;&lt;&lt;link &quot;Press me for a more precise hint!&quot;&gt;&gt;&lt;&lt;run providePreciseHint()&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 &lt;!-- Provide an option to skip the search if the player hasn&#39;t found the point after 5 minutes --&gt;
-&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 3&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;SoulTransition&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
+&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run stopVibrationService()&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.fragmentCounter to 3&gt;&gt;&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;&lt;&lt;goto &quot;SoulTransition&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 
     &lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
@@ -1526,7 +1638,7 @@ You wander around the Hall of Reflection, seeking the point where the pull of yo
     &lt;p&gt;Your message goes here.&lt;/p&gt;
     &lt;button onclick=&quot;hideCustomAlert()&quot;&gt;OK&lt;/button&gt;
   &lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="51" name="SoulTransition" tags="" position="1650,1825" size="100,100">The moment you pick up the final fragment of your soul Omni&#39;s voice once again echoes in your mind:
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="51" name="SoulTransition" tags="" position="1650,1825" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;The moment you pick up the final fragment of your soul Omni&#39;s voice once again echoes in your mind:
 
 &quot;You are truly unique, Lost One. You have defeated every challenge that has been thrown at you, all that is left now is to proceed to me at the top of the Tower of Ascension and I will reforge your soul. At the other end of this room is a spiral staircase, this will take you to me.&quot;
 
@@ -1625,20 +1737,12 @@ You attempt to lift the lid of the chest, but find that it is stuck. You see tha
     
 &lt;&lt;link &quot;Force the chest open, your strength will push through the rust. {Str + 1}&quot;&gt;&gt;
 	&lt;&lt;set $strength to $strength + 1&gt;&gt;
-    &lt;&lt;set State.variables.sourcePassage to &quot;ship.grave.3&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Force the chest open, your strength will push through the rust. {Str + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;set $chestOpen to 0&gt;&gt;
 	&lt;&lt;goto &quot;open.chest&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;Look around for something you can use to pry open the chest. {Int + 1}&quot;&gt;&gt;
 	&lt;&lt;set $intelligence to $intelligence + 1&gt;&gt;
-     &lt;&lt;set State.variables.sourcePassage to &quot;ship.grave.3&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Look around for something you can use to pry open the chest. {Int + 1}&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;stat boost&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;set $chestOpen to 1&gt;&gt;
 	&lt;&lt;goto &quot;open.chest&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="66" name="HallOfReflectionsP3" tags="" position="1550,1425" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
@@ -1683,6 +1787,7 @@ A second sensation then floods through you, one that is far more familiar.
 
 &lt;&lt;link &quot;There is another fragment of your soul somewhere in this place.&quot;&gt;&gt;
 	&lt;&lt;run sendPOIData()&gt;&gt;
+    &lt;&lt;run startVibrationService()&gt;&gt;
     &lt;&lt;goto &quot;FindSoulR3&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;.</tw-passagedata><tw-passagedata pid="70" name="FeatherMemory2" tags="" position="1750,2100" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/dark_angel_reveal.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
@@ -1729,20 +1834,12 @@ Omni scowls. &quot;You are clearly more intelligent that I gave you credit for, 
  Your situation is bleak. The options before you are both terrible. Either you enter into the service of a hateful deity and destroy the reality that once was your home, or you spend all of eternity imprisoned in this place with naught but Omni as your company. Do you free yourself, or jail the deity?
  
  &lt;&lt;link &quot;...You win, Omni. I cannot remain in this place for the rest of eternity. I will serve you, and together we shall build something new from the ashes of the universes we will destroy.&quot;&gt;&gt;
- 	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
- 	&lt;&lt;set State.variables.sourcePassage to &quot;FeatherMemory6&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;...You win, Omni. I cannot remain in this place for the rest of eternity. I will serve you, and together we shall build something new from the ashes of the universes we will destroy.&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+ 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
  	&lt;&lt;goto &quot;Epilogue - ServeOmni&quot;&gt;&gt;
  &lt;&lt;/link&gt;&gt;
  
  &lt;&lt;link &quot;Vile creature, you have dragged the wrong person into your jail cell. I will not return your soul, I shall act as your jailer and fellow prisoner. Here the two of us shall remain for eternity.&quot;&gt;&gt;
- 	&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
- 	&lt;&lt;set State.variables.sourcePassage to &quot;FeatherMemory6&quot;&gt;&gt;
-    &lt;&lt;set State.variables.playerChoice to &quot;Vile creature, you have dragged the wrong person into your jail cell. I will not return your soul, I shall act as your jailer and fellow prisoner. Here the two of us shall remain for eternity.&quot;&gt;&gt;
-    &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
+ 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
  	&lt;&lt;goto &quot;RejectOmni&quot;&gt;&gt;
  &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="75" name="EndgameForm" tags="" position="1500,2750" size="100,100">&lt;div&gt;
     &lt;p&gt;On a scale of 1 to 5, with 1 being not connected at all and 5 being extremely connected, how connected did this game make you feel to your environment?&lt;/p&gt;
@@ -1823,6 +1920,7 @@ Now that you have been introduced to the UI, we can do a full tutorial of the So
 &lt;&lt;link &quot;Give me the tutorial!&quot;&gt;&gt;
 	&lt;&lt;set State.variables.tutorialComplete to false&gt;&gt;
 	&lt;&lt;run sendPOIData()&gt;&gt;
+    &lt;&lt;run startVibrationService()&gt;&gt;
 	&lt;&lt;goto &quot;SearchTutorial&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
@@ -1847,7 +1945,7 @@ This is your chance to get familiar with the act of searching for Souls! For the
 &lt;&lt;timed 120s&gt;&gt;&lt;&lt;link &quot;Press me for a more precise hint!&quot;&gt;&gt;&lt;&lt;run providePreciseHint()&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 &lt;!-- Provide an option to skip the search if the player hasn&#39;t found the point after 5 minutes --&gt;
-&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.tutorialComplete to true&gt;&gt;&lt;&lt;goto &quot;TutorialComplete&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
+&lt;&lt;timed 300s&gt;&gt;&lt;&lt;link &quot;Press me to automatically collect the Soul Fragment and skip the remainder of this searching event!&quot;&gt;&gt;&lt;&lt;run stopVibrationService()&gt;&gt;&lt;&lt;run clearPOIList()&gt;&gt;&lt;&lt;set State.variables.tutorialComplete to true&gt;&gt;&lt;&lt;goto &quot;TutorialComplete&quot;&gt;&gt;&lt;&lt;/link&gt;&gt;&lt;&lt;/timed&gt;&gt;
 
 &lt;div id=&quot;customAlert&quot; class=&quot;alert-box&quot; style=&quot;display: none;&quot;&gt;
   &lt;div class=&quot;alert-header&quot;&gt;&lt;/div&gt;
@@ -1855,7 +1953,7 @@ This is your chance to get familiar with the act of searching for Souls! For the
     &lt;p&gt;&lt;/p&gt;
     &lt;button&gt;OK&lt;/button&gt;
   &lt;/div&gt;
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="82" name="TutorialComplete" tags="" position="1125,800" size="100,100">Well done, you have completed the Tutorial! If you feel comfortable with the Soul Searching system then you can proceed into the game!
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="82" name="TutorialComplete" tags="" position="1125,800" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;Well done, you have completed the Tutorial! If you feel comfortable with the Soul Searching system then you can proceed into the game!
 
 Alternatively, you can replay the previous tutorial again if you don&#39;t feel like you understand.
 
