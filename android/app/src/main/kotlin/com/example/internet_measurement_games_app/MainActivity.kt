@@ -31,7 +31,7 @@ class MainActivity: FlutterActivity() {
 
     private fun runMsakBinary(): String {
         val libDir = applicationInfo.nativeLibraryDir  // e.g. /data/app/..../lib/arm64
-        val binaryPath = "$libDir/libminimal-download.so"
+        val binaryPath = "$libDir/libmsak-client.so"
         try{
             val process = ProcessBuilder()
                 .command(

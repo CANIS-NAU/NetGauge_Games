@@ -218,27 +218,78 @@ class _WebViewPageState extends State<WebViewPage> {
 }
 
 // testing class for run msak
-
 class MsakTestPage extends StatelessWidget {
+  const MsakTestPage({super.key});
+
   static const platform = MethodChannel('msak_channel');
 
-  Future<void> runMsak() async {
+  // runs the MSAK test by calling the native binary through the method channel
+  Future<void> runMsak(BuildContext context) async {
     try {
-      final result = await platform.invokeMethod('runMsak');
-      debugPrint("MSAK result:\n$result");
+      // call the 'runMsak' method on the native side
+      final result = await platform.invokeMethod<String>('runMsak');
+      debugPrint("Raw MSAK output:\n$result");
+      // parse the download/upload rates from the raw output
+      final metrics = parseMsakOutput(result ?? "");
+
+      // show the results in a popup dialog
+      if (context.mounted) {
+        showMsakPopup(context, metrics);
+      }
     } catch (e) {
       debugPrint("Error getting MSAK metrics: $e");
     }
   }
 
+  // extracts the last reported download and upload speed from MSAK output
+  // results are in plain text not json :(
+  Map<String, dynamic> parseMsakOutput(String output) {
+    final downloadMatches = RegExp(r'download rate:\s+([\d.]+) Mb/s').allMatches(output);
+    final uploadMatches = RegExp(r'upload rate:\s+([\d.]+) Mb/s').allMatches(output);
+
+    return {
+      "downloadSpeed": downloadMatches.isNotEmpty
+          ? double.parse(downloadMatches.last.group(1)!)
+          : 0.0,
+      "uploadSpeed": uploadMatches.isNotEmpty
+          ? double.parse(uploadMatches.last.group(1)!)
+          : 0.0,
+    };
+  }
+
+  // display a popup dialog showing download and upload speeds
+  void showMsakPopup(BuildContext context, Map<String, dynamic> metrics) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Speed Test"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Download: ${metrics["downloadSpeed"]?.toStringAsFixed(2)} Mbps"),
+            Text("Upload: ${metrics["uploadSpeed"]?.toStringAsFixed(2)} Mbps"),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // The widget UI with a button to run the test
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("MSAK Test")),
+      appBar: AppBar(title: const Text("MSAK Test")),
       body: Center(
         child: ElevatedButton(
-          onPressed: runMsak,
-          child: Text("Run MSAK Test"),
+          onPressed: () => runMsak(context),
+          child: const Text("Run MSAK Test"),
         ),
       ),
     );
