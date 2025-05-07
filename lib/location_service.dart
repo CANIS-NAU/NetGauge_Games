@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_compass/flutter_compass.dart';
+import 'dart:io' show Platform;
 
 // stores a single piece of location data
 class LocationData {
@@ -14,11 +15,18 @@ class LocationData {
 class LocationDispatcher {
   static final Stream<Position> _positionStream = 
     Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.bestForNavigation,
-        distanceFilter: 0,
-      ),
-    ).asBroadcastStream(); // enables multiple listeners
+      locationSettings: Platform.isAndroid
+        ? AndroidSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 0,
+          intervalDuration: const Duration(milliseconds: 1000),
+          forceLocationManager: true,
+        )
+        : const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 0,
+        ), // iOS does not allow fine-grained Location Provider control
+    ).asBroadcastStream();
 
   static Stream<Position> get stream => _positionStream;
 }

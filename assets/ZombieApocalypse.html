@@ -612,7 +612,7 @@ window.onPOICheck = function(json){
         State.variables.tutorialComplete = true;
         Engine.play(State.variables.previousPassage);
       } else {
-        State.variables.fragmentCounter += 1;
+        State.variables.sampleCount += 1;
         Engine.play(State.variables.previousPassage, false, function() {});
       }
     });
