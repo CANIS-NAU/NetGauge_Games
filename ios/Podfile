@@ -1,6 +1,6 @@
 platform :ios, '12.0'
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+# Disable CocoaPods analytics
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -9,11 +9,17 @@ project 'Runner', {
   'Release' => :release,
 }
 
+# Define Flutter root
+flutter_root = File.expand_path(File.join('..', '..', 'flutter'))
+
+# Load the Flutter CocoaPods plugin support
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper.rb'), flutter_root)
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
-  flutter_install_all_plugins(File.dirname(File.realpath(__FILE__)))
+  flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
 end
 
 post_install do |installer|
