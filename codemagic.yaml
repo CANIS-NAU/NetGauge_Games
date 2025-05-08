@@ -29,9 +29,6 @@ workflows:
       - name: Set up Code Signing
         script: xcode-project use-profiles
 
-      - name: Warm Up iOS Toolchain
-        script: flutter build ios --release
-
       - name: Build iOS IPA
         script: flutter build ipa --release
 
