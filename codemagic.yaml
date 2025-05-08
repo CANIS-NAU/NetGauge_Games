@@ -31,28 +31,6 @@ workflows:
           cd ios
           pod install
 
-      - name: Patch Podfile to prevent -G Flag error
-        script: |
-          PODFILE_PATH=ios/Podfile
-          if grep -q "post_install do" "$PODFILE_PATH"; then
-            echo "Podfile already patched"
-          else
-            echo "Patching Podfile..."
-            echo "" >> $PODFILE_PATH
-            echo "post_install do |installer|" >> $PODFILE_PATH
-            echo "  installer.pods_project.targets.each do |target|" >> $PODFILE_PATH
-            echo "    target.build_configurations.each do |config|" >> $PODFILE_PATH
-            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'" >> $PODFILE_PATH
-            echo "    end" >> $PODFILE_PATH
-            echo "  end" >> $PODFILE_PATH
-            echo "end" >> $PODFILE_PATH
-          fi
-
-      - name: Re-run pod install
-        script:
-          cd ios
-          pod install
-
       - name: Set up Code Signing
         script: xcode-project use-profiles
 
