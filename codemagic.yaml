@@ -29,8 +29,12 @@ workflows:
       - name: Install Flutter dependencies
         script: flutter pub get
 
-      - name: Sign Code
+      - name: Warm Up iOS Toolchain
+        script: flutter build ios --release
+
+      - name: Set up Code Signing
         script: xcode-project use-profiles
+
       - name: Build iOS IPA
         script: flutter build ipa --release
 
