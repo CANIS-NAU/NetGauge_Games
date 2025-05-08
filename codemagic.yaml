@@ -11,21 +11,19 @@ workflows:
       groups:
         - app_store_credentials
     scripts:
+
       - name: Set Ruby version manually
         script: |
           rbenv install -s 3.3.6
           rbenv global 3.3.6
           ruby -v
+
       - name: Install Flutter dependencies
         script: flutter pub get
-      - name: Generate podhelper.rb
-        script: flutter build ios --debug
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios
-          pod install
+
       - name: Build iOS IPA
         script: flutter build ipa --release
+
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
