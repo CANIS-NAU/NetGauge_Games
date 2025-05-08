@@ -24,6 +24,8 @@ Flutter/app.zip
 Flutter/flutter_assets/
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
+Flutter/flutter_export_environment.sh
+Flutter/Generated.xcconfig
 
 # Exceptions to above rules.
 !default.mode1v3
