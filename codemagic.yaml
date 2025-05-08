@@ -6,6 +6,11 @@ workflows:
       flutter: stable
       ruby: 3.3.6
       cocoapods: 1.16.2
+      ios_signing:
+        certificates:
+          - Cole iOS Distribution Cert
+        provisioning_profiles:
+          - Cole iOS Provisioning Profile
       vars:
         BUNDLE_ID: "NetGague.Games"
       groups:
@@ -24,6 +29,8 @@ workflows:
       - name: Install Flutter dependencies
         script: flutter pub get
 
+      - name: Sign Code
+        script: xcode-project use-profiles
       - name: Build iOS IPA
         script: flutter build ipa --release
 
