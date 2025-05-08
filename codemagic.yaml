@@ -4,7 +4,8 @@ workflows:
     environment:
       xcode: latest
       flutter: stable
-      ruby: 3.1.4
+      ruby: 3.2.2
+      cocoapods: 1.16.2
       vars:
         BUNDLE_ID: "NetGague.Games"
       groups:
@@ -12,8 +13,8 @@ workflows:
     scripts:
       - name: Set Ruby version manually
         script: |
-          rbenv install -s 3.1.4
-          rbenv global 3.1.4
+          rbenv install -s 3.2.2
+          rbenv global 3.2.2
           ruby -v
       - name: Install Flutter dependencies
         script: flutter pub get
