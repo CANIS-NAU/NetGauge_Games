@@ -32,7 +32,7 @@ workflows:
           pod install
 
       - name: Patch Podfile to prevent -G Flag error
-        scrpt: |
+        script: |
           PODFILE_PATH=ios/Podfile
       if grep -q "post_install do" "$PODFILE_PATH"; then
         echo "Podfile already patched"
