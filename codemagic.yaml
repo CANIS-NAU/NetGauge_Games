@@ -18,6 +18,8 @@ workflows:
           ruby -v
       - name: Install Flutter dependencies
         script: flutter pub get
+      - name: Generate podhelper.rb
+        script: flutter build ios --debug
       - name: Install CocoaPods dependencies
         script: |
           cd ios
