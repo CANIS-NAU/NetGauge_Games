@@ -49,7 +49,7 @@ workflows:
                 end
               end
             end
-EOF
+            EOF
           fi
       - name: Install CocoaPods dependencies
         script: |
