@@ -1,0 +1,67 @@
+workflows:
+  ios-release:
+    name: iOS Release Build
+    environment:
+      xcode: latest
+      flutter: stable
+      ruby: 3.1.4
+      vars:
+        BUNDLE_ID: "NetGague.Games"
+      groups:
+        - app_store_credentials
+    scripts:
+      - name: Set Ruby version manually
+        script: |
+          rbenv install -s 3.1.4
+          rbenv global 3.1.4
+          ruby -v
+      - name: Install Flutter dependencies
+        script: flutter pub get
+      - name: Patch Podfile if needed
+        script: |
+          if [ ! -f ios/Podfile ]; then
+            echo "Creating Podfile..."
+            cat > ios/Podfile <<EOF
+            platform :ios, '12.0'
+            ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+            project 'Runner', 'Runner'
+            def flutter_root
+              generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+              unless File.exist?(generated_xcode_build_settings_path)
+                raise "#{generated_xcode_build_settings_path} must exist. Run flutter pub get first."
+              end
+              File.foreach(generated_xcode_build_settings_path) do |line|
+                matches = line.match(/FLUTTER_ROOT=(.*)/)
+                return matches[1].strip if matches
+              end
+              raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}."
+            end
+            require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+            target 'Runner' do
+              use_frameworks!
+              use_modular_headers!
+              flutter_install_all_ios_pods(File.dirname(File.realpath(__FILE__)))
+            end
+            post_install do |installer|
+              installer.pods_project.targets.each do |target|
+                target.build_configurations.each do |config|
+                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+                end
+              end
+            end
+EOF
+          fi
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios
+          pod install
+      - name: Build iOS IPA
+        script: flutter build ipa --release
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        api_key: "$APP_STORE_CONNECT_PRIVATE_KEY"
+        key_id: "$APP_STORE_CONNECT_KEY_IDENTIFIER"
+        issuer_id: "$APP_STORE_CONNECT_ISSUER_ID"
+        submit_to_testflight: true
