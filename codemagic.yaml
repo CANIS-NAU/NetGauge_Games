@@ -24,9 +24,6 @@ workflows:
       - name: Install Flutter dependencies
         script: flutter pub get
 
-      - name: Warm up iOS Toolchain
-        script: flutter build ios --debug
-
       - name: Build iOS IPA
         script: flutter build ipa --release
 
