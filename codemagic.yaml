@@ -34,22 +34,20 @@ workflows:
       - name: Patch Podfile to prevent -G Flag error
         script: |
           PODFILE_PATH=ios/Podfile
-      if grep -q "post_install do" "$PODFILE_PATH"; then
-        echo "Podfile already patched"
-      else
-        echo "Patching Podfile..."
-        cat <<EOF >> $PODFILE_PATH
+          if grep -q "post_install do" "$PODFILE_PATH"; then
+            echo "Podfile already patched"
+          else
+            echo "Patching Podfile..."
+            echo "" >> $PODFILE_PATH
+            echo "post_install do |installer|" >> $PODFILE_PATH
+            echo "  installer.pods_project.targets.each do |target|" >> $PODFILE_PATH
+            echo "    target.build_configurations.each do |config|" >> $PODFILE_PATH
+            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'" >> $PODFILE_PATH
+            echo "    end" >> $PODFILE_PATH
+            echo "  end" >> $PODFILE_PATH
+            echo "end" >> $PODFILE_PATH
+          fi
 
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-    end
-  end
-end
-EOF
-      fi
-      
       - name: Re-run pod install
         script:
           cd ios
