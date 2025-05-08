@@ -25,6 +25,35 @@ workflows:
 
       - name: Install Flutter dependencies
         script: flutter pub get
+      
+      - name: Set up pod and podfile
+        script: |
+          cd ios
+          pod install
+
+      - name: Patch Podfile to prevent -G Flag error
+        scrpt: |
+          PODFILE_PATH=ios/Podfile
+      if grep -q "post_install do" "$PODFILE_PATH"; then
+        echo "Podfile already patched"
+      else
+        echo "Patching Podfile..."
+        cat <<EOF >> $PODFILE_PATH
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+    end
+  end
+end
+EOF
+      fi
+      
+      - name: Re-run pod install
+        script:
+          cd ios
+          pod install
 
       - name: Set up Code Signing
         script: xcode-project use-profiles
