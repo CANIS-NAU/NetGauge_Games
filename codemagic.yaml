@@ -30,13 +30,6 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
 
-    code_signing:
-      automatic_code_signing:
-        signing_certificates: app_store_credentials
-        provisioning_profiles:
-          - bundle_id: "NetGague.Games"
-            type: "app_store"
-
     publishing:
       app_store_connect:
         api_key: "$APP_STORE_CONNECT_PRIVATE_KEY"
