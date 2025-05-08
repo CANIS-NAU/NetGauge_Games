@@ -1,10 +1,6 @@
 workflows:
   ios-release:
     name: iOS Release Build
-    code_signing:
-      provisioning_profiles:
-        - bundle_id: "NetGague.Games"
-        - type: "app_store"
     environment:
       xcode: latest
       flutter: stable
