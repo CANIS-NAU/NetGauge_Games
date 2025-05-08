@@ -4,7 +4,7 @@ workflows:
     code_signing:
       provisioning_profiles:
         - bundle_id: "NetGague.Games"
-          type: "app_store"
+        - type: "app_store"
     environment:
       xcode: latest
       flutter: stable
