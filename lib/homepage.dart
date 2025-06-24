@@ -141,6 +141,7 @@ class _HomePageState extends State<HomePage>
               _buildTile('Scavenger Hunt', Icons.home, 'ScavengerHunt.html', context),
               _buildTile('Soul Seeker', Icons.settings, 'SoulSeeker.html', context),
               _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
+              _buildTile('Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
               _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context)
             ],
           ),

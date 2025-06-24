@@ -82,6 +82,7 @@ flutter:
     - assets/SoulSeeker.html
     - assets/ZombieApocalypse.html
     - assets/ScavengerHunt.html
+    - assets/DragonSlayer.html
     - assets/icons/ability-icon.png
     - assets/icons/antidote-icon.png
     - assets/icons/attack-icon.png
