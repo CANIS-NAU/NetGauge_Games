@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -9,6 +10,15 @@ import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'name_entry_page.dart';
 import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
+
+//vars for mapping
+final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+final TextEditingController _controller = TextEditingController();
+
 
 // class to manage session data that needs to be accessible across functions/files
 
@@ -21,7 +31,8 @@ class HomePage extends StatefulWidget{
 }
 
 class _HomePageState extends State<HomePage>
-{
+{  
+  
   String _sessionId = '';
 
   @override
@@ -142,7 +153,8 @@ class _HomePageState extends State<HomePage>
               _buildTile('Soul Seeker', Icons.settings, 'SoulSeeker.html', context),
               _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
               _buildTile('Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
-              _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context)
+              _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context),
+              _buildPageTile('Open Map', Icons.map, MapPage(data: heatmapData, gradients: gradients, index: 0, rebuildStream: Stream<void>.empty(),), context,),
             ],
           ),
           Align(

@@ -36,6 +36,11 @@ dependencies:
   webview_flutter: ^4.1.0
   webview_flutter_platform_interface: ^2.1.0
 
+  #mapping system
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+  flutter_map_heatmap: any
+
   # Geolocation system
   geolocator: ^13.0.4
 
