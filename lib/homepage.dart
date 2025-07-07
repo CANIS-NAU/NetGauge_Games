@@ -18,6 +18,8 @@ import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 //vars for mapping
 final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 final TextEditingController _controller = TextEditingController();
+final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
+
 
 
 // class to manage session data that needs to be accessible across functions/files
@@ -93,6 +95,20 @@ class _HomePageState extends State<HomePage>
             SessionManager.endGame(); // also will stop logging location
             // Stop the vibration service, in case the game started it
             VibrationController.stop();
+
+             Future.delayed(const Duration(milliseconds: 300), () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MapPage(
+                  data: allHeatmapData,
+                  gradients: gradients,
+                  index: 0,
+                  rebuildStream: Stream<void>.empty(),
+                ),
+              ),
+            );
+          });
           });
         },
         child: Container(
