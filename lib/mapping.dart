@@ -118,6 +118,7 @@ class MapPage extends StatefulWidget {
   final List<Map<double, MaterialColor>> gradients;
   final int index;
   final Stream<void> rebuildStream;
+  final LatLng? center;
 
   const MapPage({
     Key? key,
@@ -125,6 +126,7 @@ class MapPage extends StatefulWidget {
     required this.gradients,
     required this.index,
     required this.rebuildStream,
+    this.center,
   }) : super(key: key);
 
   @override
@@ -132,16 +134,27 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
+  LatLng? _center;
+  
   @override
   void initState() {
     super.initState();
     _logMapViewEvent();
+    _setInitialCenter();
+  }
+
+  Future<void> _setInitialCenter() async {
+    final loc = await determineLocationData();
+    print("DEBUG LOCATION: ${loc.position.latitude}, ${loc.position.longitude}");
+    setState(() {_center = LatLng(loc.position.latitude, loc.position.longitude);
+    });
   }
 
   Future<void> _logMapViewEvent() async {
     final loc = await determineLocationData();
     final nickname = SessionManager.playerName;
     final sessionId = SessionManager.sessionId;
+
 
     final mapViewLog = {
       'event': 'Viewed Map',
@@ -169,9 +182,11 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Flagstaff Map Data')),
-      body: FlutterMap(
+      body: _center == null
+          ? const Center(child: CircularProgressIndicator())
+      : FlutterMap(
         options: MapOptions(
-          center: LatLng(35.1983, -111.6513),
+          center: _center,
           zoom: 15.0,
           pinchZoomThreshold: pinchZoomThreshold,
         ),

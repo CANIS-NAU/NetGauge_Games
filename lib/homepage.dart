@@ -90,21 +90,29 @@ class _HomePageState extends State<HomePage>
             MaterialPageRoute(
               builder: (context) => WebViewPage(title: title, gameFile: gameFile),
             ),
-          ).then((_) {
+          ).then((_) async {
             // log the game end with the session manager
             SessionManager.endGame(); // also will stop logging location
             // Stop the vibration service, in case the game started it
             VibrationController.stop();
-
-             Future.delayed(const Duration(milliseconds: 300), () {
+          // Get the current location
+            final loc = await determineLocationData();
+             Future.delayed(const Duration(milliseconds: 300), () async {
+            // Get the actual location data from Firestore
+            final sessionLocationData = await getSessionLocationData();
+            
+            // Use session data if available, otherwise fall back to static data
+            final mapData = sessionLocationData.isNotEmpty ? sessionLocationData : allHeatmapData;
+            
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => MapPage(
-                  data: allHeatmapData,
+                  data: mapData,
                   gradients: gradients,
                   index: 0,
                   rebuildStream: Stream<void>.empty(),
+                  center: LatLng(loc.position.latitude, loc.position.longitude),
                 ),
               ),
             );
@@ -152,6 +160,83 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  // constructor for the map tile that uses session data
+  Widget _buildMapTile(String title, IconData icon, BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () async {
+          // Get the actual location data from Firestore
+          final sessionLocationData = await getSessionLocationData();
+          
+          // Use session data if available, otherwise fall back to static data
+          final mapData = sessionLocationData.isNotEmpty ? sessionLocationData : heatmapData;
+          
+          // Navigate to map page with the appropriate data
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => MapPage(
+                data: mapData,
+                gradients: gradients,
+                index: 0,
+                rebuildStream: Stream<void>.empty(),
+              ),
+            ),
+          );
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.all(16.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18.0),
+            leading: Icon(icon, size: 40.0, color: Theme.of(context).primaryColor),
+            title: Text(title, style: const TextStyle(fontSize: 18)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Function to retrieve location data from Firestore for the current session
+  Future<List<TimedWeightedLatLng>> getSessionLocationData() async {
+    if (_sessionId.isEmpty) {
+      debugPrint('[HOMEPAGE] No session ID available for location data retrieval');
+      return [];
+    }
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore
+          .collection('Movement Data')
+          .doc(_sessionId)
+          .collection('LocationData')
+          .orderBy('datetime', descending: false)
+          .get();
+
+      List<TimedWeightedLatLng> locationData = [];
+      
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final latitude = data['latitude'] as double;
+        final longitude = data['longitude'] as double;
+        final datetime = DateTime.parse(data['datetime'] as String);
+        
+        locationData.add(TimedWeightedLatLng(
+          LatLng(latitude, longitude),
+          1.0, // intensity
+          datetime,
+        ));
+      }
+
+      debugPrint('[HOMEPAGE] Retrieved ${locationData.length} location points');
+      return locationData;
+    } catch (e) {
+      debugPrint('[HOMEPAGE] Error retrieving location data: $e');
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -170,7 +255,7 @@ class _HomePageState extends State<HomePage>
               _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
               _buildTile('Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
               _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context),
-              _buildPageTile('Open Map', Icons.map, MapPage(data: heatmapData, gradients: gradients, index: 0, rebuildStream: Stream<void>.empty(),), context,),
+              _buildMapTile('Open Map', Icons.map, context),
             ],
           ),
           Align(
