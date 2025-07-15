@@ -9,6 +9,7 @@ import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'name_entry_page.dart';
 import 'dart:async';
+import 'ndt7_service.dart';
 
 // class to manage session data that needs to be accessible across functions/files
 
@@ -356,20 +357,11 @@ class _WebViewPageState extends State<WebViewPage> {
 
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
+    // use the NDT7 service to get the metrics
+    final results = await ndt7_service.runFullTest();
+    final json = jsonEncode(results);
 
-    // TODO: When MSAK is implemented get internet metrics
-    //final json = await mesureInternet();
-
-    // PLACEHOLDER VALUES TO RETURN //
-    final json = jsonEncode({
-      'uploadSpeed': -1,
-      'downloadSpeed': -1,
-      'jitter': -1,
-      'packetLoss': -1,
-      'latency': -1,
-    });
-
-    // return the placeholder json
+    // return the json file
     controller.runJavaScript("window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   }
 
