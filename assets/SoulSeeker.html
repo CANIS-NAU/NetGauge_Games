@@ -725,6 +725,13 @@ window.stopVibrationService = function()
   FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"}));
 };
 
+window.submitLikertAnswers = function()
+{
+  // Since the Flutter app now handles Likert forms after game completion,
+  // this function just closes the game to proceed to the Flutter Likert form
+  window.close();
+};
+
 // END OF POI-RELATED FUNCTIONS //
 
 

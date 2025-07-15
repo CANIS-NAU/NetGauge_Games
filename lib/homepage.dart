@@ -9,15 +9,13 @@ import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'name_entry_page.dart';
+import 'likert_form.dart';
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 
 //vars for mapping
-final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-final TextEditingController _controller = TextEditingController();
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 
 
@@ -95,28 +93,14 @@ class _HomePageState extends State<HomePage>
             SessionManager.endGame(); // also will stop logging location
             // Stop the vibration service, in case the game started it
             VibrationController.stop();
-          // Get the current location
-            final loc = await determineLocationData();
-             Future.delayed(const Duration(milliseconds: 300), () async {
-            // Get the actual location data from Firestore
-            final sessionLocationData = await getSessionLocationData();
             
-            // Use session data if available, otherwise fall back to static data
-            final mapData = sessionLocationData.isNotEmpty ? sessionLocationData : allHeatmapData;
-            
+            // Navigate to Likert form after game ends
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MapPage(
-                  data: mapData,
-                  gradients: gradients,
-                  index: 0,
-                  rebuildStream: Stream<void>.empty(),
-                  center: LatLng(loc.position.latitude, loc.position.longitude),
-                ),
+                builder: (context) => LikertForm(gameTitle: title),
               ),
             );
-          });
           });
         },
         child: Container(
@@ -138,13 +122,19 @@ class _HomePageState extends State<HomePage>
       color: Colors.white,
       child: InkWell(
         onTap: () {
+          // log the game start with the session manager -> added 7/10
+          SessionManager.startGame(title);
+          // begin location logging -> added 7/10
+          LocationLogger.start();
           // navigate to page
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => page),
-          ).then((_){
+          ).then((_) async {
             // log the game end with the session manager
             SessionManager.endGame(); // also will stop logging location
+            // Map will only open if the page specifically requests it
+            // For now, just end the session without automatically opening map
           });
         },
         child: Container(
@@ -198,8 +188,83 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+ Widget _buildCombinedMapTile(String title, IconData icon, BuildContext context) {
+  return Material(
+    color: Colors.white,
+    child: InkWell(
+      onTap: () async {
+        final allLocationData = await getAllSessionLocationData();
+        final mapData = allLocationData.isNotEmpty ? allLocationData : heatmapData;
+      
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MapPage(
+              data: mapData,
+              gradients: gradients,
+              index: 0,
+              rebuildStream: Stream<void>.empty(),
+              
+            ),
+          ),
+        );
+      },
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 50),
+        padding: const EdgeInsets.all(16.0),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 18.0),
+          leading: Icon(icon, size: 40.0, color: Theme.of(context).primaryColor),
+          title: Text(title, style: const TextStyle(fontSize: 18)),
+        ),
+      ),
+    ),
+  );
+}
+
+  Future<List<TimedWeightedLatLng>> getAllSessionLocationData() async {
+  final firestore = FirebaseFirestore.instance;
+  List<TimedWeightedLatLng> allData = [];
+
+  try {
+    final sessionsSnapshot = await firestore.collection('Movement Data').get();
+    debugPrint('[MAP] Session Snapshot: $sessionsSnapshot');
+    debugPrint('[MAP] Got ${sessionsSnapshot.docs.length} docs in Movement Data');
+
+    for (final sessionDoc in sessionsSnapshot.docs) {
+      debugPrint('[MAP] Session Name: $sessionDoc');
+      debugPrint('[MAP] Session ID: $sessionDoc.id');
+      // Fetch location data for each sess
+      final locationSnapshot = await sessionDoc.reference
+          .collection('LocationData')
+          .orderBy('datetime', descending: false)
+          .get();
+
+      for (final locDoc in locationSnapshot.docs) {
+        final data = locDoc.data();
+        final latitude = data['latitude'] as double;
+        final longitude = data['longitude'] as double;
+        final datetime = DateTime.parse(data['datetime'] as String);
+
+        allData.add(TimedWeightedLatLng(
+          LatLng(latitude, longitude),
+          1.0,
+          datetime,
+        ));
+      }
+    }
+
+    debugPrint('[MAP] Combined total of ${allData.length} location points across all sessions');
+    return allData;
+  } catch (e) {
+    debugPrint('[MAP] Error fetching all sessions: $e');
+    return [];
+  }
+}
+
   // Function to retrieve location data from Firestore for the current session
   Future<List<TimedWeightedLatLng>> getSessionLocationData() async {
+
     if (_sessionId.isEmpty) {
       debugPrint('[HOMEPAGE] No session ID available for location data retrieval');
       return [];
@@ -255,7 +320,9 @@ class _HomePageState extends State<HomePage>
               _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
               _buildTile('Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
               _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context),
-              _buildMapTile('Open Map', Icons.map, context),
+              _buildMapTile('Open Session Map', Icons.map, context),
+              _buildCombinedMapTile('Open Full Data Map', Icons.public, context),
+
             ],
           ),
           Align(

@@ -29,6 +29,8 @@ class TimedWeightedLatLng {
 }
 
 final List<TimedWeightedLatLng> heatmapData = [
+  
+    /* 
     TimedWeightedLatLng(LatLng(35.1983, -111.6513), 1.0, DateTime.now().subtract(const Duration(days: 10))),
     TimedWeightedLatLng(LatLng(35.1990, -111.6500), 1.0, DateTime.now().subtract(const Duration(days: 10))),
     TimedWeightedLatLng(LatLng(35.1970, -111.6520), 1.0, DateTime.now().subtract(const Duration(days: 10))),
@@ -99,7 +101,7 @@ final List<TimedWeightedLatLng> heatmapData = [
     TimedWeightedLatLng(LatLng(35.1979, -111.6483), 0.7, DateTime.now().subtract(Duration(days: 112))),
     TimedWeightedLatLng(LatLng(35.1981, -111.6509), 0.5, DateTime.now().subtract(Duration(days: 120))),
     TimedWeightedLatLng(LatLng(35.1994, -111.6533), 0.9, DateTime.now().subtract(Duration(days: 0))), 
-
+   */
   ];
 
 //colors --> blue to orange gradient 
@@ -144,11 +146,21 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _setInitialCenter() async {
+  try {
     final loc = await determineLocationData();
     print("DEBUG LOCATION: ${loc.position.latitude}, ${loc.position.longitude}");
-    setState(() {_center = LatLng(loc.position.latitude, loc.position.longitude);
+
+    setState(() {
+      _center = LatLng(loc.position.latitude, loc.position.longitude);
+    });
+  } catch (e) {
+    print("ERROR setting center: $e");
+    setState(() {
+      _center = LatLng(35.1983, -111.6513); // fallback if location fails
     });
   }
+}
+
 
   Future<void> _logMapViewEvent() async {
     final loc = await determineLocationData();
@@ -186,13 +198,21 @@ class _MapPageState extends State<MapPage> {
           ? const Center(child: CircularProgressIndicator())
       : FlutterMap(
         options: MapOptions(
-          center: _center,
+          // ignore: deprecated_member_use
+          center: _center!,
+          // ignore: deprecated_member_use
           zoom: 15.0,
+          // ignore: deprecated_member_use
           pinchZoomThreshold: pinchZoomThreshold,
         ),
         children: [
           TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            subdomains: ['a', 'b', 'c'],
+            userAgentPackageName: 'com.example.internet_measurement_games_app',
+            additionalOptions: {
+              'User-Agent': 'NetGauge Games Testing App',
+            },
           ),
           if (widget.data.isNotEmpty)
             HeatMapLayer(
