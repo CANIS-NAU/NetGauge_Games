@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage>
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_){
       _promptForSessionId(context);
-      SessionManager.setSessionId(_sessionId);
+      // Don't set session ID here - it will be set in the dialog
     });
   }
 
@@ -227,30 +227,56 @@ class _HomePageState extends State<HomePage>
   List<TimedWeightedLatLng> allData = [];
 
   try {
+    debugPrint('[MAP] Starting getAllSessionLocationData...');
+    debugPrint('[MAP] Current session ID: ${SessionManager.sessionId}');
+    debugPrint('[MAP] Current player name: ${SessionManager.playerName}');
+    debugPrint('[MAP] Current game: ${SessionManager.currentGame}');
+    debugPrint('[MAP] Querying collection: Movement Data');
+    
     final sessionsSnapshot = await firestore.collection('Movement Data').get();
-    debugPrint('[MAP] Session Snapshot: $sessionsSnapshot');
-    debugPrint('[MAP] Got ${sessionsSnapshot.docs.length} docs in Movement Data');
+    debugPrint('[MAP] Query completed. Got ${sessionsSnapshot.docs.length} session documents');
+    
+    if (sessionsSnapshot.docs.isEmpty) {
+      debugPrint('[MAP] No session documents found. Collection might be empty or named differently.');
+      return [];
+    }
 
     for (final sessionDoc in sessionsSnapshot.docs) {
-      debugPrint('[MAP] Session Name: $sessionDoc');
-      debugPrint('[MAP] Session ID: $sessionDoc.id');
-      // Fetch location data for each sess
+      debugPrint('[MAP] Processing session ID: ${sessionDoc.id}');
+      debugPrint('[MAP] Session document data: ${sessionDoc.data()}');
+      
+      // Fetch location data for each session
       final locationSnapshot = await sessionDoc.reference
           .collection('LocationData')
           .orderBy('datetime', descending: false)
           .get();
 
-      for (final locDoc in locationSnapshot.docs) {
-        final data = locDoc.data();
-        final latitude = data['latitude'] as double;
-        final longitude = data['longitude'] as double;
-        final datetime = DateTime.parse(data['datetime'] as String);
+      debugPrint('[MAP] Session ${sessionDoc.id} has ${locationSnapshot.docs.length} location points');
 
-        allData.add(TimedWeightedLatLng(
-          LatLng(latitude, longitude),
-          1.0,
-          datetime,
-        ));
+      if (locationSnapshot.docs.isEmpty) {
+        debugPrint('[MAP] No LocationData subcollection found for session ${sessionDoc.id}');
+        continue;
+      }
+
+      for (final locDoc in locationSnapshot.docs) {
+        try {
+          final data = locDoc.data();
+          debugPrint('[MAP] Location document ${locDoc.id} data: $data');
+          debugPrint('[MAP] Location data keys: ${data.keys}');
+          
+          final latitude = data['latitude'] as double;
+          final longitude = data['longitude'] as double;
+          final datetime = DateTime.parse(data['datetime'] as String);
+
+          allData.add(TimedWeightedLatLng(
+            LatLng(latitude, longitude),
+            1.0,
+            datetime,
+          ));
+        } catch (e) {
+          debugPrint('[MAP] Error processing location document ${locDoc.id}: $e');
+          debugPrint('[MAP] Document data: ${locDoc.data()}');
+        }
       }
     }
 
@@ -258,6 +284,7 @@ class _HomePageState extends State<HomePage>
     return allData;
   } catch (e) {
     debugPrint('[MAP] Error fetching all sessions: $e');
+    debugPrint('[MAP] Error type: ${e.runtimeType}');
     return [];
   }
 }
@@ -302,6 +329,156 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  // Test function to check what's in Firestore
+  Future<void> debugFirestoreContents() async {
+    final firestore = FirebaseFirestore.instance;
+    
+    try {
+      // Check if Firestore is accessible
+      debugPrint('[FIRESTORE_DEBUG] Firestore connection test starting...');
+      debugPrint('[FIRESTORE_DEBUG] Current session ID: ${SessionManager.sessionId}');
+      debugPrint('[FIRESTORE_DEBUG] Homepage session ID: $_sessionId');
+      
+      // List all top-level collections
+      debugPrint('[FIRESTORE_DEBUG] Checking all top-level collections...');
+      
+      // Try different possible collection names
+      final possibleCollections = ['Movement Data', 'MovementData', 'movement_data', 'sessions', 'Sessions'];
+      
+      for (final collectionName in possibleCollections) {
+        try {
+          final query = await firestore.collection(collectionName).get();
+          debugPrint('[FIRESTORE_DEBUG] Collection "$collectionName" has ${query.docs.length} documents');
+          
+          if (query.docs.isNotEmpty) {
+            // List all session IDs if any exist
+            for (final doc in query.docs) {
+              debugPrint('[FIRESTORE_DEBUG] Found session: ${doc.id}');
+              debugPrint('[FIRESTORE_DEBUG] Session data: ${doc.data()}');
+              
+              // Check subcollections
+              final locationData = await doc.reference.collection('LocationData').get();
+              final checkData = await doc.reference.collection('CheckData').get();
+              final likertData = await doc.reference.collection('LikertData').get();
+              
+              debugPrint('[FIRESTORE_DEBUG] Session ${doc.id} has:');
+              debugPrint('[FIRESTORE_DEBUG] - LocationData: ${locationData.docs.length} documents');
+              debugPrint('[FIRESTORE_DEBUG] - CheckData: ${checkData.docs.length} documents');  
+              debugPrint('[FIRESTORE_DEBUG] - LikertData: ${likertData.docs.length} documents');
+              
+              // Show first few location data points if they exist
+              if (locationData.docs.isNotEmpty) {
+                debugPrint('[FIRESTORE_DEBUG] First 3 LocationData documents:');
+                for (int i = 0; i < locationData.docs.length && i < 3; i++) {
+                  final locDoc = locationData.docs[i];
+                  debugPrint('[FIRESTORE_DEBUG] LocationData ${locDoc.id}: ${locDoc.data()}');
+                }
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('[FIRESTORE_DEBUG] Error accessing collection "$collectionName": $e');
+        }
+      }
+      
+      // Also check if session "0" specifically exists -> just for testing purposes
+      //dont use session "0" as actual session ID
+      try {
+        final sessionZeroDoc = await firestore.collection('Movement Data').doc('0').get();
+        if (sessionZeroDoc.exists) {
+          debugPrint('[FIRESTORE_DEBUG] Session "0" exists with data: ${sessionZeroDoc.data()}');
+          final locationData = await sessionZeroDoc.reference.collection('LocationData').get();
+          debugPrint('[FIRESTORE_DEBUG] Session "0" has ${locationData.docs.length} LocationData documents');
+        } else {
+          debugPrint('[FIRESTORE_DEBUG] Session "0" does not exist');
+        }
+      } catch (e) {
+        debugPrint('[FIRESTORE_DEBUG] Error checking session "0": $e');
+      }
+      
+    } catch (e) {
+      debugPrint('[FIRESTORE_DEBUG] Error accessing Firestore: $e');
+    }
+  }
+
+  // Test function to check location logging
+  Future<void> testLocationLogging() async {
+    debugPrint('[LOCATION_TEST] Starting location logging test...');
+    debugPrint('[LOCATION_TEST] Current session ID: ${SessionManager.sessionId}');
+    debugPrint('[LOCATION_TEST] Current player name: ${SessionManager.playerName}');
+    debugPrint('[LOCATION_TEST] Current game: ${SessionManager.currentGame}');
+    debugPrint('[LOCATION_TEST] Homepage session ID: $_sessionId');
+    
+    // Set test values if they're null
+    if (SessionManager.sessionId == null || SessionManager.sessionId!.isEmpty) {
+      debugPrint('[LOCATION_TEST] Session ID is null/empty, using test session ID');
+      SessionManager.setSessionId(_sessionId.isNotEmpty ? _sessionId : 'test_session');
+    }
+    
+    if (SessionManager.playerName == null) {
+      debugPrint('[LOCATION_TEST] Player name is null, setting test player name');
+      SessionManager.setPlayerName('test_player');
+    }
+    
+    if (SessionManager.currentGame == null) {
+      debugPrint('[LOCATION_TEST] Current game is null, setting test game');
+      SessionManager.startGame('Test Game');
+    }
+    
+    // Try to write a test location to Firestore
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final sessionId = SessionManager.sessionId ?? 'test_session';
+      debugPrint('[LOCATION_TEST] Writing to session: $sessionId');
+      
+      // First, ensure the session document exists
+      await firestore
+          .collection('Movement Data')
+          .doc(sessionId)
+          .set({
+            'sessionId': sessionId,
+            'playerName': SessionManager.playerName,
+            'created': DateTime.now().toIso8601String(),
+            'test': true,
+          }, SetOptions(merge: true));
+      
+      // Then add the location data to the subcollection
+      final docRef = await firestore
+          .collection('Movement Data')
+          .doc(sessionId)
+          .collection('LocationData')
+          .add({
+            'latitude': 37.7749,
+            'longitude': -122.4194,
+            'datetime': DateTime.now().toIso8601String(),
+            'game': SessionManager.currentGame,
+            'player': SessionManager.playerName,
+            'test': true,
+          });
+      debugPrint('[LOCATION_TEST] Test location data written successfully to document: ${docRef.id}');
+      
+      // Immediately try to read it back
+      final readBack = await firestore
+          .collection('Movement Data')
+          .doc(sessionId)
+          .collection('LocationData')
+          .doc(docRef.id)
+          .get();
+      
+      if (readBack.exists) {
+        debugPrint('[LOCATION_TEST] Read back successful: ${readBack.data()}');
+      } else {
+        debugPrint('[LOCATION_TEST] ERROR: Document was written but cannot be read back!');
+      }
+      
+    } catch (e) {
+      debugPrint('[LOCATION_TEST] Error writing test location data: $e');
+    }
+    
+    // Reset game state
+    SessionManager.endGame();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -338,6 +515,17 @@ class _HomePageState extends State<HomePage>
                     onPressed: () => _promptForSessionId(context),
                     child: const Text('Change'),
                   ),
+                  /*
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => debugFirestoreContents(),
+                    child: const Text('Debug DB'),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => testLocationLogging(),
+                    child: const Text('Test Location'),
+                  ), */
                 ],
               ),
             ),

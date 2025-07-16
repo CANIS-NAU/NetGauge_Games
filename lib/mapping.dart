@@ -193,7 +193,7 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Flagstaff Map Data')),
+      appBar: AppBar(title: const Text('Measurement Map Data')),
       body: _center == null
           ? const Center(child: CircularProgressIndicator())
       : FlutterMap(
