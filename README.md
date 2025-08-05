@@ -345,6 +345,167 @@ This function receives and processes the location data, performing whatever task
 
 This is not a full coverage of every single message command contained within the Native Message Handler, but it should be enough to understand the intended purpose of the tool, how to utilize it, how to extend it, and how to read the associated code in the JavaScript. I reccommend reading through the different possible messages that can be received and understanding how those are utilized in the different games. 
 
+### `pubspec.yaml`
+
+The `pubspec.yaml` file (located at the root level of the project) is where all of the dependencies and assets are listed out. Whenever you would like to add a new dependency, you declare it in this document. Additionally, whenever you add any asset of any kind (game, image, sound, etc.) you also *must* declart it here. Simply adding the asset to the `\assets` folder is not enough to make it accessible by the app, it also must be declared in the `pubspec.yaml` file:
+
+
+```
+# To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/SoulSeeker.html
+    - assets/ZombieApocalypse.html
+    - assets/ScavengerHunt.html
+    - assets/DragonSlayer.html
+    - assets/icons/ability-icon.png
+    - assets/icons/antidote-icon.png
+    - assets/icons/attack-icon.png
+    - assets/icons/help-icon.png
+    - assets/icons/movement-icon.png
+    - assets/icons/no-antidote-icon.png
+    - assets/icons/noise-icon.png
+    - assets/icons/orientation-icon.png
+    - assets/icons/search-icon.png
+    - assets/icons/victory-icon.png
+    - assets/maps/Campus-PlayArea.png
+    - assets/maps/Rural-PlayArea.png
+    ...
+    ...
+    ...
+```
+### Tiles
+
+We refer to the buttons that exist on the homepage that launch the various games as `Tiles', and there are two typs. 
+
+A standard Tile is utilized to build a button that launches a particular HTML game into the WebView (located in `homepage.dart`, and is defined as:
+
+```{dart}
+// constructor for tiles that launch games into the webview
+  Widget _buildTile(String title, IconData icon, String gameFile, BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          // log the game start with the session manager
+          SessionManager.startGame(title);
+          // begin location logging
+          LocationLogger.start();
+          // navigate to the WebViewPage when tapped
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WebViewPage(title: title, gameFile: gameFile),
+            ),
+          ).then((_) {
+            // log the game end with the session manager
+            SessionManager.endGame(); // also will stop logging location
+            // Stop the vibration service, in case the game started it
+            VibrationController.stop();
+          });
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.all(16.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18.0),
+            leading: Icon(icon, size: 40.0, color: Theme.of(context).primaryColor),
+            title: Text(title, style: const TextStyle(fontSize: 18)),
+          ),
+        ),
+      ),
+    );
+  }
+```
+
+It takes the title to be displayed on the button, an icon to represent the game (currently a placeholder), the name of the gamefile to run (make sure it is both in the `\assets` folder and declared in `pubspec.yaml`), and the build context. 
+
+The other Tile type is called a Page Tile, and it is utilized to launch other Flutter pages. For example, our clone of a typical internet speed test application is not built in twine, but directly into Flutter. Thus, launching this page requires different methodology from opening an HTML file in the WebView:
+
+```{dart}
+// constructor for tiles that launch games in dedicated flutter pages
+  Widget _buildPageTile(String title, IconData icon, Widget page, BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          // navigate to page
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => page),
+          ).then((_){
+            // log the game end with the session manager
+            SessionManager.endGame(); // also will stop logging location
+          });
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 50),
+          padding: const EdgeInsets.all(16.0),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18.0),
+            leading: Icon(icon, size: 40.0, color: Theme.of(context).primaryColor),
+            title: Text(title, style: const TextStyle(fontSize: 18)),
+          ),
+        ),
+      ),
+    );
+  }
+```
+
+Both `_buildTile()` and `_buildPageTile()` are utilized in the `build` method of the homepage:
+
+```{homepage.dart}
+ @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Landing Page'),
+      ),
+      body: Stack(
+        children: [
+          ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // TODO: This could be more dynamic. Iterate over assets and build a 
+              // tile for each 
+              _buildTile('Scavenger Hunt', Icons.home, 'ScavengerHunt.html', context),
+              _buildTile('Soul Seeker', Icons.settings, 'SoulSeeker.html', context),
+              _buildTile('Zombie Apocalypse', Icons.info, 'ZombieApocalypse.html', context),
+              _buildTile('Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
+              _buildPageTile('Speed Test', Icons.speed, const NameEntry(), context)
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Session: $_sessionId'),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => _promptForSessionId(context),
+                    child: const Text('Change'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+```
+
+To add more tiles to the homepage, simply update this build funciton with the additional tile that you are aiming to build. 
+
+### Primary Dart Code Location
+
+The primary code for the application, its functions, and its various pages is located at `NetGauge_Games\lib`. 
+
+### Device-Specfic Folders and Files
+
+Very rarely you may have to make changes to device-specific files and folders instead of making global changes to the dart code. You can locate Android specific files at `NetGauge_Games\android` and iOS specific files at `NetGauge_Games\ios`. You should avoid making device specific changes wherever possible. 
  
 ## TODO
 
