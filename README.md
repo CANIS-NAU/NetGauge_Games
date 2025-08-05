@@ -2,13 +2,79 @@
 
 ## Setup
 
-### For Android
+First you must clone the repository onto your system utilizing whatever method you like:
 
-### For iOS
+GitHub CLI: `gh repo clone CANIS-NAU/NetGauge_Games`
+
+Git Clone: `git clone https://github.com/CANIS-NAU/NetGauge_Games.git`
+
+Or, use the GitHub Desktop GUI.
+
+I recommend using VS Code as your editor while working with Flutter apps. Using the VSC Flutter plugins will give you a very nice environment for working with the code. However, when it comes time for you to actually run the code, do NOT run the code via the VSC terminal as this can lead to scoping issues. Instead, use your native system terminal to navigate to the project root directory and run the project from there. This means that, when you install flutter, you need to install it system-wide and not just within VSC. 
+
+To install Flutter, navigate to the installation webpage at https://docs.flutter.dev/get-started/install and choose your system and then the platform you are developing for. After doing this, you will be taken to a page that contains instructions for installation and setup for you device and target device. While I do reccommend following their instructions for configuring a Text Editor or IDE to work with Flutter, I do NOT reccomend using VSC to install flutter. When given the option to install Flutter through VSC or just download the SDK, you should download the SDK system-wide. That said, both installations pathways should work, I just have been using the raw SDK instead of downloading through VSC. 
+
+Depending on the system you are using and the system you are developing for you will get additional instructions on how to install any other dependencies you may need. For example, building for Android will require you to download AndroidStudio, which comes with the Android SDK, amongst other tools.
+
+These instructions for installation and setup on the Flutter homepage are extremely robust, and will give you a better idea of how to set everything up than I can (these are the very docs I used for my first time setup).
+
+Once flutter is installed on your system, you can check its status by running `flutter doctor` in your native system terminal. This will give you an output detailing what your Flutter Build is capable of doing:
+
+```
+PS C:\Users\cpend> flutter doctor
+
+┌─────────────────────────────────────────────────────────┐
+│ A new version of Flutter is available!                  │
+│                                                         │
+│ To update to the latest version, run "flutter upgrade". │
+└─────────────────────────────────────────────────────────┘
+Doctor summary (to see all details, run flutter doctor -v):
+[✓] Flutter (Channel stable, 3.29.3, on Microsoft Windows [Version 10.0.26100.4652], locale en-US)
+[✓] Windows Version (11 Home 64-bit, 24H2, 2009)
+[!] Android toolchain - develop for Android devices (Android SDK version 36.0.0)
+    ! Some Android licenses not accepted. To resolve this, run: flutter doctor --android-licenses
+[✓] Chrome - develop for the web
+[✗] Visual Studio - develop Windows apps
+    ✗ Visual Studio not installed; this is necessary to develop Windows apps.
+      Download at https://visualstudio.microsoft.com/downloads/.
+      Please install the "Desktop development with C++" workload, including all of its default components
+[✓] Android Studio (version 2023.3)
+[✓] VS Code (version 1.101.1)
+[✓] Connected device (3 available)
+[✓] Network resources
+
+! Doctor found issues in 2 categories.
+```
+
+NOTE: Since I am working on a Windows system, any iOS related developement tools are omitted from the `flutter doctor` output. If you are working on the iOS Toolchain. For our purposes, we only need the iOS and Android Toolchains since those are the two platforms we are developing for. 
 
 ## Launching the App
 
 ### For Android
+
+Launching the application on an Android device is an extremely simple process. Given the multitude of Android phones we have access to in the lab, I highly reccommend deploying on a physical device. Simply plug the phone into a computer that has the full Android Toolchain installed, and say 'Allow' when the phone prompts you to allow USB debugging access from the connected computer.
+
+To verify the device connection, you can open your terminal and run `flutter devices` which will produce a list of compatible devices that Flutter can deploy to:
+
+```
+PS C:\Users\cpend> flutter devices
+Found 4 connected devices:
+  KB2005 (mobile)   • b83dcac0 • android-arm64  • Android 14 (API 34)
+  Windows (desktop) • windows  • windows-x64    • Microsoft Windows [Version 10.0.26100.4652]
+  Chrome (web)      • chrome   • web-javascript • Google Chrome 133.0.6943.142
+  Edge (web)        • edge     • web-javascript • Microsoft Edge 138.0.3351.121
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also
+try increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/
+for troubleshooting tips.
+```
+
+Then, navigate to the project root at `\NetGauge_Games\` and first run the command `flutter pub get`. This will ensure that all the required dependencies are installed onto your system so that the app can deploy properly. Then, simply run the command `flutter run`. This command will automatically default to the connected phone and install onto a debug version of the app. If you leave your device plugged into the computer during testing, you will also see debug output as the app runs.
+
+If you would like to be extremely robust in your deployment process, you can clean the project and rebuild it each time you deploy by running `flutter clean` then `flutter pub get` then `flutter run`. However, this is not necessary.
+
 
 ### For iOS
 
