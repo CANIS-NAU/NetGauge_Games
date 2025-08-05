@@ -46,7 +46,17 @@ Doctor summary (to see all details, run flutter doctor -v):
 ! Doctor found issues in 2 categories.
 ```
 
-NOTE: Since I am working on a Windows system, any iOS related developement tools are omitted from the `flutter doctor` output. If you are working on the iOS Toolchain. For our purposes, we only need the iOS and Android Toolchains since those are the two platforms we are developing for. 
+NOTE: Since I am working on a Windows system, any iOS related developement tools are omitted from the `flutter doctor` output. If you are working on the iOS deployment of the app you will likely be on a macOS system and will see the iOS Toolchain listed.
+
+For our purposes, we only need the iOS and Android Toolchains since those are the two platforms we are developing for. 
+
+**IMPORTANT NOTE FOR ANDROID:** One additional step you will need to take in order to ensure that Firestore read/writes are functional on your deployment version is to download the `google-services.json` file from the apps Firestore instance. To do this, first navigate to https://console.firebase.google.com/u/2/project/nauimg-524b6/overview (you will need to get access to the Firestore database from myself or Dr. Vigil-Hayes) and then navigate to `Project Settings`. This will take you to a page that lists 'Your Apps', one of which will be the Android build. Selecting this app will present you with an option to download `google-services.json`. After downloading, place the file in any or all of the following directories: 
+
+`NetGauge_Games\android\app`
+`NetGauge_Games\android\app\src`
+`NetGauge_Games\android\app\src\debug`
+
+You will only need to do this once.
 
 ## Launching the App
 
@@ -571,13 +581,20 @@ The primary code for the application, its functions, and its various pages is lo
 
 ### Device-Specfic Folders and Files
 
-Very rarely you may have to make changes to device-specific files and folders instead of making global changes to the dart code. You can locate Android specific files at `NetGauge_Games\android` and iOS specific files at `NetGauge_Games\ios`. You should avoid making device specific changes wherever possible. 
+Very rarely you may have to make changes to device-specific files and folders instead of making global changes to the dart code. You can locate Android specific files at `NetGauge_Games\android` and iOS specific files at `NetGauge_Games\ios`. 
+
+The two device-specific files you are most likely to interact with are the permissions files. These are the files that dictate what permissions the app will need to use on the device, and therefore must be device-specific. 
+
+The Android permissions file is called `AndroidManifest.xml` and is located at `\NetGauge_Games\android\app\src\main`.
+
+The iOS permissions file is called `info.plist` and is located at `\NetGauge_Games\ios\Runner\`.
  
 ## TODO
 
 - Currently, the iOS build of the application is only semi-functional. It deploys and runs as expected on an iOS emulator, but does not seem to run on physical hardware.
 - While the internet measurement system is indeed buit and functional (see `ndt7_service.dart`) it is not actually utilized in the Native Message Handler yet, I have only used it in isolated tests that print the output to the console. The NDT7 Service will need to be updated such that, instead of publishing the data to the console, it stores the data in some kind of data structure, and thend the `grabMetrics` function (in `homepage.dart`) will need to be updted to send this data structure to the JavaScript side (via the `window.onMetrics()`) function. Additionally, any function in the JavaScript that is designed to display these metrics to the user after they are collected now needs to be updated to wait for the test to be performed. Right now, the JavaScript side will display empty measurement values becuase it is trying to display those values before they are actually computed.
 - the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts.
+- When we built the iOS version of the app and listed it on our Apple Developer account we made a typo, meaning the project is recognized as `NetGagueGames` and not `NetGaugeGames`. This, unfortunately, is not a simple fix at all. We will need to remake the app in the Apple Developer account and then regenerate *all* of the permissions files and signing certifications that Apple requires when developing any sort of app. Additionally, we will need to go through the iOS-specific files and change any reference to `NetGagueGames` to `NetGaugeGames`. 
 
 ## Things That Will Likely Change
 There are a handful of systems that were built to be minimally functional and will likely need to change as the app grows towards a more fleshed out system. 
