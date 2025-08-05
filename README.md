@@ -350,4 +350,382 @@ This is not a full coverage of every single message command contained within the
 
 - Currently, the iOS build of the application is only semi-functional. It deploys and runs as expected on an iOS emulator, but does not seem to run on physical hardware.
 - While the internet measurement system is indeed buit and functional (see `ndt7_service.dart`) it is not actually utilized in the Native Message Handler yet, I have only used it in isolated tests that print the output to the console. The NDT7 Service will need to be updated such that, instead of publishing the data to the console, it stores the data in some kind of data structure, and thend the `grabMetrics` function (in `homepage.dart`) will need to be updted to send this data structure to the JavaScript side (via the `window.onMetrics()`) function. Additionally, any function in the JavaScript that is designed to display these metrics to the user after they are collected now needs to be updated to wait for the test to be performed. Right now, the JavaScript side will display empty measurement values becuase it is trying to display those values before they are actually computed.
-- the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts. 
+- the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts.
+
+## Things That Will Likely Change
+There are a handful of systems that were built to be minimally functional and will likely need to change as the app grows towards a more fleshed out system. 
+
+1. The POI System. Currently, both the SoulSeeker and ZombieApocalypse games utilize points of interest that the player needs to search for, albeit in different ways. SoulSeeker sends a single POI at a time, depending on the play area the user is within and the realm they are in on the game side:
+
+```{JavaScript}
+// Determine which group of POIs to send to android based on the hexagon the user is in
+window.sendPOIData = function(){
+  
+  // Send point of Interest for each realm in each of the 3 testing locations
+  if(State.variables.insideCampus) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Campus FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.186191, longitude: -111.658219}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Campus SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.185980, longitude: -111.658405}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Campus ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.185564, longitude: -111.658066}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+      console.log("Campus Tutorial POI sent to Flutter");
+      
+      // vibration system designed to work with a list of POIs
+      const poiList = [
+        { latitude: 35.185980, longitude: -111.658405}
+      ];
+      
+      // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+    }
+  
+  } else if (State.variables.insideUrban) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Urban FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198773, longitude: -111.648046}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Urban SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198444, longitude: -111.647922}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Urban ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+        const poiList = [
+          { latitude: 35.198521, longitude: -111.648314}
+        ];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+       console.log("Urban Tutorial POI sent to Flutter");
+
+       // vibration system designed to work with a list of POIs
+       const poiList = [
+         { latitude: 35.198521, longitude: -111.648314}
+       ];
+      
+       // Send the POI set to Flutter
+       FlutterBridge.postMessage(JSON.stringify({
+         command: "setPOIs",
+         payload: poiList
+       }));
+    }
+    
+  } else if (State.variables.insideRural) {
+    if(State.variables.tutorialComplete)
+    {
+      if(State.variables.fragmentCounter == 0) {
+        console.log("Rural FirstRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234222, longitude: -111.665501}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+
+        State.variables.FirstRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 1) {
+        console.log("Rural SecondRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234288, longitude: -111.665135}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+        
+        State.variables.SecondRealm = false;
+      }
+      else if (State.variables.fragmentCounter == 2) {
+        console.log("Rural ThirdRealm POI sent to Flutter");
+        
+        // vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234671, longitude: -111.665116}
+       	];
+        
+        // Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+     
+        State.variables.ThirdRealm = false;
+      }
+    } else {
+     	console.log("Rural Tutorial POI sent to Flutter");
+      
+      	// vibration system designed to work with a list of POIs
+       	const poiList = [
+         	{ latitude: 35.234288, longitude: -111.665135}
+       	];
+      
+      	// Send the POI set to Flutter
+    	FlutterBridge.postMessage(JSON.stringify({
+    		command: "setPOIs",
+         	payload: poiList
+    	}));
+    }
+    
+  } else {
+    console.log("Not in a play area, no POIs sent");
+  }
+
+};
+```
+
+This funciton will change dramatically when the POI system becomes more dynamic and generates these points rather than hardcoding them. In fact, you may be able to shift the entirety of the POI logic into the app and out of the games themeselves, though that is up to the discretion of the future dev. The ZombieApocalypse games functions in a similar manner, but it sends groups of interest points instead of infdividual ones:
+
+```{JavaScript}
+// Determine which group of POIs to send to android based on the hexagon the user is in
+window.sendPOIData = function(){
+  // Point of Interest lists for each of the three locations
+  var campusPoiTutorial = [
+    {latitude: 35.185980, longitude: -111.658405} // SICCS Patio
+  ];
+  
+  var campusPois = [
+    {latitude: 35.186191, longitude: -111.658219}, // SICCS entrance
+    {latitude: 35.185980, longitude: -111.658405}, // SICCS patio
+    {latitude: 35.185765, longitude: -111.658330}, // SICCS small lot
+    {latitude: 35.185564, longitude: -111.658066}  // ISB Lot
+  ];
+  
+  var urbanPoiTutorial = [
+    {latitude: 35.198521, longitude:-111.648314}  // Mozelle's Bakery Sign
+  ];
+  
+  var urbanPois = [
+    {latitude: 35.198773, longitude:-111.648046}, // Green tables near cat sculpture
+    {latitude: 35.198600, longitude:-111.647828}, // Hello sugar salon
+    {latitude: 35.198521, longitude:-111.648314},  // Mozelle's Bakery Sign
+    {latitude: 35.198444, longitude:-111.647922} // Forum Center
+  ];
+  
+  var ruralPoiTutorial = [
+    {latitude: 35.234288, longitude: -111.665135} // Progression sculpture
+  ];
+  
+  var ruralPois = [
+    {latitude: 35.234288, longitude: -111.665135}, // Progression sculpture
+    {latitude: 35.234222, longitude: -111.665501}, // Museum entrance
+    {latitude: 35.234671, longitude: -111.665116}, // Parking lot
+    {latitude: 35.234244, longitude: -111.665822}  // Left of the entrance, around back
+  ];
+      
+  if(State.variables.insideCampus) {
+    if(State.variables.tutorialComplete)
+    {
+    	console.log("Campus POIs sent to Flutter");
+    	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: campusPois
+        }));
+    } else {
+     	console.log("Campus Tutorial POI sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: campusPoiTutorial
+        }));
+    }
+  } else if (State.variables.insideUrban) {
+    if(State.variables.tutorialComplete)
+    {
+      	console.log("Urban POIs sent to Flutter");
+  		FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: urbanPois
+        }));
+    }else{
+      	console.log("Urban Tutorial POI sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: urbanPoiTutorial
+        }));
+    }
+  } else if (State.variables.insideRural) {
+    if(State.variables.tutorialComplete)
+    {
+      	console.log("Rural POIs sent to Flutter");
+    	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: ruralPois
+        }));
+    }else{
+      	console.log("Rural POI tutorial sent to Flutter");
+      	FlutterBridge.postMessage(JSON.stringify({
+          command: "setPOIs",
+          payload: ruralPoiTutorial
+        }));
+    }
+  } else {
+    console.log("Not in a play area, no POIs sent");
+  }
+};
+```
+
+Additionally, you will likely be able to entirely remove code that the defines the playspaces that all games use:
+
+```{JavaScript}
+// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
+// Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
+function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
+    // Calculate side length using the area of a regular hexagon
+    const radius = Math.sqrt((2 * area) / (3 * Math.sqrt(3)));
+
+    // Calculate angles for each vertex (in radians)
+    const angles = [0, Math.PI / 3, (2 * Math.PI) / 3, Math.PI, (4 * Math.PI) / 3, (5 * Math.PI) / 3];
+
+    // Earth's radius in kilometers
+    const earthRadius = 6371;
+
+    // Convert radius from kilometers to degrees
+    const radiusLat = (radius / earthRadius) * (180 / Math.PI);
+    const radiusLon = radiusLat / Math.cos(centerLatitude * (Math.PI / 180));
+
+    // Calculate vertices
+    const vertices = angles.map(angle => {
+        const latitude = centerLatitude + radiusLat * Math.cos(angle);
+        const longitude = centerLongitude + radiusLon * Math.sin(angle);
+        return { latitude, longitude };
+    });
+
+    return vertices;
+}
+
+// Check if a point is in any of our hexagons
+function isPointInsideHexagon(pointLatitude, pointLongitude, vertices) {
+  const numVertices = 6;
+  let inside = false;
+	
+  // Loop through each edge of the Campus Hexagon
+  for (let i = 0, j = numVertices - 1; i < numVertices; j = i++) {
+    const vertex1 = vertices[i];
+    const vertex2 = vertices[j];
+
+    // Check if the point's longitude is between the longitudes of the current edge's vertices
+    if ((vertex1.longitude > pointLongitude) !== (vertex2.longitude > pointLongitude)) {
+      // Calculate the intersection point's latitude
+      const intersectionLatitude =
+        ((pointLongitude - vertex1.longitude) * (vertex2.latitude - vertex1.latitude)) /
+          (vertex2.longitude - vertex1.longitude) +
+        vertex1.latitude;
+
+      // Check if the point's latitude is below the intersection latitude
+      if (pointLatitude < intersectionLatitude) {
+        inside = !inside;
+      }
+    }
+  }
+  // Return location status
+  return inside;
+}
+
+// 0.7km^2 hexagonal plane defined just outside of SICCS (Campus)
+let campusSpace = [];
+campusSpace = calculateHexagonVertices(35.186127, -111.658185, 0.7);
+
+// 0.7km^2 hexagonal plane defined at Heritage Square in downtown Flagstaff (Urban)
+let urbanSpace = [];
+urbanSpace = calculateHexagonVertices(35.19913, -111.648010, 0.7);
+
+// 0.7km^2 hexagonal plane defined just outside the Museum of Northern Arizona (Rural)
+let ruralSpace = [];
+ruralSpace = calculateHexagonVertices(35.234485, -111.666281, 0.7);
+```
+
+In the early stages of the platform, we used three hardcoded playspaces that the players could operate the games within, and they are built using the functions above. As the platform becomes more dynamic, these playspaces will no longer need to be generated from hardcoded values. Keep in mind that removing these functions will also require significant changes to the code written in the Twine Passages as they currently utilize these hardcoded functions. Meaning, updating any of this code to be more modern and dynamic will require you to change not just the JavaScript code, but the games themselves. 
