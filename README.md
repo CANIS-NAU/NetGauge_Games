@@ -88,6 +88,23 @@ If you would like to be extremely robust in your deployment process, you can cle
 
 ### For iOS
 
+WIP
+
+## File Overview
+
+All of the relevant Flutter code is located at `\NetGauge_Games\lib\`
+
+1. `main.dart`:
+2. `homepage.dart`:
+3. `location_service.dart`:
+4. `location_logger.dart`:
+5. `vibration_controller.dart`:
+6. `session_manager.dart`:
+7. `ndt7_service.dart`:
+8. `name_entry_page.dart`:
+9. `speed_test_page.dart`:
+10. `likert_form.dart`:
+    
 ## Important Code
 
 ### The Flutter Bridge
@@ -575,10 +592,6 @@ Both `_buildTile()` and `_buildPageTile()` are utilized in the `build` method of
 
 To add more tiles to the homepage, simply update this build funciton with the additional tile that you are aiming to build. 
 
-### Primary Dart Code Location
-
-The primary code for the application, its functions, and its various pages is located at `NetGauge_Games\lib`. 
-
 ### Device-Specfic Folders and Files
 
 Very rarely you may have to make changes to device-specific files and folders instead of making global changes to the dart code. You can locate Android specific files at `NetGauge_Games\android` and iOS specific files at `NetGauge_Games\ios`. 
@@ -594,7 +607,8 @@ The iOS permissions file is called `info.plist` and is located at `\NetGauge_Gam
 - Currently, the iOS build of the application is only semi-functional. It deploys and runs as expected on an iOS emulator, but does not seem to run on physical hardware.
 - While the internet measurement system is indeed buit and functional (see `ndt7_service.dart`) it is not actually utilized in the Native Message Handler yet, I have only used it in isolated tests that print the output to the console. The NDT7 Service will need to be updated such that, instead of publishing the data to the console, it stores the data in some kind of data structure, and thend the `grabMetrics` function (in `homepage.dart`) will need to be updted to send this data structure to the JavaScript side (via the `window.onMetrics()`) function. Additionally, any function in the JavaScript that is designed to display these metrics to the user after they are collected now needs to be updated to wait for the test to be performed. Right now, the JavaScript side will display empty measurement values becuase it is trying to display those values before they are actually computed.
 - the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts.
-- When we built the iOS version of the app and listed it on our Apple Developer account we made a typo, meaning the project is recognized as `NetGagueGames` and not `NetGaugeGames`. This, unfortunately, is not a simple fix at all. We will need to remake the app in the Apple Developer account and then regenerate *all* of the permissions files and signing certifications that Apple requires when developing any sort of app. Additionally, we will need to go through the iOS-specific files and change any reference to `NetGagueGames` to `NetGaugeGames`. 
+- When we built the iOS version of the app and listed it on our Apple Developer account we made a typo, meaning the project is recognized as `NetGagueGames` and not `NetGaugeGames`. This, unfortunately, is not a simple fix at all. We will need to remake the app in the Apple Developer account and then regenerate *all* of the permissions files and signing certifications that Apple requires when developing any sort of app. Additionally, we will need to go through the iOS-specific files and change any reference to `NetGagueGames` to `NetGaugeGames`.
+- Read through this documentation for spelling errors.
 
 ## Things That Will Likely Change
 There are a handful of systems that were built to be minimally functional and will likely need to change as the app grows towards a more fleshed out system. 
