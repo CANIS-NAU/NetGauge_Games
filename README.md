@@ -6,7 +6,7 @@ First you must clone the repository onto your system utilizing whatever method y
 
 GitHub CLI: `gh repo clone CANIS-NAU/NetGauge_Games`
 
-Git Clone: `git clone https://github.com/CANIS-NAU/NetGauge_Games.git`
+Git HTTPS: `git clone https://github.com/CANIS-NAU/NetGauge_Games.git`
 
 Or, use the GitHub Desktop GUI.
 
