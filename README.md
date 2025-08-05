@@ -8,9 +8,9 @@
 
 ## Launching the App
 
-### Android
+### For Android
 
-### iOS
+### For iOS
 
 ## Important Code
 
