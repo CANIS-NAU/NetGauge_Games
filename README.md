@@ -1,4 +1,4 @@
-# README
+# NetGauge_Games Developer Documentation
 
 ## Setup
 
