@@ -347,3 +347,7 @@ This is not a full coverage of every single message command contained within the
 
  
 ## TODO
+
+- Currently, the iOS build of the application is only semi-functional. It deploys and runs as expected on an iOS emulator, but does not seem to run on physical hardware.
+- While the internet measurement system is indeed buit and functional (see `ndt7_service.dart`) it is not actually utilized in the Native Message Handler yet, I have only used it in isolated tests that print the output to the console. The NDT7 Service will need to be updated such that, instead of publishing the data to the console, it stores the data in some kind of data structure, and thend the `grabMetrics` function (in `homepage.dart`) will need to be updted to send this data structure to the JavaScript side (via the `window.onMetrics()`) function. Additionally, any function in the JavaScript that is designed to display these metrics to the user after they are collected now needs to be updated to wait for the test to be performed. Right now, the JavaScript side will display empty measurement values becuase it is trying to display those values before they are actually computed.
+- the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts. 
