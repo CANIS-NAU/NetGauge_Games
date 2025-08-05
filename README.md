@@ -39,7 +39,7 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 ```
 
-This creates the channel that allows information to be communicated between the HTML games and the Application itself. The Flutter Bridge uses a Native Message Handler to process the requests send from the games. Put simply, a game posts a 'message' through the Flutter Bridge that represents a particular request along with a payload of information if necessary. The `handleNativeMessage` function in the `_WebViewPageState` class processes this message and executes the associated command. Here is the main body of the `handleNativeMessage` function:
+This creates the channel that allows information to be communicated between the HTML games and the Application itself. The Flutter Bridge uses a Native Message Handler to process the requests sent from the games. Put simply, a game posts a 'message' through the Flutter Bridge that represents a particular request along with a payload of information if necessary. The `handleNativeMessage` function in the `_WebViewPageState` class processes this message and executes the associated command. Here is the main body of the `handleNativeMessage` function:
 
 ```{dart}
   void handleNativeMessage(String message) {
