@@ -609,6 +609,7 @@ The iOS permissions file is called `info.plist` and is located at `\NetGauge_Gam
 - the ndt7_service_implemention branch needs to be merged with the mapping_service_implementation branch, and then all of that merged into main. You may want to reach out to me (Cole) when you do this and I can help you with merge conflicts.
 - When we built the iOS version of the app and listed it on our Apple Developer account we made a typo, meaning the project is recognized as `NetGagueGames` and not `NetGaugeGames`. This, unfortunately, is not a simple fix at all. We will need to remake the app in the Apple Developer account and then regenerate *all* of the permissions files and signing certifications that Apple requires when developing any sort of app. Additionally, we will need to go through the iOS-specific files and change any reference to `NetGagueGames` to `NetGaugeGames`.
 - Read through this documentation for spelling errors.
+- The Data Dashboard needs to be completed -> the structure of the dashboard exists and is merged into main/can be seen when app is deployed. What is left to finish is that the buttons within the feature need to pull in the real data from the FireStore and display it on the dashboard; this can be doen by following the structure used for the mapping features and session manager.
 
 ## Things That Will Likely Change
 There are a handful of systems that were built to be minimally functional and will likely need to change as the app grows towards a more fleshed out system. 
