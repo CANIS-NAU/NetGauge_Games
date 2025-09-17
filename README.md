@@ -36,3 +36,19 @@ This is the function that writes data to the firestore database.
 --Reception Functions:
 There are a few examples of reception functions, which vary based on what you need to do. Essentially, these are two-way forms of communication, where the game will post a message, the native message handler reads the message and runs a function in the back-end, and then it gives something back to the Twine side so call a JavaScript function.
 
+_Important files and widgets you should know about_
+
+--Location_logger.dart
+Writes persistent location data to firestore.
+
+--Widget _buildTile:
+Used specifically for building HTML files and is located in homepage.dart.
+
+--Widget _buildPageTile:
+Provides the title, icon, and the page, used for the speed test.
+
+## Deployment
+Android studio is required for Android deployment and is the easiest way to install the Android SDK. You should also download the Android NDK, which does not come automatically with Android Studio.
+
+Make sure when you are deploying the code that you are not using VSCode's terminal, but rather the computer terminal navigated into the directory where your Flutter code is.
+
