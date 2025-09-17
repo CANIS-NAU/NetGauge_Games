@@ -14,3 +14,25 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Communication Between Twinee, the NetGauge App, and the Firestore Database
+All of the communication between NetGauge and the built out Twine games is handled by the app itself in the homepage.dart file. Here are some important functions that you may need to know about:
+
+--handle_native_message:
+On the Twine game side, certain actions will lead to messages being posted to the backend of the app. When these messages get read by this function, it triggers an associated message or action. For example, if the game has a function that gets the user's location, it will trigger a series of events in the NetGauge app that will collect the location in the back-end.
+
+--runJavaScript:
+This function is mused to send information to the callback function on the Twine side. When we call a function on the JavaScript side (meaning within the Twine game), we provide it with context so it knows what information it needs to get provided with when it calls the next function.
+
+--FlutterBridge.postMessage():
+This command chooses the function that will be ran, taking in context to pass off to the game side. In order to write a function that interacts with the Flutter bridge, you must use the window structure, which allows JavaScript to access things beyond the game itself. An example of this syntax is window.requestMetricsAndWriteData().
+
+--SessionManager:
+This keeps track of data and how it is being used, including but not limitted to the session ID, the game's POI lists, and the player ID.
+
+--writeCheckData:
+This is the function that writes data to the firestore database.
+
+--Reception Functions:
+There are a few examples of reception functions, which vary based on what you need to do. Essentially, these are two-way forms of communication, where the game will post a message, the native message handler reads the message and runs a function in the back-end, and then it gives something back to the Twine side so call a JavaScript function.
+
