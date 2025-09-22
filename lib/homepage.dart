@@ -15,6 +15,7 @@ import 'likert_form.dart';
 import 'dart:async';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'authentication/services/auth_service.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 
 //vars for mapping
@@ -513,6 +514,12 @@ class _HomePageState extends State<HomePage> {
               _buildPageTile('Data Dashboard', Icons.leaderboard,
                   const DataDashboard(), context),
             ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await AuthService().signOut();
+            },
           ),
           Align(
             alignment: Alignment.bottomLeft,
