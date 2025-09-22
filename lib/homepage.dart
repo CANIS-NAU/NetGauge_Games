@@ -36,39 +36,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _promptForSessionId(context);
-      // Don't set session ID here - it will be set in the dialog
-    });
   }
 
-  Future<void> _promptForSessionId(BuildContext context) async {
-    String tempSessionId = '';
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Enter Session ID'),
-        content: TextField(
-          autofocus: true,
-          onChanged: (value) => tempSessionId = value,
-          decoration: const InputDecoration(hintText: 'e.g. session_001, E1'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (tempSessionId.trim().isNotEmpty) {
-                setState(() => _sessionId = tempSessionId.trim());
-                SessionManager.setSessionId(tempSessionId.trim());
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
 
   // constructor for tiles that launch games into the webview
   Widget _buildTile(
@@ -554,10 +523,6 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   Text('Session: $_sessionId'),
                   const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => _promptForSessionId(context),
-                    child: const Text('Change'),
-                  ),
                   /*
                   const SizedBox(width: 8),
                   TextButton(
