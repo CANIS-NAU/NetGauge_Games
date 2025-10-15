@@ -57,7 +57,7 @@ class _LikertFormState extends State<LikertForm> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please answer both questions before submitting.')),
+        const SnackBar(content: Text('Please answer all questions before submitting.')),
       );
     }
   }
