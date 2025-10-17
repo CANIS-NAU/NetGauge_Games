@@ -17,7 +17,7 @@ class NameEntryState extends State<NameEntry> {
 
   void _submitName() {
     final name = _nameController.text.trim();
-    if(name.isNotEmpty) {
+    if (name.isNotEmpty) {
       SessionManager.setPlayerName(name);
       LocationLogger.start();
       Navigator.pushReplacement(
@@ -40,7 +40,8 @@ class NameEntryState extends State<NameEntry> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('Enter your experiment nickname:', style: TextStyle(fontSize: 16)),
+            const Text('Enter your experiment nickname:',
+                style: TextStyle(fontSize: 16)),
             const SizedBox(height: 10),
             TextField(
               controller: _nameController,

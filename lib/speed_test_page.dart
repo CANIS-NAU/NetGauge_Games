@@ -91,7 +91,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const LikertForm()),
+                MaterialPageRoute(builder: (context) => const LikertForm(gameTitle: 'Speed Test')),
               );
             },
             child: const Text('Open Feedback Form'),

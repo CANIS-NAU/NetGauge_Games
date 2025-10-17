@@ -13,11 +13,32 @@ class LocationLogger {
     LocationDispatcher.stream.listen((Position pos) async {
       _writeCount++;
 
+      debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
+      debugPrint("[LOCATION_LOGGER] Current game: ${SessionManager.currentGame}");
+      debugPrint("[LOCATION_LOGGER] Player name: ${SessionManager.playerName}");
+      debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
+
       // only writing every 5th location update and only if a game is being played and a player has been declared
       if (_writeCount % 5 == 0 && (SessionManager.currentGame != null && SessionManager.playerName != null)) {
-        await FirebaseFirestore.instance
+        debugPrint("[LOCATION_LOGGER] Writing location data to Firestore...");
+        
+        final firestore = FirebaseFirestore.instance;
+        final sessionId = SessionManager.sessionId;
+        
+        // First, ensure the session document exists
+        await firestore
           .collection('Movement Data')
-          .doc(SessionManager.sessionId)
+          .doc(sessionId)
+          .set({
+            'sessionId': sessionId,
+            'playerName': SessionManager.playerName,
+            'created': DateTime.now().toIso8601String(),
+          }, SetOptions(merge: true)); // merge: true prevents overwriting existing data
+        
+        // Then add the location data to the subcollection
+        await firestore
+          .collection('Movement Data')
+          .doc(sessionId)
           .collection('LocationData')
           .add({
             'latitude': pos.latitude,
@@ -26,11 +47,12 @@ class LocationLogger {
             'game': SessionManager.currentGame,
             'player': SessionManager.playerName,
           });
-        debugPrint("[LOCATION_LOGGER] Location Logged");
+        debugPrint("[LOCATION_LOGGER] Location Logged successfully to session: $sessionId");
       } else {
         debugPrint("[LOCATION_LOGGER] Skipped Location Logging");
         debugPrint("[LOCATION_LOGGER] Game: ${SessionManager.currentGame}");
         debugPrint("[LOCATION_LOGGER] Name: ${SessionManager.playerName}");
+        debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
       }
     });
   }
