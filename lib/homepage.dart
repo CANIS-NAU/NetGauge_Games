@@ -37,13 +37,13 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _promptForSessionId(context);
+   /* WidgetsBinding.instance.addPostFrameCallback((_) {
+      //_promptForSessionId(context);
       // Don't set session ID here - it will be set in the dialog
-    });
+    });*/
   }
 
-  Future<void> _promptForSessionId(BuildContext context) async {
+ /* Future<void> _promptForSessionId(BuildContext context) async {
     String tempSessionId = '';
     await showDialog(
       context: context,
@@ -69,7 +69,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-  }
+  }*/
 
   // constructor for tiles that launch games into the webview
   Widget _buildTile(
@@ -546,34 +546,6 @@ class _HomePageState extends State<HomePage> {
                   const DataDashboard(), context),
             ],
           ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Session: $_sessionId'),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => _promptForSessionId(context),
-                    child: const Text('Change'),
-                  ),
-                  /*
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => debugFirestoreContents(),
-                    child: const Text('Debug DB'),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => testLocationLogging(),
-                    child: const Text('Test Location'),
-                  ), */
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -767,12 +739,9 @@ class _WebViewPageState extends State<WebViewPage> {
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
-    final results = await ndt7_service.runFullTest();
-    final json = jsonEncode(results);
+    final results = await NDT7Service.runFullTest();
+    //final json = jsonEncode(results);
 
-    // return the json file
-    controller.runJavaScript("window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
-  void grabMetrics() async {
     // TODO: When MSAK is implemented get internet metrics
     //final json = await mesureInternet();
 
