@@ -52,7 +52,7 @@ class NDT7Service {
             final speedMbps = (totalBytes * 8) / (duration * 1000000);
             completer.complete({
                 'speedMbps': speedMbps,
-                'latency' : endTime.difference(startTime).inMilliseconds.toDouble();
+                'latency' : endTime.difference(startTime).inMilliseconds.toDouble()
             });
         },
 

@@ -358,7 +358,7 @@ class _WebViewPageState extends State<WebViewPage> {
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
-    final results = await ndt7_service.runFullTest();
+    final results = await NDT7Service.runFullTest();
     final json = jsonEncode(results);
 
     // return the json file
