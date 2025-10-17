@@ -13,6 +13,7 @@ import 'vibration_controller.dart';
 import 'name_entry_page.dart';
 import 'likert_form.dart';
 import 'dart:async';
+import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'authentication/services/auth_service.dart';
@@ -37,8 +38,39 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+   /* WidgetsBinding.instance.addPostFrameCallback((_) {
+      //_promptForSessionId(context);
+      // Don't set session ID here - it will be set in the dialog
+    });*/
   }
 
+ /* Future<void> _promptForSessionId(BuildContext context) async {
+    String tempSessionId = '';
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Enter Session ID'),
+        content: TextField(
+          autofocus: true,
+          onChanged: (value) => tempSessionId = value,
+          decoration: const InputDecoration(hintText: 'e.g. session_001, E1'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (tempSessionId.trim().isNotEmpty) {
+                setState(() => _sessionId = tempSessionId.trim());
+                SessionManager.setSessionId(tempSessionId.trim());
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }*/
 
   // constructor for tiles that launch games into the webview
   Widget _buildTile(
@@ -515,36 +547,6 @@ class _HomePageState extends State<HomePage> {
                   const DataDashboard(), context),
             ],
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await AuthService().signOut();
-            },
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Session: $_sessionId'),
-                  const SizedBox(width: 8),
-                  /*
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => debugFirestoreContents(),
-                    child: const Text('Debug DB'),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => testLocationLogging(),
-                    child: const Text('Test Location'),
-                  ), */
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -736,7 +738,11 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   // uses measureInternet() function to measure internet and send data to JS
-  void grabMetrics() async {
+  void grabMetrics() async{
+    // use the NDT7 service to get the metrics
+    final results = await NDT7Service.runFullTest();
+    //final json = jsonEncode(results);
+
     // TODO: When MSAK is implemented get internet metrics
     //final json = await mesureInternet();
 
