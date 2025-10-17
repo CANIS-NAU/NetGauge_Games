@@ -13,6 +13,7 @@ import 'vibration_controller.dart';
 import 'name_entry_page.dart';
 import 'likert_form.dart';
 import 'dart:async';
+import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
@@ -764,6 +765,13 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   // uses measureInternet() function to measure internet and send data to JS
+  void grabMetrics() async{
+    // use the NDT7 service to get the metrics
+    final results = await ndt7_service.runFullTest();
+    final json = jsonEncode(results);
+
+    // return the json file
+    controller.runJavaScript("window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   void grabMetrics() async {
     // TODO: When MSAK is implemented get internet metrics
     //final json = await mesureInternet();
