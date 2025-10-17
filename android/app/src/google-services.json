@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020382562858",
+    "project_id": "nauimg-524b6",
+    "storage_bucket": "nauimg-524b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020382562858:android:006a555f5afa6835329153",
+        "android_client_info": {
+          "package_name": "com.example.nauimg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXcdl-6HLUuXWL0E7r9d29UH47NjykUUw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
