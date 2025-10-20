@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:internet_measurement_games_app/homepage.dart';
 import 'session_manager.dart';
 
 //this list defines all the different panels in the dashboard
@@ -52,121 +53,96 @@ class DataDashboardState extends State<DataDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: <Widget>[dashBackground, content],
-      ),
-    );
-  }
-
-  //makes the background of the dashboard match the app theme
-  get dashBackground => Column(
-        children: <Widget>[
-          Expanded(
-            child: Container(
-                color: Theme.of(context)
-                    .primaryColor), //adds matching purple theme
-            flex: 2,
-          ),
-          Expanded(
-            child: Container(color: Colors.white),
-            flex: 5,
-          ),
-        ],
-      );
-
-  //sets header and grid onto the dashboard to seperate the header from the grid
-  get content => Container(
-        child: Column(
-          children: <Widget>[
-            header,
-            grid,
-          ],
-        ),
-      );
-//stylizing the header of the dashboard
-//this is the top part of the dashboard that has the title and user ico
-  get header => const ListTile(
-        contentPadding: EdgeInsets.only(left: 20, right: 20, top: 20),
-        title: Text(
+      appBar: AppBar(
+        title: const Text(
           'Mobility Data Dashboard',
           style: TextStyle(
-            color: Colors.white,
             fontFamily: 'Roboto',
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
-        trailing: CircleAvatar(
-          backgroundColor: Colors.black,
-          radius: 20,
-          child: Icon(
-            Icons.person,
-            color: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: CircleAvatar(
+              backgroundColor: Colors.black,
+              radius: 20,
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+              ),
+            ),
           ),
-        ),
-      );
+        ],
+        backgroundColor: Theme.of(context).primaryColor,
+        elevation: 0,
+      ),
+      body: Container(
+        color: Colors.white,
+        child: grid,
+      ),
+    );
+  }
 
-  //makes up grib of panels and stylization
-  get grid => Expanded(
-        child: Container(
-          //box style
-          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 14),
-          child: GridView.count(
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            crossAxisCount: 2,
-            childAspectRatio: .90,
-            children: List.generate(panelData.length, (index) {
-              final data = panelData[index];
-              //pop up when panel is clicked
-              return InkWell(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text(data['message']),
-                        content: Text('Feature coming soon!'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                //continued box style
-                borderRadius: BorderRadius.circular(12),
-                child: Card(
-                  elevation: 4,
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        Icon(data['icon'], color: data['color'], size: 40),
-                        const SizedBox(height: 8),
-                        Text(
-                          data['title'],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: data['color'],
-                          ),
-                        ),
-                      ],
+  //makes up grid of panels and stylization
+  get grid => Container(
+    padding: const EdgeInsets.all(20),
+    child: GridView.count(
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      crossAxisCount: 2,
+      childAspectRatio: .90,
+      children: List.generate(panelData.length, (index) {
+        final data = panelData[index];
+        //pop up when panel is clicked
+        return InkWell(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text(data['message']),
+                  content: Text('Feature coming soon!'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          //continued box style
+          borderRadius: BorderRadius.circular(12),
+          child: Card(
+            elevation: 4,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(data['icon'], color: data['color'], size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    data['title'],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: data['color'],
                     ),
                   ),
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
           ),
-        ),
-      );
+        );
+      }),
+    ),
+  );
 }

@@ -203,7 +203,7 @@ class _HomePageState extends State<HomePage> {
           final allLocationData = await getAllSessionLocationData();
           final mapData =
               allLocationData.isNotEmpty ? allLocationData : heatmapData;
-
+          debugPrint('[HomePage] Calling functionality to build MapPage.');
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -519,9 +519,32 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Landing Page'),
-      ),
+        appBar: AppBar(
+          title: const Text(
+            'NetGauge Games',
+            style: TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: 24,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.black,
+                radius: 20,
+                child: Icon(
+                  Icons.person,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+          backgroundColor: Theme.of(context).primaryColor,
+          elevation: 0,
+        ),
       body: Stack(
         children: [
           ListView(

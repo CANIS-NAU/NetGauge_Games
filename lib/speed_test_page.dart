@@ -31,14 +31,14 @@ class SpeedTestPageState extends State<SpeedTestPage> {
     });
     // write data to firestore
     final loc = await determineLocationData();
-    final nickname = SessionManager.playerName;
+    //final nickname = SessionManager.playerName;
     final sessionId = SessionManager.sessionId;
 
     final checkData = {
         'game': 'Speedtester',
         'latitude': loc.position.latitude,
         'longitude': loc.position.longitude,
-        'nickname': nickname,
+        //'nickname': nickname,
         'sessionID': sessionId
       };
 

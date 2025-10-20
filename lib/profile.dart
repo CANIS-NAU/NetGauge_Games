@@ -1,0 +1,1 @@
+// this will be where participants will have the option to logout
