@@ -572,7 +572,7 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
-
+    debugPrint('[HOMEPAGE] initState started');
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
         PlatformWebViewControllerCreationParams();
@@ -602,6 +602,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // Load gameFile associated with tile that created the webview
     controller.loadFlutterAsset('assets/${widget.gameFile}');
+    debugPrint('[HOMEPAGE] initState completed');
   }
 
   /// parses the incoming message from the JavaScript channel.

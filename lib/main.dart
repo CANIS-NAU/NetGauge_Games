@@ -7,8 +7,11 @@ import 'screens/auth/signup_screen.dart';
 
 // app initialization
 void main() async {
+  debugPrint('[MAIN] Main app is starting...');
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('[MAIN] Waiting for firebase connection to initialize...');
   await Firebase.initializeApp();
+  debugPrint('[MAIN] Running app...');
   runApp(const MyApp());
 }
 
