@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:internet_measurement_games_app/dashboard.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
@@ -35,12 +36,23 @@ class _HomePageState extends State<HomePage> {
   String _sessionId = '';
 
   @override
-  void initState() {
+  /*void initState() {
     super.initState();
    /* WidgetsBinding.instance.addPostFrameCallback((_) {
       //_promptForSessionId(context);
       // Don't set session ID here - it will be set in the dialog
     });*/
+  }*/
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _sessionId = user.uid;
+      SessionManager.setSessionId(user.uid);
+      SessionManager.setPlayerName(user.email ?? user.uid);
+    }
   }
 
  /* Future<void> _promptForSessionId(BuildContext context) async {
