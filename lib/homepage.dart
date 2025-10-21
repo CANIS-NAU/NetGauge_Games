@@ -36,10 +36,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    /*WidgetsBinding.instance.addPostFrameCallback((_) {
       _promptForSessionId(context);
       // Don't set session ID here - it will be set in the dialog
-    });
+    });*/
   }
 
   Future<void> _promptForSessionId(BuildContext context) async {
@@ -568,7 +568,7 @@ class _HomePageState extends State<HomePage> {
                   const DataDashboard(), context),
             ],
           ),
-          Align(
+          /*Align(
             alignment: Alignment.bottomLeft,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -595,7 +595,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-          ),
+          ),*/
         ],
       ),
     );
