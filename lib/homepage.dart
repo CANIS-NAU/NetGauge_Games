@@ -13,6 +13,7 @@ import 'vibration_controller.dart';
 import 'name_entry_page.dart';
 import 'likert_form.dart';
 import 'dart:async';
+import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
@@ -38,11 +39,13 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     /*WidgetsBinding.instance.addPostFrameCallback((_) {
       _promptForSessionId(context);
+   /* WidgetsBinding.instance.addPostFrameCallback((_) {
+      //_promptForSessionId(context);
       // Don't set session ID here - it will be set in the dialog
     });*/
   }
 
-  Future<void> _promptForSessionId(BuildContext context) async {
+ /* Future<void> _promptForSessionId(BuildContext context) async {
     String tempSessionId = '';
     await showDialog(
       context: context,
@@ -68,7 +71,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-  }
+  }*/
 
   // constructor for tiles that launch games into the webview
   Widget _buildTile(
@@ -568,34 +571,6 @@ class _HomePageState extends State<HomePage> {
                   const DataDashboard(), context),
             ],
           ),
-          /*Align(
-            alignment: Alignment.bottomLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Session: $_sessionId'),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => _promptForSessionId(context),
-                    child: const Text('Change'),
-                  ),
-                  /*
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => debugFirestoreContents(),
-                    child: const Text('Debug DB'),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => testLocationLogging(),
-                    child: const Text('Test Location'),
-                  ), */
-                ],
-              ),
-            ),
-          ),*/
         ],
       ),
     );
@@ -787,7 +762,11 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   // uses measureInternet() function to measure internet and send data to JS
-  void grabMetrics() async {
+  void grabMetrics() async{
+    // use the NDT7 service to get the metrics
+    final results = await NDT7Service.runFullTest();
+    //final json = jsonEncode(results);
+
     // TODO: When MSAK is implemented get internet metrics
     //final json = await mesureInternet();
 
