@@ -18,6 +18,7 @@ import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
+import 'profile.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -34,17 +35,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _sessionId = '';
-
-  @override
-  /*void initState() {
-    super.initState();
-    /*WidgetsBinding.instance.addPostFrameCallback((_) {
-      _promptForSessionId(context);
-   /* WidgetsBinding.instance.addPostFrameCallback((_) {
-      //_promptForSessionId(context);
-      // Don't set session ID here - it will be set in the dialog
-    });*/
-  }*/
 
   @override
   void initState() {
@@ -550,9 +540,15 @@ class _HomePageState extends State<HomePage> {
               child: CircleAvatar(
                 backgroundColor: Colors.black,
                 radius: 20,
-                child: Icon(
-                  Icons.person,
+                child: IconButton(
+                  icon: Icon(Icons.person),
                   color: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage())
+                    );
+                  },
                 ),
               ),
             ),
