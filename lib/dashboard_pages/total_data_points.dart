@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class TotalDataPoints extends StatefulWidget {
   const TotalDataPoints({Key? key}) : super(key: key);
 
@@ -25,7 +24,7 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.green,
       ),
     );
   }

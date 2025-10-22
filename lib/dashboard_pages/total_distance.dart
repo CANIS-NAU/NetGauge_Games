@@ -25,7 +25,7 @@ class _TotalDistanceState extends State<TotalDistance> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.red,
       ),
     );
   }

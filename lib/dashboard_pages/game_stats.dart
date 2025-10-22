@@ -25,7 +25,7 @@ class _GameStatsState extends State<GameStats> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.orange,
       ),
     );
   }

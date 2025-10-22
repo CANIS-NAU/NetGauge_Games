@@ -25,7 +25,7 @@ class _LeaderboardState extends State<Leaderboard> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.purple,
       ),
     );
   }

@@ -25,7 +25,7 @@ class _RadiusGyrationState extends State<RadiusGyration> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Colors.blue,
       ),
     );
   }
