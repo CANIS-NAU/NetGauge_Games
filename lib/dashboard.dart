@@ -7,8 +7,6 @@ import 'package:internet_measurement_games_app/dashboard_pages/leaderboard.dart'
 import 'package:internet_measurement_games_app/dashboard_pages/radius_gyration.dart';
 import 'package:internet_measurement_games_app/dashboard_pages/total_data_points.dart';
 import 'package:internet_measurement_games_app/dashboard_pages/total_distance.dart';
-import 'package:internet_measurement_games_app/homepage.dart';
-import 'session_manager.dart';
 
 //this list defines all the different panels in the dashboard
 // new panels can be added by adding a new "map" to this list

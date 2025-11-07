@@ -5,13 +5,21 @@ import 'homepage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'login_page.dart';
 //import 'firebase_options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'user_data_manager.dart';
 
 // app initialization
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   //await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => UserDataProvider(),
+      child: MyApp(),
+    ),
+  );
 }
 
 
@@ -21,9 +29,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Provider.of<UserDataProvider>(context, listen: false)
+        .fetchUserData('ie8KrAP4zpP1FxnXw2sQ');
     return MaterialApp(
       title: 'Internet Measurement Games',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(primarySwatch: Colors.purple),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

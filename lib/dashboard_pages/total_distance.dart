@@ -11,7 +11,6 @@ class TotalDistance extends StatefulWidget {
 class _TotalDistanceState extends State<TotalDistance> {
 
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
