@@ -13,7 +13,7 @@ import 'user_data_manager.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  //await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => UserDataProvider(),
@@ -22,28 +22,38 @@ void main() async {
   );
 }
 
-
-// build the home page
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    Provider.of<UserDataProvider>(context, listen: false)
-        .fetchUserData('ie8KrAP4zpP1FxnXw2sQ');
     return MaterialApp(
-      title: 'Internet Measurement Games',
-      theme: ThemeData(primarySwatch: Colors.purple),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
+          // Check auth state
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          } else if (snapshot.hasData) {
-            return const HomePage(); // user logged in
-          } else {
-            return const LoginPage(); // not logged in
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
+
+          // User is logged in
+          if (snapshot.hasData) {
+            // Fetch user data when logged in
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Provider.of<UserDataProvider>(context, listen: false)
+                  .fetchUserData();
+            });
+
+            return const HomePage();
+          }
+
+          // User is logged out - clear provider data
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Provider.of<UserDataProvider>(context, listen: false)
+                .clearData();
+          });
+
+          return const LoginPage();
         },
       ),
     );

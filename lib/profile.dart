@@ -29,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text(
           'User Profile',
           style: TextStyle(
@@ -40,14 +41,28 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         backgroundColor: Theme.of(context).primaryColor,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child:
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              CircleAvatar(
+                backgroundColor: Colors.purple,
+                radius: 100,
+                child: Icon(
+                  Icons.person,
+                  size: 100,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 350),
               ElevatedButton(
+                style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all<Color>(Colors.purple),
+                  foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                ),
                 onPressed: () {
                   logout();
                 },
@@ -55,6 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
+        ),
       ),
     );
   }

@@ -1,3 +1,5 @@
+// Reference: https://www.youtube.com/watch?v=F1ofL4t6fyg
+// Reference: https://medium.com/@punithsuppar7795/building-a-firebase-powered-real-time-leaderboard-with-websockets-flutter-web-12afd4718ae0
 import 'package:flutter/material.dart';
 
 
@@ -16,6 +18,7 @@ class _LeaderboardState extends State<Leaderboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text(
           'Leaderboard',
           style: TextStyle(
