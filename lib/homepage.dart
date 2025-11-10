@@ -16,6 +16,7 @@ import 'dart:async';
 import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'authentication/services/auth_service.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 
 //vars for mapping
@@ -596,7 +597,7 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
-
+    debugPrint('[HOMEPAGE] initState started');
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
         PlatformWebViewControllerCreationParams();
@@ -626,6 +627,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // Load gameFile associated with tile that created the webview
     controller.loadFlutterAsset('assets/${widget.gameFile}');
+    debugPrint('[HOMEPAGE] initState completed');
   }
 
   /// parses the incoming message from the JavaScript channel.

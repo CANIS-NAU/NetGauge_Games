@@ -992,7 +992,7 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-## Communication Between Twinee, the NetGauge App, and the Firestore Database
+## Communication Between Twine, the NetGauge App, and the Firestore Database
 All of the communication between NetGauge and the built out Twine games is handled by the app itself in the homepage.dart file. Here are some important functions that you may need to know about:
 
 --handle_native_message:
