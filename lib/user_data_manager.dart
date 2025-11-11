@@ -18,6 +18,7 @@ class UserDataProvider extends ChangeNotifier {
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
+  List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {

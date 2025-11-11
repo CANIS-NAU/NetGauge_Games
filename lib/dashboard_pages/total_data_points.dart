@@ -14,7 +14,7 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
   @override
   Widget build(BuildContext context) {
     final userDataProvider = Provider.of<UserDataProvider>(context);
-    print("User ID Found: ${userDataProvider.uid}");
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -28,16 +28,44 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
         ),
         backgroundColor: Colors.green,
       ),
-      body:
-        Text(
-          'Total points collected: ${userDataProvider.measurementsTaken}',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.blue,
-            letterSpacing: 1.5,
-          ),
-        )
+      body: SingleChildScrollView( // Allows scrolling if list is long
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total points collected: ${userDataProvider.measurementsTaken}',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+                letterSpacing: 1.5,
+              ),
+            ),
+            SizedBox(height: 20), // Spacing
+            const Text(
+              'Data Points',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 10),
+            // Display each data point
+            ...userDataProvider.dataPoints.map((point) =>
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4.0),
+                  child: Text(
+                    '(${point.latitude}, ${point.longitude})', // Convert to string for display
+                    style: TextStyle(fontSize: 16),
+                  ),
+                )
+            ).toList(),
+          ],
+        ),
+      ),
     );
+    }
   }
-}
