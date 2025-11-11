@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:internet_measurement_games_app/dashboard.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
@@ -17,6 +18,7 @@ import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
+import 'profile.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -37,12 +39,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    /*WidgetsBinding.instance.addPostFrameCallback((_) {
-      _promptForSessionId(context);
-   /* WidgetsBinding.instance.addPostFrameCallback((_) {
-      //_promptForSessionId(context);
-      // Don't set session ID here - it will be set in the dialog
-    });*/
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _sessionId = user.uid;
+      SessionManager.setSessionId(user.uid);
+      SessionManager.setPlayerName(user.email ?? user.uid);
+    }
   }
 
  /* Future<void> _promptForSessionId(BuildContext context) async {
@@ -523,6 +525,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          centerTitle: true,
           title: const Text(
             'NetGauge Games',
             style: TextStyle(
@@ -538,9 +541,15 @@ class _HomePageState extends State<HomePage> {
               child: CircleAvatar(
                 backgroundColor: Colors.black,
                 radius: 20,
-                child: Icon(
-                  Icons.person,
+                child: IconButton(
+                  icon: Icon(Icons.person),
                   color: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage())
+                    );
+                  },
                 ),
               ),
             ),

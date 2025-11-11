@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:internet_measurement_games_app/homepage.dart';
-import 'session_manager.dart';
+import 'package:internet_measurement_games_app/dashboard_pages/game_stats.dart';
+import 'package:internet_measurement_games_app/dashboard_pages/leaderboard.dart';
+import 'package:internet_measurement_games_app/dashboard_pages/radius_gyration.dart';
+import 'package:internet_measurement_games_app/dashboard_pages/total_data_points.dart';
+import 'package:internet_measurement_games_app/dashboard_pages/total_distance.dart';
+import 'profile.dart';
 
 //this list defines all the different panels in the dashboard
 // new panels can be added by adding a new "map" to this list
@@ -12,31 +16,36 @@ final List<Map<String, dynamic>> panelData = [
     'title': 'Total Distance Traveled',
     'icon': Icons.directions_walk,
     'color': Colors.red,
-    'message': 'Total Distance Traveled During Session'
+    'message': 'Total Distance Traveled During Session',
+    'navigation': TotalDistance()
   },
   {
     'title': 'Total Data Points Collected',
     'icon': Icons.scatter_plot,
     'color': Colors.green,
-    'message': 'Total Data Points Collected During Session'
+    'message': 'Total Data Points Collected During Session',
+    'navigation': TotalDataPoints()
   },
   {
     'title': 'Radius of Gyration',
     'icon': Icons.radar,
     'color': Colors.blue,
-    'message': 'Radius of Gyration During Session'
+    'message': 'Radius of Gyration During Session',
+    'navigation': RadiusGyration()
   },
   {
     'title': 'Most Played Game in Area',
     'icon': Icons.gamepad,
     'color': Colors.orange,
-    'message': 'Most Played Game in Area'
+    'message': 'Most Played Game in Area',
+    'navigation': GameStats()
   },
   {
     'title': 'Leaderboard',
     'icon': Icons.emoji_events,
     'color': Colors.purple,
-    'message': 'Leaderboard for Data Points Collected in Area'
+    'message': 'Leaderboard for Data Points Collected in Area',
+    'navigation': Leaderboard()
   },
 ];
 
@@ -60,6 +69,7 @@ class DataDashboardState extends State<DataDashboard> {
             fontFamily: 'Roboto',
             fontSize: 24,
             fontWeight: FontWeight.bold,
+            color: Colors.white
           ),
         ),
         actions: [
@@ -68,9 +78,15 @@ class DataDashboardState extends State<DataDashboard> {
             child: CircleAvatar(
               backgroundColor: Colors.black,
               radius: 20,
-              child: Icon(
-                Icons.person,
+              child: IconButton(
+                icon: Icon(Icons.person),
                 color: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage())
+                  );
+                },
               ),
             ),
           ),
@@ -98,20 +114,12 @@ class DataDashboardState extends State<DataDashboard> {
         //pop up when panel is clicked
         return InkWell(
           onTap: () {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: Text(data['message']),
-                  content: Text('Feature coming soon!'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                );
-              },
+            // Navigate to the page specified in the navigation field
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => data['navigation'],
+              ),
             );
           },
           //continued box style
