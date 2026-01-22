@@ -31,13 +31,13 @@ class _LikertFormState extends State<LikertForm> {
       // write data to firestore
       
       final sessionId = SessionManager.sessionId;
-      final nickname = SessionManager.playerName;
+      //final nickname = SessionManager.playerName;
 
       final likertData = {
         'game': widget.gameTitle,
         'envconnection': envConnection,
         'plrconnection': playerConnection,
-        'nickname': nickname,
+        //'nickname': nickname,
         'sessionID': sessionId
       };
 

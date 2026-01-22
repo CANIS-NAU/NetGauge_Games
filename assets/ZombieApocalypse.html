@@ -969,7 +969,9 @@ Please start by entering your experiment nickname in the box below.
         &lt;&lt;set $tutorialMessage to &quot;;arge yellow sculpture near the museum entrance&quot;&gt;&gt;
         &lt;&lt;goto &quot;RoleSelect&quot;&gt;&gt;
     &lt;&lt;else&gt;&gt;
-    	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
+        &lt;&lt;set $locationMessage to &quot;We have located you at a non-testing location.&quot;&gt;&gt;
+        &lt;&lt;set $tutorialMessage to &quot;tutorial message&quot;&gt;&gt;
+        &lt;&lt;goto &quot;RoleSelect&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="10" name="Searching" tags="" position="725,1550" size="100,100">You are searching the area...
 

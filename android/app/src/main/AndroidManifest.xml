@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.BODY_SENSORS" />
     <application
-        android:label="nauimg"
+        android:label="NetGauge"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

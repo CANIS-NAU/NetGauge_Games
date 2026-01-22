@@ -3,6 +3,8 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 import 'likert_form.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'ndt7_service.dart';
+import 'dart:convert';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -18,16 +20,17 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   String jitter = '---';
   String packetLoss = '---';
 
-  // function to run the speed test
-  // TODO: Integrate this with MSAK Toolkit
   void _runSpeedTest() async {
-    // Temporary: Simulate Metrics
+
+    final results = await NDT7Service().runFullTest();
+
+    // set state with actual metrics
     setState(() {
-      downloadSpeed = '100 Mbps';
-      uploadSpeed = '50 Mbps';
-      latency = '20 ms';
-      jitter = '5 ms';
-      packetLoss = '0.1%';
+      downloadSpeed = '${results['downloadSpeed']?.toStringAsFixed(2) ?? '0.00'} Mbps';
+      uploadSpeed = '${results['uploadSpeed']?.toStringAsFixed(2) ?? '0.00'} Mbps';
+      latency = '${results['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
+      jitter = '${results['jitter']}';
+      packetLoss = '${results['packetLoss']}';
     });
     // write data to firestore
     final loc = await determineLocationData();
@@ -35,7 +38,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
     final sessionId = SessionManager.sessionId;
 
     final checkData = {
-        'game': 'Speedtester',
+        'game': 'Speedtest',
         'latitude': loc.position.latitude,
         'longitude': loc.position.longitude,
         'nickname': nickname,
@@ -87,15 +90,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             child: const Text('Run Test'),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LikertForm(gameTitle: 'Speed Test')),
-              );
-            },
-            child: const Text('Open Feedback Form'),
-          ),
         ],
       ),
     );

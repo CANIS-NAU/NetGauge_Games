@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:internet_measurement_games_app/dashboard.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
@@ -17,6 +18,9 @@ import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
+import 'profile.dart';
+import 'poi_generator.dart';
+import 'speed_test_page.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -37,10 +41,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-   /* WidgetsBinding.instance.addPostFrameCallback((_) {
-      //_promptForSessionId(context);
-      // Don't set session ID here - it will be set in the dialog
-    });*/
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      _sessionId = user.uid;
+      SessionManager.setSessionId(user.uid);
+      //SessionManager.setPlayerName(user.email ?? user.uid);
+    }
   }
 
  /* Future<void> _promptForSessionId(BuildContext context) async {
@@ -204,7 +210,7 @@ class _HomePageState extends State<HomePage> {
           final allLocationData = await getAllSessionLocationData();
           final mapData =
               allLocationData.isNotEmpty ? allLocationData : heatmapData;
-
+          debugPrint('[HomePage] Calling functionality to build MapPage.');
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -238,7 +244,7 @@ class _HomePageState extends State<HomePage> {
     try {
       debugPrint('[MAP] Starting getAllSessionLocationData...');
       debugPrint('[MAP] Current session ID: ${SessionManager.sessionId}');
-      debugPrint('[MAP] Current player name: ${SessionManager.playerName}');
+      //debugPrint('[MAP] Current player name: ${SessionManager.playerName}');
       debugPrint('[MAP] Current game: ${SessionManager.currentGame}');
       debugPrint('[MAP] Querying collection: Movement Data');
 
@@ -441,8 +447,8 @@ class _HomePageState extends State<HomePage> {
     debugPrint('[LOCATION_TEST] Starting location logging test...');
     debugPrint(
         '[LOCATION_TEST] Current session ID: ${SessionManager.sessionId}');
-    debugPrint(
-        '[LOCATION_TEST] Current player name: ${SessionManager.playerName}');
+    /*debugPrint(
+        '[LOCATION_TEST] Current player name: ${SessionManager.playerName}');*/
     debugPrint('[LOCATION_TEST] Current game: ${SessionManager.currentGame}');
     debugPrint('[LOCATION_TEST] Homepage session ID: $_sessionId');
 
@@ -454,11 +460,11 @@ class _HomePageState extends State<HomePage> {
           _sessionId.isNotEmpty ? _sessionId : 'test_session');
     }
 
-    if (SessionManager.playerName == null) {
+   /* if (SessionManager.playerName == null) {
       debugPrint(
           '[LOCATION_TEST] Player name is null, setting test player name');
       SessionManager.setPlayerName('test_player');
-    }
+    }*/
 
     if (SessionManager.currentGame == null) {
       debugPrint('[LOCATION_TEST] Current game is null, setting test game');
@@ -474,7 +480,7 @@ class _HomePageState extends State<HomePage> {
       // First, ensure the session document exists
       await firestore.collection('Movement Data').doc(sessionId).set({
         'sessionId': sessionId,
-        'playerName': SessionManager.playerName,
+        //'playerName': SessionManager.playerName,
         'created': DateTime.now().toIso8601String(),
         'test': true,
       }, SetOptions(merge: true));
@@ -489,7 +495,7 @@ class _HomePageState extends State<HomePage> {
         'longitude': -122.4194,
         'datetime': DateTime.now().toIso8601String(),
         'game': SessionManager.currentGame,
-        'player': SessionManager.playerName,
+        //'player': SessionManager.playerName,
         'test': true,
       });
       debugPrint(
@@ -520,9 +526,39 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Landing Page'),
-      ),
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+            'NetGauge Games',
+            style: TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: 24,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.black,
+                radius: 20,
+                child: IconButton(
+                  icon: Icon(Icons.person),
+                  color: Colors.white,
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage())
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+          backgroundColor: Theme.of(context).primaryColor,
+          elevation: 0,
+        ),
       body: Stack(
         children: [
           ListView(
@@ -539,7 +575,7 @@ class _HomePageState extends State<HomePage> {
               _buildTile(
                   'Dragon Slayer', Icons.home, 'DragonSlayer.html', context),
               _buildPageTile(
-                  'Speed Test', Icons.speed, const NameEntry(), context),
+                  'Speed Test', Icons.speed, const SpeedTestPage(), context),
               _buildMapTile('Session Data Map', Icons.map, context),
               _buildCombinedMapTile('Full Data Map', Icons.public, context),
               _buildPageTile('Data Dashboard', Icons.leaderboard,
@@ -661,27 +697,30 @@ class _WebViewPageState extends State<WebViewPage> {
           writeLikertData(mapPayload, sessionId);
           break;
 
-        case 'publishPlayerName':
+        /*case 'publishPlayerName':
           // set the player name in the session manager so LocationService can access
           final nickname = data['playerName'];
           SessionManager.setPlayerName(nickname);
-          break;
+          break;*/
 
         case 'setPOIs':
           // extract POI list from payload
           final rawPOIs = data['payload'];
 
-          final poiList = (rawPOIs as List).map((entry) {
+          /*final poiList = (rawPOIs as List).map((entry) {
             return {
               'latitude': (entry['latitude'] as num).toDouble(),
               'longitude': (entry['longitude'] as num).toDouble(),
             };
-          }).toList();
+          }).toList();*/
+
+          PoiListGenerator poi_generator = new PoiListGenerator();
+          final poiList = poi_generator.generatePOIList(5);
 
           debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
 
           // store the POIs in the Sessionmanager
-          SessionManager.setPOIs(poiList);
+          SessionManager.setPOIs(poiList as List<Map<String, double>>);
           break;
 
         case 'POICheck':
@@ -739,20 +778,20 @@ class _WebViewPageState extends State<WebViewPage> {
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
-    final results = await NDT7Service.runFullTest();
-    //final json = jsonEncode(results);
+    final results = await NDT7Service().runFullTest();;
+    final json = jsonEncode(results);
 
     // TODO: When MSAK is implemented get internet metrics
     //final json = await mesureInternet();
 
     // PLACEHOLDER VALUES TO RETURN //
-    final json = jsonEncode({
+    /*final json = jsonEncode({
       'uploadSpeed': -1,
       'downloadSpeed': -1,
       'jitter': -1,
       'packetLoss': -1,
       'latency': -1,
-    });
+    });*/
 
     // return the placeholder json
     controller.runJavaScript(

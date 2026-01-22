@@ -18,7 +18,7 @@ class NameEntryState extends State<NameEntry> {
   void _submitName() {
     final name = _nameController.text.trim();
     if (name.isNotEmpty) {
-      SessionManager.setPlayerName(name);
+     // SessionManager.setPlayerName(name);
       LocationLogger.start();
       Navigator.pushReplacement(
         context,

@@ -1,94 +1,145 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:flutter/foundation.dart';
+
 
 class NDT7Service {
-
     // URLs for download and upload speed measurements
-    static const _downloadUrl = 'wss://ndt7.mlab-oti.measurementlab.net/ndt/v7/download';
-    static const _uploadUrl = 'wss://ndt7.mlab-oti.measurementlab.net/ndt/v7/upload';
+
+    // get URLs for speed test
+    Future<Map<String, String>> getNDT7Urls() async {
+        final response = await http.get(
+            Uri.parse('https://locate.measurementlab.net/v2/nearest/ndt/ndt7'),
+        );
+
+        if (response.statusCode != 200) {
+            throw Exception('Locate API failed with status ${response.statusCode}');
+        }
+
+        final data = jsonDecode(response.body);
+        final urls = data['results'][0]['urls'];
+
+        String downloadUrl = urls['ws:///ndt/v7/download'];
+        String uploadUrl = urls['ws:///ndt/v7/upload'];
+
+        // Force secure WebSocket for iOS production
+        downloadUrl = downloadUrl.replaceFirst('ws://', 'wss://');
+        uploadUrl = uploadUrl.replaceFirst('ws://', 'wss://');
+
+        debugPrint('[NDT7] Download URL (secure): $downloadUrl');
+        debugPrint('[NDT7] Upload URL (secure): $uploadUrl');
+
+        return {
+            'download': downloadUrl,
+            'upload': uploadUrl,
+        };
+    }
 
     // Function to run a full network test (dl speed, ul speed, round trip time)
-    static Future<Map<String, dynamic>> runFullTest() async {
+    Future<Map<String, dynamic>> runFullTest() async {
+        final urls = await getNDT7Urls();
 
-        // run functions to get Download and Upload speeds
-        final download = await _runDownloadTest();
-        final upload = await _runUploadTest();
+        final download = await _runDownloadTest(urls['download']!);
+        final upload = await _runUploadTest(urls['upload']!);
 
-        // Rough latency estimation based on RTT for WebSocket setup
-        final latency = download['latency'] ?? -1; // Default to -1 if latency can't be collected
-
-        // extract information and return
         return {
-            'uploadSpeed': upload['speedMbps'],
             'downloadSpeed': download['speedMbps'],
-            'latency': latency,
-            'jitter': -1, // placeholder for future implementation
-            'packetLoss': -1, // placeholder for future implementation
+            'uploadSpeed': upload['speedMbps'],
+            'latency': download['latency'],
+            'jitter': -1,
+            'packetLoss': -1,
         };
     }
 
     // Measures download speed
-    static Future<Map<String, dynamic>> _runDownloadTest() async {
-        final channel = WebSocketChannel.connect(Uri.parse(_downloadUrl));
+    Future<Map<String, dynamic>> _runDownloadTest(String downloadUrl) async {
+        final uri = Uri.parse(downloadUrl);
+        final socket = await WebSocket.connect(
+            downloadUrl,
+            protocols: ['net.measurementlab.ndt.v7'],
+        );
+
+        final startTime = DateTime.now();
+        int bytesReceived = 0;
+
         final completer = Completer<Map<String, dynamic>>();
 
-        int totalBytes = 0;
-        final startTime = DateTime.now();
-        late DateTime endTime;
+        socket.listen(
+                (message) {
+                if (message is String) {
+                    final data = jsonDecode(message);
 
-        channel.stream.listen((event) {
-            if (event is String) {
-                // Control message, ignore for now
-            } else if (event is List<int>) {
-                totalBytes += event.length;
-                endTime = DateTime.now();
-            }
-        },
+                    if (data['AppInfo']?['NumBytes'] != null) {
+                        bytesReceived = data['AppInfo']['NumBytes'];
+                    }
+                }
+            },
+            onDone: () {
+                final endTime = DateTime.now();
+                final durationSeconds =
+                    endTime.difference(startTime).inMilliseconds / 1000;
 
-        onDone: () {
-            final duration = endTime.difference(startTime).inMilliseconds / 1000.0;
-            final speedMbps = (totalBytes * 8) / (duration * 1000000);
-            completer.complete({
-                'speedMbps': speedMbps,
-                'latency' : endTime.difference(startTime).inMilliseconds.toDouble()
-            });
-        },
+                final speedMbps = (bytesReceived * 8) / (durationSeconds * 1e6);
 
-        onError: (err) => completer.completeError(err));
+                completer.complete({
+                    'speedMbps': speedMbps,
+                    'latency': 0,
+                });
+            },
+            onError: (error) {
+                if (!completer.isCompleted) {
+                    completer.completeError(error);
+                }
+            },
+        );
 
         return completer.future;
     }
 
-    // Measures upload speed
-    static Future<Map<String, dynamic>> _runUploadTest() async {
-        final channel = WebSocketChannel.connect(Uri.parse(_uploadUrl));
+    Future<Map<String, dynamic>> _runUploadTest(String uploadUrl) async {
+        final uri = Uri.parse(uploadUrl);
+        final socket = await WebSocket.connect(
+            uploadUrl,
+            protocols: ['net.measurementlab.ndt.v7'],
+        );
+
+        final startTime = DateTime.now();
+        int bytesReceived = 0;
+
         final completer = Completer<Map<String, dynamic>>();
 
-        final payload = List<int>.filled(8192, 1); // 8 KB chunks
-        int sentBytes = 0;
-        final startTime = DateTime.now();
-        final timer = Timer.periodic(Duration(milliseconds: 100), (t) {
-            channel.sink.add(payload);
-            sentBytes += payload.length;
-            if (DateTime.now().difference(startTime).inSeconds >= 10) {
-                t.cancel();
-                channel.sink.close();
-            }
-        });
+        socket.listen(
+                (message) {
+                if (message is String) {
+                    final data = jsonDecode(message);
 
-        channel.stream.listen((event) {
-            // Optional: parse server response
-        },
-        
-        onDone: () {
-            final duration = DateTime.now().difference(startTime).inMilliseconds / 1000.0;
-            final speedMbps = (sentBytes * 8) / (duration * 1000000);
-            completer.complete({'speedMbps': speedMbps});
-        },
+                    if (data['AppInfo']?['NumBytes'] != null) {
+                        bytesReceived = data['AppInfo']['NumBytes'];
+                    }
+                }
+            },
+            onDone: () {
+                final endTime = DateTime.now();
+                final durationSeconds =
+                    endTime.difference(startTime).inMilliseconds / 1000;
 
-        onError: (err) => completer.completeError(err));
+                final speedMbps = (bytesReceived * 8) / (durationSeconds * 1e6);
+
+                completer.complete({
+                    'speedMbps': speedMbps,
+                    'latency': 0,
+                });
+            },
+            onError: (error) {
+                if (!completer.isCompleted) {
+                    completer.completeError(error);
+                }
+            },
+        );
 
         return completer.future;
     }
