@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:internet_measurement_games_app/dashboard.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
@@ -18,7 +18,6 @@ import 'ndt7_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
-import 'profile.dart';
 import 'poi_generator.dart';
 import 'speed_test_page.dart';
 
@@ -41,12 +40,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    //final user = FirebaseAuth.instance.currentUser;
+    /*if (user != null) {
       _sessionId = user.uid;
       SessionManager.setSessionId(user.uid);
       //SessionManager.setPlayerName(user.email ?? user.uid);
-    }
+    }*/
   }
 
  /* Future<void> _promptForSessionId(BuildContext context) async {
@@ -537,7 +536,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          actions: [
+          /*actions: [
             Padding(
               padding: const EdgeInsets.only(right: 12.0),
               child: CircleAvatar(
@@ -555,7 +554,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ],
+          ],*/
           backgroundColor: Theme.of(context).primaryColor,
           elevation: 0,
         ),
@@ -778,7 +777,7 @@ class _WebViewPageState extends State<WebViewPage> {
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
-    final results = await NDT7Service().runFullTest();;
+    final results = await NDT7Service().runFullTest();
     final json = jsonEncode(results);
 
     // TODO: When MSAK is implemented get internet metrics
