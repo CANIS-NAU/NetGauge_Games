@@ -79,6 +79,10 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       detailedLog = 'Step 1: Initializing...\n';
       errorLog = '';
     });
+    // write data to firestore
+    final loc = await determineLocationData();
+    //final nickname = SessionManager.playerName;
+    final sessionId = SessionManager.sessionId;
 
     try {
       final service = NDT7Service();
