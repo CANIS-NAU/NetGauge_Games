@@ -11,12 +11,16 @@ import 'package:flutter/foundation.dart';
 
 
 // Reference for OSM API: https://wiki.openstreetmap.org/wiki/Overpass_API
-
+// ^^ if Overpass API is too resource intensive, may switch to wikidata API
+// Potential issue: People will likely use this when they have poor internet connection.
+  // Should we download all POIs to a local database? Or every day, try to
+  // install XX POIs from a radius of YY, search through that if location close enough
+//^^ I will hold off on storing locally for now, but may revisit this later
 
 // currently this is how it works
 // Games have predefined lists of POIs that get sent to the flutter side
 // So instead, what if we just send over the player's current location, and then generate POIs here?
-// or even go that on the flutter side
+// or even do that on the flutter side
 
 // This class was written with the help of Claude
 class OverpassService {
@@ -35,16 +39,14 @@ class OverpassService {
     required double latitude,
     required double longitude,
     required double radius,
-    String? amenityType,
-    Map<String, String>? tags,
   }) async {
     // Build the Overpass QL query
     final query = _buildQuery(
       latitude: latitude,
       longitude: longitude,
       radius: radius,
-      amenityType: amenityType,
-      tags: tags,
+      //amenityType: amenityType,
+      //tags: tags,
     );
 
     try {
@@ -89,8 +91,8 @@ class OverpassService {
       latitude: latitude,
       longitude: longitude,
       radius: radius,
-      amenityType: amenityType,
-      tags: tags,
+      //amenityType: amenityType,
+      //tags: tags,
     );
 
     // Calculate distance for each POI
@@ -247,8 +249,8 @@ class PoiListGenerator {
   Future<List<PointOfInterest>> generatePOIList(int list_size) async{
     num_pois = list_size;
     getCurrentLocation();
-    List<PointOfInterest> poi_list = await callOverpassAPI();
-    return poi_list;
+    List<PointOfInterest> poiList = await callOverpassAPI();
+    return poiList;
   }
 
 
@@ -275,15 +277,15 @@ class PoiListGenerator {
   Future<List<PointOfInterest>> callOverpassAPI() async{
     // start service, call instance of class
     final service = await OverpassService();
-    final allPois = service.fetchNearestPOIs(
+    final allPOIs = service.fetchNearestPOIs(
       latitude: user_latitude,
       longitude: user_longitude,
       radius: max_distance, //kilometers
       limit: num_pois,
     );
     debugPrint("[POI_GENERATOR] Printing allPOIs");
-    debugPrint("[POI_GENERATOR] Lat: $allPois[latitude]");
-    debugPrint("[POI_GENERATOR] Lon: $allPois[longitude]");
-    return allPois;
+    debugPrint("[POI_GENERATOR] Lat: $allPOIs[latitude]");
+    debugPrint("[POI_GENERATOR] Lon: $allPOIs[longitude]");
+    return allPOIs;
   }
 }
