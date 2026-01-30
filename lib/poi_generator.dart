@@ -82,8 +82,6 @@ class OverpassService {
     required double latitude,
     required double longitude,
     required double radius,
-    String? amenityType,
-    Map<String, String>? tags,
     int limit = 10,
   }) async {
     // First, get all POIs within the radius
@@ -243,12 +241,12 @@ class PoiListGenerator {
   double user_latitude = 0.0;
 
   // this needs to get reset when the class is called, but default can be 5K
-  double max_distance = 5.0; // kilometers
+  double max_distance = 5000; // kilometers
   int num_pois = 0; // reset when class is initialized
 
   Future<List<PointOfInterest>> generatePOIList(int list_size) async{
     num_pois = list_size;
-    getCurrentLocation();
+    await getCurrentLocation();
     List<PointOfInterest> poiList = await callOverpassAPI();
     return poiList;
   }
@@ -284,8 +282,7 @@ class PoiListGenerator {
       limit: num_pois,
     );
     debugPrint("[POI_GENERATOR] Printing allPOIs");
-    debugPrint("[POI_GENERATOR] Lat: $allPOIs[latitude]");
-    debugPrint("[POI_GENERATOR] Lon: $allPOIs[longitude]");
+    debugPrint("[POI_GENERATOR] POIs: $allPOIs");
     return allPOIs;
   }
 }

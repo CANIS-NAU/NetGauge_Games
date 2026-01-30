@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'poi_generator.dart';
+import 'homepage.dart';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);

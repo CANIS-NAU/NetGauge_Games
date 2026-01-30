@@ -3,6 +3,7 @@ import 'session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'poi_generator.dart';
 
 // class that manages logging of persistent location data to firestore
 class LocationLogger {
@@ -12,6 +13,17 @@ class LocationLogger {
     debugPrint("[LOCATION_LOGGER] Starting location logging.");
     LocationDispatcher.stream.listen((Position pos) async {
       _writeCount++;
+
+      //testing POI fetch
+      LocationData currentPosition = await determineLocationData();
+      double latitude = currentPosition.position.latitude;
+      double longitude = currentPosition.position.longitude;
+      double radius = 5000;
+      List pointsOfInterest = await OverpassService().fetchNearestPOIs(latitude: latitude, longitude: longitude, radius: radius, limit: 3);
+      debugPrint('[LOCATION_TEST]: Current Latitude is $latitude');
+      debugPrint('[LOCATION_TEST]: Current Longitude is $longitude');
+      debugPrint('[LOCATION_TEST]: Nearest POIs in 5km radius are $pointsOfInterest');
+
 
       debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
       debugPrint("[LOCATION_LOGGER] Current game: ${SessionManager.currentGame}");
