@@ -20,6 +20,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'poi_generator.dart';
 import 'speed_test_page.dart';
+import 'profile.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -536,7 +537,7 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          /*actions: [
+          actions: [
             Padding(
               padding: const EdgeInsets.only(right: 12.0),
               child: CircleAvatar(
@@ -554,7 +555,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          ],*/
+          ],
           backgroundColor: Theme.of(context).primaryColor,
           elevation: 0,
         ),
