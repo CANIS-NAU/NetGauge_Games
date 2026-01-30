@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
   static String? _sessionId;
-  static String? _playerName;
+  //static String? _playerName;
   static String? _currentGame; 
   static List<Map<String, double>> _poiList = [];
 
   static String? get sessionId => _sessionId;
-  static String? get playerName => _playerName;
+ // static String? get playerName => _playerName;
   static String? get currentGame => _currentGame;
   static List<Map<String, double>> get poiList => _poiList;
 
@@ -18,11 +18,11 @@ class SessionManager {
     _sessionId = id;
   }
 
-  // stores the nickname of the current player
+ /* // stores the nickname of the current player
   static void setPlayerName(String name){
     _playerName = name;
     debugPrint('[SESSION_MANAGER] Player name set to $_playerName');
-  }
+  }*/
 
   // updates current game when game is started
   static void startGame(String gameTitle){

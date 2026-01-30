@@ -164,7 +164,7 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _logMapViewEvent() async {
     final loc = await determineLocationData();
-    final nickname = SessionManager.playerName;
+    //final nickname = SessionManager.playerName;
     final sessionId = SessionManager.sessionId;
 
 
@@ -172,7 +172,7 @@ class _MapPageState extends State<MapPage> {
       'event': 'Viewed Map',
       'latitude': loc.position.latitude,
       'longitude': loc.position.longitude,
-      'nickname': nickname,
+      //'nickname': nickname,
       'sessionID': sessionId,
       'timestamp': FieldValue.serverTimestamp(),
     };

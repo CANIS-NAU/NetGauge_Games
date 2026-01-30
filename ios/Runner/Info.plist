@@ -2,75 +2,109 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs access to your location.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We need your location to find the nearest speed test server</string>
 
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>This app needs access to your location even when the app is in the background.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>We need your location to find the nearest speed test server</string>
 
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>This app collects location data to enable real-time and background performance metrics.</string>
 
-	<key>NSMotionUsageDescription</key>
-	<string>This app uses your motion data to determine device heading.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>This app uses your motion data to determine device heading.</string>
 
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
 
-	<key>CFBundleDisplayName</key>
-	<string>Internet Measurement Games App</string>
+    <key>CFBundleDisplayName</key>
+    <string>Internet Measurement Games App</string>
 
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
 
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
 
-	<key>CFBundleName</key>
-	<string>internet_measurement_games_app</string>
+    <key>CFBundleName</key>
+    <string>internet_measurement_games_app</string>
 
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
 
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
 
-	<key>CFBundleSignature</key>
-	<string>????</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
 
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
 
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
 
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
 
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+       <string>UIInterfaceOrientationPortrait</string>
+       <string>UIInterfaceOrientationLandscapeLeft</string>
+       <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+       <string>UIInterfaceOrientationPortrait</string>
+       <string>UIInterfaceOrientationPortraitUpsideDown</string>
+       <string>UIInterfaceOrientationLandscapeLeft</string>
+       <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <false/>
+
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>measurementlab.net</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+            <key>measurement-lab.org</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+            <key>googleoim.autojoin.measurement-lab.org</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
 </dict>
 </plist>

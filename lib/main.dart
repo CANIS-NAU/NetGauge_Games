@@ -3,11 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'homepage.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'login_page.dart';
-//import 'firebase_options.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
+import 'dart:io' show Platform;
+import 'firebase_options.dart';
 
 // app initialization
 void main() async {

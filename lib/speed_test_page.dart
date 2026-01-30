@@ -3,6 +3,9 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 import 'likert_form.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'ndt7_service.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -17,41 +20,165 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   String latency = '---';
   String jitter = '---';
   String packetLoss = '---';
+  String errorLog = '';
+  String detailedLog = '';
 
-  // function to run the speed test
-  // TODO: Integrate this with MSAK Toolkit
+  // ADD THIS METHOD HERE
+  @override
+  void initState() {
+    super.initState();
+    // Test basic WebSocket connectivity on startup
+    _testBasicWebSocketConnection();
+  }
+
+  // Add this test method
+  Future<void> _testBasicWebSocketConnection() async {
+    try {
+      debugPrint('[TEST] Testing basic WebSocket connection...');
+
+      final testSocket = await WebSocket.connect(
+        'wss://echo.websocket.org',
+      );
+
+      debugPrint('[TEST] ✅ WebSocket connected successfully!');
+
+      testSocket.listen(
+            (message) {
+          debugPrint('[TEST] Received: $message');
+        },
+        onDone: () {
+          debugPrint('[TEST] Connection closed');
+        },
+        onError: (error) {
+          debugPrint('[TEST] Error: $error');
+        },
+      );
+
+      testSocket.add('Hello from Flutter!');
+
+      await Future.delayed(const Duration(seconds: 2));
+      testSocket.close();
+
+    } catch (e, stack) {
+      debugPrint('[TEST] ❌ WebSocket connection failed!');
+      debugPrint('[TEST] Error: $e');
+      debugPrint('[TEST] Stack: $stack');
+
+      // Optionally show error to user
+      setState(() {
+        errorLog = 'WebSocket test failed: $e\n\nThis may indicate a network permission issue.';
+      });
+    }
+  }
+
   void _runSpeedTest() async {
-    // Temporary: Simulate Metrics
     setState(() {
-      downloadSpeed = '100 Mbps';
-      uploadSpeed = '50 Mbps';
-      latency = '20 ms';
-      jitter = '5 ms';
-      packetLoss = '0.1%';
+      downloadSpeed = 'Testing...';
+      uploadSpeed = 'Testing...';
+      latency = 'Testing...';
+      detailedLog = 'Step 1: Initializing...\n';
+      errorLog = '';
     });
     // write data to firestore
     final loc = await determineLocationData();
     //final nickname = SessionManager.playerName;
     final sessionId = SessionManager.sessionId;
 
-    final checkData = {
-        'game': 'Speedtester',
+    try {
+      final service = NDT7Service();
+
+      setState(() {
+        detailedLog += 'Step 2: Starting download test...\n';
+      });
+
+      // Call the download test with callback
+      final download = await service.runDownloadTest((status) {
+        setState(() {
+          detailedLog += status + '\n';
+        });
+      });
+
+      setState(() {
+        detailedLog += '\n✅ Download complete!\n';
+        detailedLog += 'Speed: ${download['speedMbps']?.toStringAsFixed(2)} Mbps\n';
+        detailedLog += 'Bytes: ${download['bytesReceived']}\n';
+        detailedLog += 'Duration: ${download['duration']?.toStringAsFixed(2)} sec\n';
+        detailedLog += 'Messages: ${download['messageCount']}\n\n';
+        detailedLog += 'Raw bytes received: ${download['bytesReceived']}\n';  // ADD THIS
+        detailedLog += 'Raw duration: ${download['duration']} sec\n';  // ADD THIS
+
+        downloadSpeed = '${download['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
+        latency = '${download['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
+      });
+
+      setState(() {
+        detailedLog += 'Step 3: Starting upload test...\n';
+      });
+
+      // Call the upload test with callback
+      final upload = await service.runUploadTest((status) {
+        setState(() {
+          detailedLog += status + '\n';
+        });
+      });
+
+      setState(() {
+        detailedLog += '\n✅ Upload complete!\n';
+        detailedLog += 'Speed: ${upload['speedMbps']?.toStringAsFixed(2)} Mbps\n';
+        detailedLog += 'Bytes: ${upload['bytesSent']}\n';
+        detailedLog += 'Duration: ${upload['duration']?.toStringAsFixed(2)} sec\n';
+        detailedLog += 'Chunks: ${upload['chunksSent']}\n\n';
+
+        uploadSpeed = '${upload['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
+
+        detailedLog += '✅ ALL TESTS COMPLETE!\n';
+      });
+
+      // Save to Firestore
+      setState(() {
+        detailedLog += 'Step 4: Saving to Firestore...\n';
+      });
+
+      final loc = await determineLocationData();
+      final sessionId = SessionManager.sessionId;
+
+      final checkData = {
+        'game': 'Speedtest',
         'latitude': loc.position.latitude,
         'longitude': loc.position.longitude,
-        //'nickname': nickname,
-        'sessionID': sessionId
+        'sessionID': sessionId,
+        'downloadSpeed': download['speedMbps'],
+        'uploadSpeed': upload['speedMbps'],
+        'latency': download['latency'],
+        'timestamp': FieldValue.serverTimestamp(),
       };
 
-      try {
-        await FirebaseFirestore.instance
+      await FirebaseFirestore.instance
           .collection('Movement Data')
           .doc(sessionId)
           .collection('CheckData')
           .add(checkData);
-        debugPrint('[SPEED_TEST] Check data added to Firestore.');
-      } catch(e) {
-        debugPrint('[SPEED_TEST] Error adding Check data to Firestore: $e');
-      }
+
+      setState(() {
+        detailedLog += '✅ Data saved to Firestore!\n';
+        jitter = '-1';
+        packetLoss = '-1';
+      });
+
+      debugPrint('[SPEED_TEST] Test completed successfully');
+
+    } catch (e, stackTrace) {
+      debugPrint('[SPEED_TEST] Error: $e');
+      debugPrint('[SPEED_TEST] Stack: $stackTrace');
+
+      setState(() {
+        downloadSpeed = 'Failed';
+        uploadSpeed = 'Failed';
+        latency = 'Failed';
+        errorLog = '❌ ERROR:\n${e.toString()}\n\nStack trace:\n${stackTrace.toString()}';
+        detailedLog += '\n❌ TEST FAILED: $e\n';
+      });
+    }
   }
 
   // constructor for UI elements
@@ -81,21 +208,28 @@ class SpeedTestPageState extends State<SpeedTestPage> {
           _buildMetricsCard('Latency', latency),
           _buildMetricsCard('Jitter', jitter),
           _buildMetricsCard('Packet Loss', packetLoss),
+          if (errorLog.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  errorLog,
+                  style: const TextStyle(fontSize: 10, fontFamily: 'monospace'),
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _runSpeedTest,
             child: const Text('Run Test'),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LikertForm(gameTitle: 'Speed Test')),
-              );
-            },
-            child: const Text('Open Feedback Form'),
-          ),
         ],
       ),
     );
