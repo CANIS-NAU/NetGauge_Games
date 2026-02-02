@@ -473,227 +473,89 @@ window.publishPlayerName = function()
 // FUNCTIONS RELATED TO SETTING AND COLLECTING POIs //
 
 // Determine which group of POIs to send to android based on the hexagon the user is in
-window.sendPOIData = function(){
-  
-  // Send point of Interest for each realm in each of the 3 testing locations
-  if(State.variables.insideCampus) {
+// removed: sendPOIData
+
+// called when POIs get set on the flutter side
+window.onSetPOIs = function() {
+
+    // if the tutorial is complete
     if(State.variables.tutorialComplete)
     {
+        // if the fragment counter is 0
       if(State.variables.fragmentCounter == 0) {
-        console.log("Campus FirstRealm POI sent to Flutter");
-        
+        console.log("FirstRealm POI sent to Flutter");
+
         // vibration system designed to work with a list of POIs
-        const poiList = [
+        /*const poiList = [
           { latitude: 35.186191, longitude: -111.658219}
-        ];
-        
-        // Send the POI set to Flutter
+        ];*/
+
+        // number of POIs SoulSeeker needs
+        // May need to change structure of SoulSeeker code to get all POIs at once, remove risk of overlap in gameplay
+        const numPOIs = 1;
+
+        // Request numPOIs POIs from Flutter
     	FlutterBridge.postMessage(JSON.stringify({
     		command: "setPOIs",
-         	payload: poiList
+         	payload: numPOIs
     	}));
-        
+
         State.variables.FirstRealm = false;
       }
       else if (State.variables.fragmentCounter == 1) {
         console.log("Campus SecondRealm POI sent to Flutter");
-        
+
         // vibration system designed to work with a list of POIs
-        const poiList = [
-          { latitude: 35.185980, longitude: -111.658405}
-        ];
-        
-        // Send the POI set to Flutter
+        const numPOIs = 1;
+
+        // Request numPOIs POIs from Flutter
     	FlutterBridge.postMessage(JSON.stringify({
     		command: "setPOIs",
-         	payload: poiList
+         	payload: numPOIs
     	}));
-        
+
         State.variables.SecondRealm = false;
       }
       else if (State.variables.fragmentCounter == 2) {
         console.log("Campus ThirdRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-        const poiList = [
-          { latitude: 35.185564, longitude: -111.658066}
-        ];
-        
-        // Send the POI set to Flutter
+
+        const numPOIs = 1;
+
+        // Request numPOIs POIs from Flutter
     	FlutterBridge.postMessage(JSON.stringify({
     		command: "setPOIs",
-         	payload: poiList
+         	payload: numPOIs
     	}));
-        
+
         State.variables.ThirdRealm = false;
       }
     } else {
       console.log("Campus Tutorial POI sent to Flutter");
-      
-      // vibration system designed to work with a list of POIs
-      const poiList = [
-        { latitude: 35.185980, longitude: -111.658405}
-      ];
-      
-      // Send the POI set to Flutter
+
+        const numPOIs = 1;
+
+        // Request numPOIs POIs from Flutter
     	FlutterBridge.postMessage(JSON.stringify({
     		command: "setPOIs",
-         	payload: poiList
+         	payload: numPOIs
     	}));
-        
+
     }
-  
-  } else if (State.variables.insideUrban) {
-    if(State.variables.tutorialComplete)
-    {
-      if(State.variables.fragmentCounter == 0) {
-        console.log("Urban FirstRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-        const poiList = [
-          { latitude: 35.198773, longitude: -111.648046}
-        ];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-        
-        State.variables.FirstRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 1) {
-        console.log("Urban SecondRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-        const poiList = [
-          { latitude: 35.198444, longitude: -111.647922}
-        ];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-        
-        State.variables.SecondRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 2) {
-        console.log("Urban ThirdRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-        const poiList = [
-          { latitude: 35.198521, longitude: -111.648314}
-        ];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-        
-        State.variables.ThirdRealm = false;
-      }
-    } else {
-       console.log("Urban Tutorial POI sent to Flutter");
+}
 
-       // vibration system designed to work with a list of POIs
-       const poiList = [
-         { latitude: 35.198521, longitude: -111.648314}
-       ];
-      
-       // Send the POI set to Flutter
-       FlutterBridge.postMessage(JSON.stringify({
-         command: "setPOIs",
-         payload: poiList
-       }));
-    }
-    
-  } else if (State.variables.insideRural) {
-    if(State.variables.tutorialComplete)
-    {
-      if(State.variables.fragmentCounter == 0) {
-        console.log("Rural FirstRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-       	const poiList = [
-         	{ latitude: 35.234222, longitude: -111.665501}
-       	];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-
-        State.variables.FirstRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 1) {
-        console.log("Rural SecondRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-       	const poiList = [
-         	{ latitude: 35.234288, longitude: -111.665135}
-       	];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-        
-        State.variables.SecondRealm = false;
-      }
-      else if (State.variables.fragmentCounter == 2) {
-        console.log("Rural ThirdRealm POI sent to Flutter");
-        
-        // vibration system designed to work with a list of POIs
-       	const poiList = [
-         	{ latitude: 35.234671, longitude: -111.665116}
-       	];
-        
-        // Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-     
-        State.variables.ThirdRealm = false;
-      }
-    } else {
-     	console.log("Rural Tutorial POI sent to Flutter");
-      
-      	// vibration system designed to work with a list of POIs
-       	const poiList = [
-         	{ latitude: 35.234288, longitude: -111.665135}
-       	];
-      
-      	// Send the POI set to Flutter
-    	FlutterBridge.postMessage(JSON.stringify({
-    		command: "setPOIs",
-         	payload: poiList
-    	}));
-    }
-    
-  } else {
-    console.log("Not in a play area, no POIs sent");
-  }
-
-};
-
-// Handler for the search button
+// Handler for the search button, keep
 window.handleSearchButtonClick = function() {
-    requestMetricsAndWriteData(); 
+    requestMetricsAndWriteData();
     State.variables.previousPassage = State.passage; // Set the SugarCube variable
     Engine.play('Searching'); // Navigate to the 'Searching' passage
 };
 
-// request a poi check from flutter
+// request a poi check from flutter, keep
 window.requestPOICheck = function(){
   FlutterBridge.postMessage(JSON.stringify({command: "POICheck"}));
 };
 
-// callback function to handle the POI check returned from flutter
+// callback function to handle the POI check returned from flutter, keep
 window.onPOICheck = function(json){
   //const data = JSON.parse(json);
   if (json.collected) {
@@ -731,17 +593,7 @@ window.stopVibrationService = function()
   FlutterBridge.postMessage(JSON.stringify({command: "stopVibrationService"}));
 };
 
-window.submitLikertAnswers = function()
-{
-  // Since the Flutter app now handles Likert forms after game completion,
-  // this function just closes the game to proceed to the Flutter Likert form
-  window.close();
-};
-
 // END OF POI-RELATED FUNCTIONS //
-
-
-
 
 
 // FUNCTIONS RELATED TO PROVIDING ORIENTATION HINTS //
@@ -845,57 +697,10 @@ window.providePreciseHint = function()
 
 // END OF HINT-RELATED FUNCTIONS //
 
-
-
-
-
-// FUNCTIONS RELATED TO POST-GAME LIKERT FORM //
-
-// Function to handle submission of Likert scale answers
-// post a message to FlutterBridge to write Likert data payload to firestore
-window.publishLikertResponses = function()
-{
-  // create variables to load into payload
-  var envConnection = document.querySelector('input[name="envConnection"]:checked');
-  var playerConnection = document.querySelector('input[name="playerConnection"]:checked');
-  
-  // verify both questions have been answered
-  if(envConnection && playerConnection)
-  {
-    var envValue = envConnection.value;
-    var playerValue = playerConnection.value;
-    
-    var playerName = State.variables.playerName;
-    var currentGame = "SoulSeeker.html";
-    
-    showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
-    Engine.play("AfterForm");
-    
-    // send the payload and command to Flutter
-   	FlutterBridge.postMessage(JSON.stringify({
-      command: "publishLikertResponses",
-      payload: {
-      	nickname: playerName,
-        game: currentGame,
-        envConnection: envValue,
-        plrConnection: playerValue
-      }
-    }));
-  } else {
-    showCustomAlert("Post-Game Form", "Please answer both questions before submitting.");
-  }
-}; // no callback needed, this function only sends
-
-// END OF LIKERT FORM FUNCTIONS //
-
-
-
-
-
 /*
-// TODO: Figure out what this is for
+
 // Function to grab location data collected in Android backend
-// what is this for??
+
 window.displayLocation = function() {
   
   // Grab JSON string via the AndroidBridge

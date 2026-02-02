@@ -126,24 +126,24 @@ class _WebViewPageState extends State<WebViewPage> {
           SessionManager.setPlayerName(nickname);
           break;*/
 
+        //TODO: Replace publishPlayerName with setPlayerName
+        // Games could require some kind of username. Set it on Flutter side instead of game.
+        // Alternatively, could leave publishPlayerName alone for now, don't store in DB
+
         case 'setPOIs':
-        // extract POI list from payload
-          final rawPOIs = data['payload'];
+          // retrieve needed # of POIs from payload
+          // get user's current location
+          // call POI fetch for given # of POIs based on current location
 
-          /*final poiList = (rawPOIs as List).map((entry) {
-            return {
-              'latitude': (entry['latitude'] as num).toDouble(),
-              'longitude': (entry['longitude'] as num).toDouble(),
-            };
-          }).toList();*/
-
-          PoiListGenerator PoiGenerator = new PoiListGenerator();
-          final poiList = PoiGenerator.generatePOIList(5);
-
-          debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
-
-          // store the POIs in the Sessionmanager
+          /* I think this command is always going to be the same,
+          * because the payload is what gets returned to the flutter side from
+          * the JS side after this case is called....*/
+          final numPOIs = data['payload'];
+          PoiListGenerator poiGenerator = PoiListGenerator();
+          final poiList = poiGenerator.generatePOIList(numPOIs);
+          //store in session manager
           SessionManager.setPOIs(poiList as List<Map<String, double>>);
+          //TODO: Send poiList back to JS side. WHAT does it expend? or is this handled by session manager?
           break;
 
         case 'POICheck':
@@ -176,10 +176,10 @@ class _WebViewPageState extends State<WebViewPage> {
           break;
 
         default:
-          debugPrint("[HANDLENATIVEMESSAGE] Unknown command: $command");
+          debugPrint("[FLUTTER_BRIDGE] Unknown command: $command");
       }
     } catch (e) {
-      debugPrint("[HANDLENATIVEMESSAGE] Error decoding message: $e");
+      debugPrint("[FLUTTER_BRIDGE] Error decoding message: $e");
     }
   }
 
@@ -304,6 +304,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
 
     // get the nearest POI
+    //TODO: Change this to use new poi generator if applicable
     final nearestPOI = SessionManager.getNearestPOI(userPos);
     // verify POI exists
     if (nearestPOI == null) {
@@ -313,6 +314,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
 
     // calculate bearing from user to POI
+    //TODO: Change this to use new poi generator if applicable
     final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
         userPos.longitude, nearestPOI['latitude']!, nearestPOI['longitude']!);
 
