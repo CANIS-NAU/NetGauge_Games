@@ -347,7 +347,6 @@ window.hideCustomAlert = function() {
 
 // FLUTTER BRIDGE FUNCTIONS
 // TODO: REFACTOR GAME TO UTILIZE NEW FUNCTIONS
-// TODO: CLEAR CALLS TO writeTaylenData
 // FUNCTIONS FOR COLLECTING AND UTILIZING LOCATION INFORMATION AND INTERNET MEASUREMENTS //
 
 // Function to request location data from flutter
@@ -369,37 +368,37 @@ window.onLocationJSON = function(json)
 {
   const data = JSON.parse(json);
   const context = data.context;
-  
+
   // determine what needs to be done with the returned location
   // data
   switch(context) {
     case 'zoneCheck': // determining if the player is in a valid zone
       const lat = data.latitude;
       const lon = data.longitude;
-      
+
       // log for debugging
       console.log("User Lat: ", lat);
       console.log("User Lon: ", lon);
-      
+
       // initialize location statuses as false
       let insideCampus = false;
       let insideUrban = false;
       let insideRural = false;
-      
+
       insideCampus = isPointInsideHexagon(lat, lon, campusSpace);
       insideUrban = isPointInsideHexagon(lat, lon, urbanSpace);
       insideRural = isPointInsideHexagon(lat, lon, ruralSpace);
-      
+
       // debug logs
       console.log("insideCampus", insideCampus);
       console.log("insideUrban", insideUrban);
       console.log("insideRural", insideRural);
-      
+
       State.variables.insideCampus = insideCampus;
       State.variables.insideUrban = insideUrban;
       State.variables.insideRural = insideRural;
       break;
-      
+
     default: // unrecognized context
       console.warn("Unrecognized location context: ", context);
   }
@@ -407,21 +406,21 @@ window.onLocationJSON = function(json)
 
 // function to request metrics data from Flutter bridge
 window.requestMetricsAndWriteData = function()
-{ 
+{
   // check current player site
   var site;
-  
+
   if(State.variables.insideCampus)
   {
 	site = "campus";
   } else if (State.variables.insideUrban) {
-   	site = "urban"; 
+   	site = "urban";
   } else if (State.variables.insideRural) {
-   	site = "rural"; 
+   	site = "rural";
   } else {
-   	site = "unidentifiedSite"; 
+   	site = "unidentifiedSite";
   }
-  
+
   // post a message to the FlutterBbridge requesting internet metrics
   // include data payload for Firestore data writing
   FlutterBridge.postMessage(JSON.stringify({
@@ -440,7 +439,7 @@ window.onMetrics = function(json)
 {
   // extract metrics
   const metrics = JSON.parse(json);
-  
+
   // store in state variables
   State.variables.uploadSpeed = metrics.uploadSpeed;
   State.variables.downloadSpeed = metrics.downloadSpeed;
@@ -451,7 +450,7 @@ window.onMetrics = function(json)
 
 // Function to display internet metrics collected at user request. Only works if requestMetricsAndWriteData has been run previously.
 window.displayMetrics = function() {
-  
+
   // Display the measurement values to the user
   alert("Upload Speed: " + State.variables.uploadSpeed + "Mbps\n" + "Download Speed: " + State.variables.downloadSpeed + "Mbps\n" + "Jitter: " + State.variables.jitter + "ms\n" + "Packet Loss: " + State.variables.packetLoss + "%\n" + "Latency: " + State.variables.latency + "ms");
 };
@@ -922,28 +921,13 @@ How do you approach defeating the golem?
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;ch1FightStrFail&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker! &lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to Soul Seeker!
 
 Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
 	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-    &lt;&lt;run publishPlayerName()&gt;&gt;
-    &lt;&lt;if State.variables.insideCampus&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideUrban&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Heritage Square.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the &#39;Mozelle&#39;s Bakery&#39; hanging sign&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideRural&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Museum of Northern Arizona.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the large yellow sculpture near the museum entrance&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-    	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
+	&lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
 &lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome, $playerName! &lt;&lt;print $locationMessage&gt;&gt;
 
 Before you begin, please read over the instructions!
@@ -953,7 +937,6 @@ Before you begin, please read over the instructions!
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 
 &lt;&lt;link &quot;Check my location&quot;&gt;&gt;
-	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
         &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
@@ -1000,7 +983,6 @@ Omni&#39;s voice is harsher now, almost pleading. &quot;I know not how this feat
 	 &lt;&lt;set State.variables.sourcePassage to &quot;TowerOfAscension&quot;&gt;&gt;
     &lt;&lt;set State.variables.playerChoice to &quot;Leave the feather and continue upwards.&quot;&gt;&gt;
     &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - OmniWins&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
@@ -1011,7 +993,6 @@ or
     &lt;&lt;set State.variables.sourcePassage to &quot;TowerOfAscension&quot;&gt;&gt;
     &lt;&lt;set State.variables.playerChoice to &quot;Take the feather and reclaim the memory. {Str &amp; Int check - Need an 11 in each to pass}&quot;&gt;&gt;
     &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;set $intRoll to random(1, 20)&gt;&gt;
     &lt;&lt;set $strRoll to random(1, 20)&gt;&gt;
     &lt;&lt;set $intCheck to $intRoll + $intelligence&gt;&gt;
@@ -1021,7 +1002,7 @@ or
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;FeatherFail&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="23" name="Epilogue - OmniWins" tags="" position="1475,1975" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|AfterForm]]. But first, you can view your epilogue below!
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="23" name="Epilogue - OmniWins" tags="" position="1475,1975" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, you can exit the game. But first, you can view your epilogue below!
 
 &lt;&lt;linkreplace &quot;EPILOGUE - Ending 1 of 3&quot;&gt;&gt;EPILOGUE - Ending 1 of 3&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
 You finally reach the top of the tower, and find yourself standing before Omni, seated on a golden throne.
@@ -1056,7 +1037,7 @@ You collapse to your knees, powerless and alone.
 
 Omni is free.
 And you will never be.
-&lt;&lt;/linkreplace&gt;&gt;</tw-passagedata><tw-passagedata pid="24" name="Epilogue - ServeOmni" tags="" position="1650,2550" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|AfterForm]]. But first, you can view your epilogue below!
+&lt;&lt;/linkreplace&gt;&gt;</tw-passagedata><tw-passagedata pid="24" name="Epilogue - ServeOmni" tags="" position="1650,2550" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, you can exit the game. But first, you can view your epilogue below!
 
 &lt;&lt;linkreplace &quot;EPILOGUE - Ending 2 of 3&quot;&gt;&gt;EPILOGUE - Ending 2 of 3&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
 
@@ -1090,7 +1071,7 @@ Do you reconsider?
 &lt;&lt;link &quot;...Very well, you have convinced me. I will serve you, monster, just free me from this hell.&quot;&gt;&gt;
 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - ServeOmni&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Epilogue - RejectOmni" tags="" position="1750,2700" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|AfterForm]]. But first, you can view your epilogue below!
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Epilogue - RejectOmni" tags="" position="1750,2700" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please exit the game. But first, you can view your epilogue below!
 
 &lt;&lt;linkreplace &quot;EPILOGUE - Ending 3 of 3&quot;&gt;&gt;EPILOGUE - Ending 3 of 3&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
 
@@ -1332,7 +1313,6 @@ Then the leader turns to you and says &quot;Very well, we accept these terms. Ha
 	&lt;set State.variables.sourcePassage to &quot;ch2FightIntSuccess&quot;&gt;&gt;
     &lt;&lt;set State.variables.playerChoice to &quot;Hand over the sword&quot;&gt;&gt;
     &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
     &lt;&lt;goto &quot;end.R.2&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
@@ -1341,7 +1321,6 @@ Then the leader turns to you and says &quot;Very well, we accept these terms. Ha
     &lt;&lt;set State.variables.sourcePassage to &quot;ch2FightIntSuccess&quot;&gt;&gt;
     &lt;&lt;set State.variables.playerChoice to &quot;Actually, I changed my mind. I&#39;m keeping this sword! {Str check - 15 to pass - keep sword}&quot;&gt;&gt;
     &lt;&lt;set State.variables.choiceType to &quot;stat check&quot;&gt;&gt;
-    &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;set $roll to random(1, 20)&gt;&gt;
     &lt;&lt;set $check to $roll + $strength&gt;&gt;
     &lt;&lt;if $check &gt;= 15&gt;&gt;
