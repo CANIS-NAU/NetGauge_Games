@@ -927,12 +927,12 @@ Please start by entering your experiment nickname in the box below.
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
 	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-	&lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome, $playerName! &lt;&lt;print $locationMessage&gt;&gt;
+&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome, $playerName!
 
 Before you begin, please read over the instructions!
 
-[[Take me there!|Instructions]]</tw-passagedata><tw-passagedata pid="20" name="NoLocation" tags="" position="1400,200" size="100,100">Sorry $playerName, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
+[[Take me there!|Instructions]]
+&lt;&lt;run requestPOICheck()&gt;&gt;</tw-passagedata><tw-passagedata pid="20" name="NoLocation" tags="" position="1400,200" size="100,100">Sorry $playerName, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
 
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 
