@@ -135,6 +135,10 @@ flutter:
     - assets/sounds/zombieSound2.mp3
     - assets/sounds/zombieSound3.mp3
     - assets/sounds/zombieSound4.mp3
+    - assets/icons/game_controller.png
+    - assets/icons/dragon_outline.png
+    - assets/icons/soul_icon.png
+    - assets/icons/zombie_outline.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
