@@ -6,6 +6,7 @@ import 'homepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
+import 'game_catalog.dart';
 
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
@@ -19,6 +20,7 @@ class UserDataProvider extends ChangeNotifier {
   String get email => _userData?['email'] ?? '';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
+
 
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {

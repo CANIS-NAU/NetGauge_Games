@@ -20,7 +20,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'poi_generator.dart';
 import 'speed_test_page.dart';
-import 'profile.dart';
+import 'user_settings.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -540,21 +540,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 12.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.black,
-                radius: 20,
-                child: IconButton(
-                  icon: Icon(Icons.person),
-                  color: Colors.white,
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage())
-                    );
-                  },
-                ),
               ),
-            ),
           ],
           backgroundColor: Theme.of(context).primaryColor,
           elevation: 0,
