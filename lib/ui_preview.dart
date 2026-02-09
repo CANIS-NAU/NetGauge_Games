@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'game_catalog.dart'; // Replace with your actual page file
+import 'home.dart';
 
 void main() {
   runApp(const PreviewApp());

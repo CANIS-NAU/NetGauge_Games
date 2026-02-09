@@ -18,6 +18,12 @@ class GameData {
   GameData({required this.text, this.icon, this.imagePath});
 }
 
+final List<GameData> favorite_games = [
+  GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
+  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+];
+
+
 @Preview()
 Widget gameCatalog() {
   // Store your button data in a list
@@ -59,7 +65,7 @@ Widget gameCatalog() {
               iconSize: 60,
               buttonHeight: 45,
               buttonLength: 45,
-              onTap: () => _showCustomPopup(context, games[index].text),
+              onTap: () => showCustomPopup(context, games[index].text),
             );
           },
         ),
@@ -68,7 +74,7 @@ Widget gameCatalog() {
   );
 }
 
-void _showCustomPopup(BuildContext context, String game) {
+void showCustomPopup(BuildContext context, String game) {
   String title = "Title";
   String content = "Content";
   String gameURL = "URL";
@@ -148,4 +154,17 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       ),
     );*/
   });
+}
+
+void _updateFavorites(GameData game, BuildContext context) {
+  // if game is already favorited
+  if(favorite_games.contains(game)) {
+    // remove from favorites
+    favorite_games.remove(game);
+  }
+  // if game is not favorited
+  else if(!favorite_games.contains(game)) {
+    // remove from favorites
+    favorite_games.insert(1, game);
+  }
 }
