@@ -7,7 +7,7 @@ import 'package:internet_measurement_games_app/dashboard_pages/leaderboard.dart'
 import 'package:internet_measurement_games_app/dashboard_pages/radius_gyration.dart';
 import 'package:internet_measurement_games_app/dashboard_pages/total_data_points.dart';
 import 'package:internet_measurement_games_app/dashboard_pages/total_distance.dart';
-import 'user_settings.dart';
+import 'profile.dart';
 
 //this list defines all the different panels in the dashboard
 // new panels can be added by adding a new "map" to this list
@@ -72,6 +72,25 @@ class DataDashboardState extends State<DataDashboard> {
             color: Colors.white
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: CircleAvatar(
+              backgroundColor: Colors.black,
+              radius: 20,
+              child: IconButton(
+                icon: Icon(Icons.person),
+                color: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage())
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
         backgroundColor: Theme.of(context).primaryColor,
         elevation: 0,
       ),

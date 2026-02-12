@@ -1,9 +1,8 @@
 // New homepage, so I can easily refer to the original home page as needed
 import 'package:flutter/material.dart';
+import 'speed_test_page.dart';
 import 'widgets/buttons.dart';
 import 'game_catalog.dart';
-import 'user_settings.dart';
-import 'user_data_manager.dart';
 
 class Utilities {
   final String text;
@@ -14,7 +13,7 @@ class Utilities {
 }
 
 final List<Utilities> utilityButtons = [
-  Utilities(text: "Game Catalog", icon:Icons.menu_book_rounded),
+  Utilities(text: "Internet Measurement", icon:Icons.wifi),
   Utilities(text: "Settings", icon:Icons.settings),
   Utilities(text: "Player Statistics", icon:Icons.auto_graph),
   Utilities(text: "Community Statistics", icon:Icons.group),
@@ -38,24 +37,9 @@ class _HomePageState extends State<HomePage> {
       home: Scaffold(
         appBar: AppBar(
           centerTitle: true,
-          title: const Text(
-              'NetGauge Games',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 30)),
+          title: const Text('NetGauge Games'),
           backgroundColor: Colors.deepPurple,
           foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.help_outline_rounded),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Icon pressed!')),
-                );
-              },
-            ),
-          ],
         ),
         body: SingleChildScrollView(
           child: Padding(
@@ -70,7 +54,7 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.bold,
                     color: Colors.deepPurple,
                     fontSize: 30)),
-                const SizedBox(height: 400),
+                const SizedBox(height: 300),
                 // Utility buttons
                 GridView.builder(
                   shrinkWrap: true,
@@ -91,25 +75,14 @@ class _HomePageState extends State<HomePage> {
                       icon: utilityButtons[index].icon,
                       imagePath: utilityButtons[index].imagePath,
                       isIcon: true,
-                      iconSize: 40,
+                      iconSize: 25,
                       textSize: 12,
                       buttonHeight: 60,
                       buttonLength: 85,
-                      onTap: () {
-                        //TODO: Repeat for all utility buttons
-                        if(utilityButtons[index].text == "Game Catalog") {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => gameCatalog(context)),
-                          );
-                        }
-                        else if(utilityButtons[index].text == "Settings") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => userSettings(context)),
-                          );
-                        }
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SpeedTestPage()),
+                      ),
                     );
                   },
                 ),
@@ -124,20 +97,20 @@ class _HomePageState extends State<HomePage> {
                     mainAxisSpacing: 20,
                     childAspectRatio: 50 / 40,
                   ),
-                  itemCount: favoriteGames.length,
+                  itemCount: favorite_games.length,
                   itemBuilder: (context, index) {
                     return AppButtons(
                       textColor: Colors.black,
                       backgroundColor: Colors.white,
                       borderColor: Colors.black,
-                      text: favoriteGames[index].text,
-                      icon: favoriteGames[index].icon,
-                      imagePath: favoriteGames[index].imagePath,
+                      text: favorite_games[index].text,
+                      icon: favorite_games[index].icon,
+                      imagePath: favorite_games[index].imagePath,
                       isIcon: true,
                       iconSize: 60,
                       buttonHeight: 45,
                       buttonLength: 45,
-                      onTap: () => showCustomPopup(context, favoriteGames[index]),
+                      onTap: () => showCustomPopup(context, favorite_games[index].text),
                     );
                   },
                 ),

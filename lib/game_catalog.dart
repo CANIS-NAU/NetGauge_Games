@@ -9,8 +9,6 @@ import 'homepage.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
-import 'home.dart';
-import 'user_data_manager.dart';
 
 class GameData {
   final String text;
@@ -20,13 +18,14 @@ class GameData {
   GameData({required this.text, this.icon, this.imagePath});
 }
 
-final List<GameData> favoriteGames = [
+final List<GameData> favorite_games = [
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
 ];
 
+
 @Preview()
-Widget gameCatalog(BuildContext context) {
+Widget gameCatalog() {
   // Store your button data in a list
   final List<GameData> games = [
     GameData(text: "Space Explorers", icon: Icons.settings),
@@ -39,26 +38,10 @@ Widget gameCatalog(BuildContext context) {
   return MaterialApp(
     home: Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.home),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
         centerTitle: true,
         title: const Text('Game Catalog'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline_rounded),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Icon pressed!')),
-              );
-            },
-          ),
-        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -82,7 +65,7 @@ Widget gameCatalog(BuildContext context) {
               iconSize: 60,
               buttonHeight: 45,
               buttonLength: 45,
-              onTap: () => showCustomPopup(context, games[index]),
+              onTap: () => showCustomPopup(context, games[index].text),
             );
           },
         ),
@@ -91,7 +74,7 @@ Widget gameCatalog(BuildContext context) {
   );
 }
 
-void showCustomPopup(BuildContext context, GameData game) {
+void showCustomPopup(BuildContext context, String game) {
   String title = "Title";
   String content = "Content";
   String gameURL = "URL";
@@ -123,39 +106,18 @@ void showCustomPopup(BuildContext context, GameData game) {
   }
   showDialog(
     context: context,
-    barrierDismissible: true,
     builder: (BuildContext context) {
-      IconData favStatus = Icons.favorite_border_outlined;
-      if(favoriteGames.any((favGame) => favGame.text == game)) {
-        favStatus = Icons.favorite;
-      }
       return AlertDialog(
         title: Text(title),
         content: Text(content),
         actions: [
-          IconButton(
-            icon: Icon(favStatus),
-            onPressed: () => _updateFavorites(game, context),
-          ),
           TextButton(
             onPressed: () => _launchGame(title, gameURL, context),
-            style: TextButton.styleFrom(
-              alignment: Alignment.center,
-              backgroundColor: Colors.deepPurple,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              textStyle: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25.0),
-              ),
-              side: BorderSide(color: Colors.black, width: 2)
-            ),
-            child: const Text(
-              "Play",
-              style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 20),
-            ),
+            child: Text("Play"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close"),
           ),
         ],
       );
@@ -166,10 +128,12 @@ void showCustomPopup(BuildContext context, GameData game) {
 void _launchGame(String title, String gameFile, BuildContext context) {
   // Close the dialog first
   Navigator.pop(context);
+
   // log the game start with the session manager
   SessionManager.startGame(title);
   // begin location logging
   LocationLogger.start();
+
   // navigate to the WebViewPage
   Navigator.push(
     context,
@@ -181,18 +145,26 @@ void _launchGame(String title, String gameFile, BuildContext context) {
     SessionManager.endGame(); // also will stop logging location
     // Stop the vibration service, in case the game started it
     VibrationController.stop();
+
+    // TODO: Navigate to home page
+    /*Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => home(gameTitle: title),
+      ),
+    );*/
   });
 }
 
 void _updateFavorites(GameData game, BuildContext context) {
   // if game is already favorited
-  if(favoriteGames.contains(game)) {
+  if(favorite_games.contains(game)) {
     // remove from favorites
-    favoriteGames.remove(game);
+    favorite_games.remove(game);
   }
   // if game is not favorited
-  else if(!favoriteGames.contains(game)) {
+  else if(!favorite_games.contains(game)) {
     // remove from favorites
-    favoriteGames.insert(1, game);
+    favorite_games.insert(1, game);
   }
 }

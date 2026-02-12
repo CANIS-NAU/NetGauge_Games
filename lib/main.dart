@@ -7,7 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'dart:io' show Platform;
 import 'firebase_options.dart';
 import 'login_page.dart';
-import 'user_settings.dart';
+import 'profile.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 
