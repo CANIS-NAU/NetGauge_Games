@@ -18,7 +18,7 @@ class Utilities {
 final List<Utilities> utilityButtons = [
   Utilities(text: "Game Catalog", icon:Icons.menu_book),
   Utilities(text: "Settings", icon:Icons.settings),
-  Utilities(text: "Internet Measurement", icon:Icons.wifi),
+  Utilities(text: "Measure Internet", icon:Icons.wifi),
   Utilities(text: "Community Statistics", icon:Icons.auto_graph_rounded),
 ];
 
@@ -100,6 +100,7 @@ class _HomePageState extends State<HomePage> {
                   )
                 ),
                 child: const Text("Expand Player Statistics"),
+                //TODO: Nice-to-have-->add a trailing expand icon here
               ),
               const SizedBox(height: 350),
               // Utility buttons
@@ -142,7 +143,7 @@ class _HomePageState extends State<HomePage> {
                         );
                         // 3. After returning, rebuild the UI to show the new favorites
                         setState(() {});
-                      } else if (buttonText == 'Internet Measurment') {
+                      } else if (buttonText == 'Measure Internet') {
                         Navigator.push(
                           context,
                           MaterialPageRoute(

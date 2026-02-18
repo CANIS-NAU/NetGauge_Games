@@ -6,6 +6,7 @@ import 'profile.dart';
 import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'widgets/buttons.dart';
+import 'user_data_manager.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
@@ -31,24 +32,26 @@ class PlayerStatistics extends StatelessWidget {
   }
 }
 
-// stores ExpansionPanel state information
-class SessionItem {
-  SessionItem({
-    required this.expandedValue,
-    required this.headerValue,
+// A new class that extends SessionData to include UI state for the panel.
+class ExpandableSessionData extends SessionData {
+  bool isExpanded;
+
+  ExpandableSessionData({
+    required super.date,
+    required super.game,
     this.isExpanded = false,
   });
-
-  String expandedValue;
-  String headerValue;
-  bool isExpanded;
 }
 
-List<SessionItem> generateItems(int numberOfItems) {
-  return List<SessionItem>.generate(numberOfItems, (int index) {
-    return SessionItem(
-      headerValue: 'Session $index',
-      expandedValue: 'Placeholder data.',
+/*
+TODO: This function is just to populate with dummy data. It will need to be replaced
+by a function pulling real data to populate in player statistics.
+ */
+List<ExpandableSessionData> generateItems(int numberOfItems) {
+  return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
+    return ExpandableSessionData(
+      date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
+      game: favorite_games[index % favorite_games.length], // Cycle through favorite games
     );
   });
 }
@@ -62,8 +65,8 @@ class ExpansionListStatistics extends StatefulWidget {
 }
 
 class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
-  //TODO: This should not be hard-coded, update later with session count from manager.
-  final List<SessionItem> _data = generateItems(8);
+  // The list now correctly holds the expandable data objects.
+  final List<ExpandableSessionData> _data = generateItems(8);
 
   @override
   Widget build(BuildContext context) {
@@ -77,13 +80,13 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
           _data[index].isExpanded = isExpanded;
         });
       },
-      children: _data.map<ExpansionPanel>((SessionItem item) {
+      children: _data.map<ExpansionPanel>((ExpandableSessionData item) {
         return ExpansionPanel(
           headerBuilder: (BuildContext context, bool isExpanded) {
-            return ListTile(title: Text(item.headerValue));
+            return ListTile(title: Text(item.date.toString()));
           },
           body: ListTile(
-            title: Text(item.expandedValue),
+            title: Text(item.game.text), // Correctly display the game's text property.
           ),
           isExpanded: item.isExpanded,
         );
@@ -91,96 +94,3 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
     );
   }
 }
-
-//this list defines all the different panels in the dashboard
-// new panels can be added by adding a new "map" to this list
-/*final List<Map<String, dynamic>> panelData = [
-  {
-    'title': 'Total Distance Traveled',
-    'icon': Icons.directions_walk,
-    'color': Colors.red,
-    'message': 'Total Distance Traveled During Session',
-    'navigation': TotalDistance()
-  },
-  {
-    'title': 'Total Data Points Collected',
-    'icon': Icons.scatter_plot,
-    'color': Colors.green,
-    'message': 'Total Data Points Collected During Session',
-    'navigation': TotalDataPoints()
-  },
-  {
-    'title': 'Radius of Gyration',
-    'icon': Icons.radar,
-    'color': Colors.blue,
-    'message': 'Radius of Gyration During Session',
-    'navigation': RadiusGyration()
-  },
-  {
-    'title': 'Most Played Game in Area',
-    'icon': Icons.gamepad,
-    'color': Colors.orange,
-    'message': 'Most Played Game in Area',
-    'navigation': GameStats()
-  },
-  {
-    'title': 'Leaderboard',
-    'icon': Icons.emoji_events,
-    'color': Colors.purple,
-    'message': 'Leaderboard for Data Points Collected in Area',
-    'navigation': Leaderboard()
-  },
-];
-
-class DataDashboard extends StatefulWidget {
-  const DataDashboard({Key? key}) : super(key: key);
-
-  @override
-  DataDashboardState createState() => DataDashboardState();
-}
-
-class DataDashboardState extends State<DataDashboard> {
-  late Future<List<Map<String, dynamic>>> _userDataFuture;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Mobility Data Dashboard',
-          style: TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.black,
-              radius: 20,
-              child: IconButton(
-                icon: Icon(Icons.person),
-                color: Colors.white,
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage())
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-        backgroundColor: Theme.of(context).primaryColor,
-        elevation: 0,
-      ),
-      body: Container(
-        color: Colors.white,
-        child: grid,
-      ),
-    );
-  }*/
-

@@ -13,6 +13,23 @@ final List<GameData> favorite_games = [
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
 ];
 
+// Data pulled from provider gets stored as SessionData items for player history
+class SessionData {
+  final DateTime date;
+  final GameData game;
+  /*
+  pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
+  in the event that someone starts a game and closes it before collecting measurements, moving
+  around, etc.
+   */
+  final int? pointsCollected;
+  final int? distanceTraveled;
+  List<dynamic>? sessionDataPoints;
+
+  SessionData({required this.date, required this.game, this.pointsCollected,
+    this.distanceTraveled, this.sessionDataPoints});
+}
+
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
@@ -32,7 +49,6 @@ class UserDataProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      print('❌ No user logged in');
       return;
     }
 
