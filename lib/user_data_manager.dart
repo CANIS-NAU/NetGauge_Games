@@ -6,6 +6,12 @@ import 'homepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
+import 'game_catalog.dart';
+
+final List<GameData> favorite_games = [
+  GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
+  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+];
 
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;

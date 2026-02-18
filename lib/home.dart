@@ -3,20 +3,21 @@ import 'package:flutter/material.dart';
 import 'speed_test_page.dart';
 import 'widgets/buttons.dart';
 import 'game_catalog.dart';
+import 'user_data_manager.dart';
 
 class Utilities {
   final String text;
   final IconData? icon;
   final String? imagePath;
-
   Utilities({required this.text, this.icon, this.imagePath});
+
 }
 
 final List<Utilities> utilityButtons = [
-  Utilities(text: "Internet Measurement", icon:Icons.wifi),
+  Utilities(text: "Game Catalog", icon:Icons.menu_book),
   Utilities(text: "Settings", icon:Icons.settings),
-  Utilities(text: "Player Statistics", icon:Icons.auto_graph),
-  Utilities(text: "Community Statistics", icon:Icons.group),
+  Utilities(text: "Internet Measurment", icon:Icons.wifi),
+  Utilities(text: "Community Statistics", icon:Icons.auto_graph_rounded),
 ];
 
 class HomePage extends StatefulWidget {
@@ -79,10 +80,31 @@ class _HomePageState extends State<HomePage> {
                       textSize: 12,
                       buttonHeight: 60,
                       buttonLength: 85,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SpeedTestPage()),
-                      ),
+                      onTap: () async {
+                        String buttonText = utilityButtons[index].text;
+                        if (buttonText == 'Settings') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SpeedTestPage(),
+                            ),
+                          );
+                        } else if (buttonText == 'Game Catalog') {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const GameCatalog()),
+                          );
+                          // 3. After returning, rebuild the UI to show the new favorites
+                          setState(() {});
+                        } else if (buttonText == 'Internet Measurment') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SpeedTestPage(),
+                            ),
+                          );
+                        }
+                      },
                     );
                   },
                 ),
@@ -110,7 +132,10 @@ class _HomePageState extends State<HomePage> {
                       iconSize: 60,
                       buttonHeight: 45,
                       buttonLength: 45,
-                      onTap: () => showCustomPopup(context, favorite_games[index].text),
+                      onTap: () async {
+                        await showCustomPopup(context, favorite_games[index]);
+                        setState(() {});
+                      },
                     );
                   },
                 ),

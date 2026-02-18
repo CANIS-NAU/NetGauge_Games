@@ -13,7 +13,7 @@ class PreviewApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: gameCatalog(), // Replace with your actual page widget
+      home: GameCatalog(), // Replace with your actual page widget
     );
   }
 }
