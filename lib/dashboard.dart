@@ -2,16 +2,99 @@ import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/game_stats.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/leaderboard.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/radius_gyration.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/total_data_points.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/total_distance.dart';
 import 'profile.dart';
+import 'user_data_manager.dart';
+import 'game_catalog.dart';
+import 'widgets/buttons.dart';
+
+class PlayerStatistics extends StatelessWidget {
+  const PlayerStatistics({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+              'Player Statistics',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 25)
+          ),
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+        ),
+      body:
+        const ExpansionListStatistics(),
+    );
+  }
+}
+
+// stores ExpansionPanel state information
+class SessionItem {
+  SessionItem({
+    required this.expandedValue,
+    required this.headerValue,
+    this.isExpanded = false,
+  });
+
+  String expandedValue;
+  String headerValue;
+  bool isExpanded;
+}
+
+List<SessionItem> generateItems(int numberOfItems) {
+  return List<SessionItem>.generate(numberOfItems, (int index) {
+    return SessionItem(
+      headerValue: 'Session $index',
+      expandedValue: 'Placeholder data.',
+    );
+  });
+}
+
+class ExpansionListStatistics extends StatefulWidget {
+  const ExpansionListStatistics({super.key});
+
+  @override
+  State<ExpansionListStatistics> createState() =>
+      _ExpansionListStatisticsState();
+}
+
+class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
+  //TODO: This should not be hard-coded, update later with session count from manager.
+  final List<SessionItem> _data = generateItems(8);
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(child: Container(child: _buildPanel()));
+  }
+
+  Widget _buildPanel() {
+    return ExpansionPanelList(
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          _data[index].isExpanded = isExpanded;
+        });
+      },
+      children: _data.map<ExpansionPanel>((SessionItem item) {
+        return ExpansionPanel(
+          headerBuilder: (BuildContext context, bool isExpanded) {
+            return ListTile(title: Text(item.headerValue));
+          },
+          body: ListTile(
+            title: Text(item.expandedValue),
+          ),
+          isExpanded: item.isExpanded,
+        );
+      }).toList(),
+    );
+  }
+}
 
 //this list defines all the different panels in the dashboard
 // new panels can be added by adding a new "map" to this list
-final List<Map<String, dynamic>> panelData = [
+/*final List<Map<String, dynamic>> panelData = [
   {
     'title': 'Total Distance Traveled',
     'icon': Icons.directions_walk,
@@ -99,58 +182,5 @@ class DataDashboardState extends State<DataDashboard> {
         child: grid,
       ),
     );
-  }
+  }*/
 
-  //makes up grid of panels and stylization
-  get grid => Container(
-    padding: const EdgeInsets.all(20),
-    child: GridView.count(
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      crossAxisCount: 2,
-      childAspectRatio: .90,
-      children: List.generate(panelData.length, (index) {
-        final data = panelData[index];
-        //pop up when panel is clicked
-        return InkWell(
-          onTap: () {
-            // Navigate to the page specified in the navigation field
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => data['navigation'],
-              ),
-            );
-          },
-          //continued box style
-          borderRadius: BorderRadius.circular(12),
-          child: Card(
-            elevation: 4,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(data['icon'], color: data['color'], size: 40),
-                  const SizedBox(height: 8),
-                  Text(
-                    data['title'],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: data['color'],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
-    ),
-  );
-}

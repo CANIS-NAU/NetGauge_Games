@@ -5,6 +5,7 @@ import 'widgets/buttons.dart';
 import 'game_catalog.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'dashboard.dart';
 
 class Utilities {
   final String text;
@@ -17,7 +18,7 @@ class Utilities {
 final List<Utilities> utilityButtons = [
   Utilities(text: "Game Catalog", icon:Icons.menu_book),
   Utilities(text: "Settings", icon:Icons.settings),
-  Utilities(text: "Internet Measurment", icon:Icons.wifi),
+  Utilities(text: "Internet Measurement", icon:Icons.wifi),
   Utilities(text: "Community Statistics", icon:Icons.auto_graph_rounded),
 ];
 
@@ -38,6 +39,10 @@ class _HomePageState extends State<HomePage> {
     final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.help_outline_rounded),
+          onPressed: () { /* Open drawer/menu */ },
+        ),
         centerTitle: true,
         title: const Text(
             'NetGauge Games',
@@ -65,12 +70,38 @@ class _HomePageState extends State<HomePage> {
                           'Total Radius of Gyration: ${userData.totalRadiusGyration}',
                       textAlign: TextAlign.start,
                       style: const TextStyle(
-                          fontWeight: FontWeight.normal,
-                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
                           fontSize: 20)
                   ),
               ),
-              const SizedBox(height: 300),
+              // add expand player statistics button
+              TextButton(
+                onPressed: () => {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PlayerStatistics()),
+                  )
+                },
+                style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        color: Colors.black, // Specify the border color
+                        width: 3,           // Specify the border width
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  fixedSize: const Size(500, 25),
+                  //backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.black,
+                  textStyle: const TextStyle(
+                      fontSize: 20,
+                    fontWeight: FontWeight.w400,
+                  )
+                ),
+                child: const Text("Expand Player Statistics"),
+              ),
+              const SizedBox(height: 350),
               // Utility buttons
               GridView.builder(
                 shrinkWrap: true,
@@ -92,7 +123,7 @@ class _HomePageState extends State<HomePage> {
                     imagePath: utilityButtons[index].imagePath,
                     isIcon: true,
                     iconSize: 25,
-                    textSize: 12,
+                    textSize: 13,
                     buttonHeight: 60,
                     buttonLength: 85,
                     onTap: () async {

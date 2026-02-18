@@ -36,7 +36,13 @@ class GameCatalog extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Game Catalog'),
+        title: const Text(
+            'Game Catalog',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 25)
+        ),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
