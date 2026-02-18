@@ -7,12 +7,14 @@ import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'widgets/buttons.dart';
 import 'user_data_manager.dart';
+import 'package:provider/provider.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -26,8 +28,41 @@ class PlayerStatistics extends StatelessWidget {
           backgroundColor: Colors.deepPurple,
           foregroundColor: Colors.white,
         ),
-      body:
-        const ExpansionListStatistics(),
+      body: Column(
+          children:[
+            const Text('All-Time Statistics',
+              style:
+              TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              child:
+              Text(
+                  'Total Points Collected: ${userData.measurementsTaken} \n'
+                      'Total Distance Traveled: ${userData.distanceTraveled} \n'
+                      'Total Radius of Gyration: ${userData.totalRadiusGyration}',
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                      fontSize: 20)
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Session Data',
+              style:
+               TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const ExpansionListStatistics(),
+        ],
+      )
     );
   }
 }
