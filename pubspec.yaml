@@ -47,6 +47,7 @@ dependencies:
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   flutter_map_heatmap: any
+  flutter_osm_plugin: ^1.4.3
 
   # Geolocation system
   geolocator: ^13.0.4

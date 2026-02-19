@@ -6,6 +6,7 @@ import 'game_catalog.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 import 'dashboard.dart';
+import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 
 class Utilities {
   final String text;
@@ -102,7 +103,87 @@ class _HomePageState extends State<HomePage> {
                 child: const Text("Expand Player Statistics"),
                 //TODO: Nice-to-have-->add a trailing expand icon here
               ),
-              const SizedBox(height: 350),
+              const SizedBox(height: 10),
+              //TODO: Add map preview here, remove SizedBox placeholder
+              Container(
+                decoration: BoxDecoration(
+                  // Use BoxDecoration to add a border and other styling
+                  border: Border.all(
+                    color: Colors.black, // Specify the border color
+                    width: 3.0, // Specify the border thickness
+                  ),
+                ),
+                height: 250,
+                width: double.infinity,
+                child: OSMFlutter(
+                  controller: MapController(
+                    initPosition: GeoPoint(latitude: 47.4358055, longitude: 8.4737324),
+                    areaLimit: const BoundingBox(
+                      east: 10.4922941,
+                      north: 47.8084648,
+                      south: 45.817995,
+                      west: 5.9559113,
+                    ),
+                  ),
+                  osmOption: OSMOption(
+                    userTrackingOption: const UserTrackingOption(
+                      enableTracking: true,
+                      unFollowUser: false,
+                    ),
+                    zoomOption: const ZoomOption(
+                      initZoom: 8,
+                      minZoomLevel: 3,
+                      maxZoomLevel: 19,
+                      stepZoom: 1.0,
+                    ),
+                    userLocationMarker: UserLocationMaker(
+                      personMarker: const MarkerIcon(
+                        icon: Icon(
+                          Icons.location_history_rounded,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                      ),
+                      directionArrowMarker: const MarkerIcon(
+                        icon: Icon(
+                          Icons.double_arrow,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                    roadConfiguration: const RoadOption(
+                      roadColor: Colors.yellowAccent,
+                    ),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PlayerStatistics()),
+                  )
+                },
+                style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        color: Colors.black, // Specify the border color
+                        width: 3,           // Specify the border width
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    fixedSize: const Size(500, 25),
+                    //backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                    )
+                ),
+                child: const Text("Expand Map"),
+                //TODO: Nice-to-have-->add a trailing expand icon here
+              ),
+              const SizedBox(height: 10),
               // Utility buttons
               GridView.builder(
                 shrinkWrap: true,
