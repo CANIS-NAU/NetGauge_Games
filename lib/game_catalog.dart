@@ -26,6 +26,7 @@ class GameCatalog extends StatelessWidget {
   Widget build(BuildContext context) {
     // Store your button data in a list
     final List<GameData> games = [
+      GameData(text: "Measure Internet", icon: Icons.wifi),
       GameData(text: "Space Explorers", icon: Icons.settings),
       GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
       GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
@@ -118,6 +119,12 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
   if (game.text == "Space Explorers") {
     title = "Space Explorers";
     content = "Coming soon!";
+    gameURL = '';
+    imagePath = game.imagePath;
+  }
+  if (game.text == "Measure Internet") {
+    title = "Measure Internet";
+    content = "Measure your connectivity!";
     gameURL = '';
     imagePath = game.imagePath;
   }

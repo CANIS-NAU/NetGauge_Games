@@ -7,6 +7,7 @@ import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 import 'dashboard.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'dynamic_map.dart';
 
 class Utilities {
   final String text;
@@ -19,7 +20,6 @@ class Utilities {
 final List<Utilities> utilityButtons = [
   Utilities(text: "Game Catalog", icon:Icons.menu_book),
   Utilities(text: "Settings", icon:Icons.settings),
-  Utilities(text: "Measure Internet", icon:Icons.wifi),
   Utilities(text: "Community Statistics", icon:Icons.auto_graph_rounded),
 ];
 
@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () => {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PlayerStatistics()),
+                    MaterialPageRoute(builder: (context) => const DynamicMap()),
                   )
                 },
                 style: TextButton.styleFrom(
@@ -189,10 +189,10 @@ class _HomePageState extends State<HomePage> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
+                  crossAxisCount: 3,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 15 / 20,
+                  childAspectRatio: 15 / 12,
                 ),
                 itemCount: utilityButtons.length,
                 itemBuilder: (context, index) {
@@ -206,8 +206,8 @@ class _HomePageState extends State<HomePage> {
                     isIcon: true,
                     iconSize: 25,
                     textSize: 13,
-                    buttonHeight: 60,
-                    buttonLength: 85,
+                    buttonHeight: 40,
+                    buttonLength: 65,
                     onTap: () async {
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
@@ -222,15 +222,8 @@ class _HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
                         );
-                        // 3. After returning, rebuild the UI to show the new favorites
+                        // After returning, rebuild the UI to show the new favorites
                         setState(() {});
-                      } else if (buttonText == 'Measure Internet') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SpeedTestPage(),
-                          ),
-                        );
                       }
                     },
                   );
