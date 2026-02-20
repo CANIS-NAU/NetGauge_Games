@@ -65,17 +65,17 @@ class UserDataProvider extends ChangeNotifier {
 
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
-        print('✅ Data loaded:');
+        print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
       } else {
-        print('❌ No document found, creating one...');
+        print('No document found, creating one...');
         // Create document if it doesn't exist
         await createUserDocument(user);
         await fetchUserData(); // Try again
       }
     } catch (e) {
-      print('❌ Error: $e');
+      print('Error: $e');
     }
 
     _isLoading = false;
