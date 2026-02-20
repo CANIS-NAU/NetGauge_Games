@@ -9,6 +9,7 @@ import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 import 'dashboard.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 // Data Point Class
 class DataPoint {
@@ -24,15 +25,10 @@ class DataPoint {
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-
-    // Pull the GeoPoint from Firestore
-    final firestore.GeoPoint geoPoint = data['location'] as firestore.GeoPoint;
-
-    // Convert it to LatLng right here
-    final LatLng latLng = LatLng(geoPoint.latitude, geoPoint.longitude);
+    final firestore.GeoPoint geoPoint = data['location']['geopoint'] as firestore.GeoPoint;
 
     return DataPoint(
-      point: latLng,
+      point: LatLng(geoPoint.latitude, geoPoint.longitude),
       timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
       uploadSpeed: data['uploadSpeed'] as double ?? 0.0,
       downloadSpeed: data['downloadSpeed'] as double ?? 0.0,
@@ -40,6 +36,19 @@ class DataPoint {
       gamePlayed: data['gamePlayed'] as String ?? 'Unknown',
     );
   }
+}
+
+// radius-based stream for gathering points from firestore
+final GeoCollectionReference<Map<String, dynamic>> geoCollection =
+GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
+
+Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm) {
+  return geoCollection.subscribeWithin(
+    center: GeoFirePoint(firestore.GeoPoint(center.latitude, center.longitude)),
+    radiusInKm: radiusKm,
+    field: 'location',       // the nested field name you used when writing
+    geopointFrom: (data) => data['location']['geopoint'] as firestore.GeoPoint,
+  );
 }
 
 class DynamicMap extends StatefulWidget {

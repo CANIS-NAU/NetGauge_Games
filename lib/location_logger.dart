@@ -44,8 +44,9 @@ class LocationLogger {
           .doc(sessionId)
           .collection('LocationData')
           .add({
-            'latitude': pos.latitude,
-            'longitude': pos.longitude,
+          // commenting instead of removing just in case, should be replaced by geopoint
+            //'latitude': pos.latitude,
+            //'longitude': pos.longitude,
             'datetime': DateTime.now().toIso8601String(),
             'game': SessionManager.currentGame,
             'geopoint': geoPoint.geopoint,
