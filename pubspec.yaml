@@ -49,6 +49,8 @@ dependencies:
   flutter_map_heatmap: any
   flutter_osm_plugin: ^1.4.3
   geoflutterfire_plus: ^0.0.32
+  flutter_polyline_points: ^3.1.0
+  location: ^8.0.1
 
   # Geolocation system
   geolocator: ^13.0.4

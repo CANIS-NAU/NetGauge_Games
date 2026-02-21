@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'dashboard.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'dart:async'; // needed for StreamSubscription
 
 // Data Point Class
 class DataPoint {
@@ -30,10 +31,10 @@ class DataPoint {
     return DataPoint(
       point: LatLng(geoPoint.latitude, geoPoint.longitude),
       timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
-      uploadSpeed: data['uploadSpeed'] as double ?? 0.0,
-      downloadSpeed: data['downloadSpeed'] as double ?? 0.0,
-      latency: data['latency'] as double ?? 0.0,
-      gamePlayed: data['gamePlayed'] as String ?? 'Unknown',
+      uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
+      downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
+      latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
+      gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
     );
   }
 }
@@ -46,7 +47,7 @@ Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double r
   return geoCollection.subscribeWithin(
     center: GeoFirePoint(firestore.GeoPoint(center.latitude, center.longitude)),
     radiusInKm: radiusKm,
-    field: 'location',       // the nested field name you used when writing
+    field: 'location',
     geopointFrom: (data) => data['location']['geopoint'] as firestore.GeoPoint,
   );
 }
@@ -59,12 +60,48 @@ class DynamicMap extends StatefulWidget {
 }
 
 class _DynamicMapState extends State<DynamicMap> {
+  late MapController _mapController;           // moved here from OSMFlutter
+  late StreamSubscription _streamSubscription; // new
+
   @override
   void initState() {
     super.initState();
+
+    // initialize the controller
+    _mapController = MapController(
+      initPosition: GeoPoint(latitude: 35.1861, longitude: -111.6583),
+    );
+
+    // define the center and radius for your query
+    final LatLng center = LatLng(35.1861, -111.6583);
+    final double radiusKm = 10.0; // adjust as needed
+
+    // subscribe to the stream and store the subscription
+    _streamSubscription = getPointsStream(center, radiusKm).listen((docs) async {
+      final points = docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
+      final existingPoints = await _mapController.geopoints;
+      await _mapController.removeMarkers(existingPoints);
+      for (final dp in points) {
+        await _mapController.addMarker(
+          GeoPoint(latitude: dp.point.latitude, longitude: dp.point.longitude),
+          markerIcon: const MarkerIcon(
+            icon: Icon(Icons.location_pin, color: Colors.red, size: 48),
+          ),
+        );
+      }
+    });
   }
+
+  @override
+  void dispose() {
+    _streamSubscription.cancel(); // cancel stream first
+    _mapController.dispose();     // then dispose the controller
+    super.dispose();              // always last
+  }
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -79,7 +116,7 @@ class _DynamicMapState extends State<DynamicMap> {
         centerTitle: true,
         title: const Text(
             'Map',
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontSize: 25)
@@ -87,17 +124,12 @@ class _DynamicMapState extends State<DynamicMap> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
-      body:
-      OSMFlutter(
-        controller: MapController(
-          initPosition: GeoPoint(latitude: 47.4358055, longitude: 8.4737324),
-          areaLimit: const BoundingBox(
-            east: 10.4922941,
-            north: 47.8084648,
-            south: 45.817995,
-            west: 5.9559113,
-          ),
-        ),
+      body: OSMFlutter(
+        controller: _mapController, // now using the state-level controller
+        /*mapIsReady: (isReady) async {
+          // markers are only added once the map confirms it's ready
+          if (!isReady) return;
+        },*/
         osmOption: OSMOption(
           userTrackingOption: const UserTrackingOption(
             enableTracking: true,
