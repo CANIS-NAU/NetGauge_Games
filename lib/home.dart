@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'dashboard.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'dynamic_map.dart';
+import 'information.dart';
 
 class Utilities {
   final String text;
@@ -42,7 +43,12 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.help_outline_rounded),
-          onPressed: () { /* Open drawer/menu */ },
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const Information()),
+            );
+          },
         ),
         centerTitle: true,
         title: const Text(
