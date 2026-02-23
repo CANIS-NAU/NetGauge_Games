@@ -47,6 +47,10 @@ dependencies:
   flutter_map: ^6.1.0
   latlong2: ^0.9.0
   flutter_map_heatmap: any
+  flutter_osm_plugin: ^1.4.3
+  geoflutterfire_plus: ^0.0.32
+  flutter_polyline_points: ^3.1.0
+  location: ^8.0.1
 
   # Geolocation system
   geolocator: ^13.0.4
@@ -135,6 +139,10 @@ flutter:
     - assets/sounds/zombieSound2.mp3
     - assets/sounds/zombieSound3.mp3
     - assets/sounds/zombieSound4.mp3
+    - assets/icons/game_controller.png
+    - assets/icons/dragon_outline.png
+    - assets/icons/soul_icon.png
+    - assets/icons/zombie_outline.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

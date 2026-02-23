@@ -6,6 +6,29 @@ import 'homepage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
+import 'game_catalog.dart';
+
+final List<GameData> favorite_games = [
+  GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
+  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+];
+
+// Data pulled from provider gets stored as SessionData items for player history
+class SessionData {
+  final DateTime date;
+  final GameData game;
+  /*
+  pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
+  in the event that someone starts a game and closes it before collecting measurements, moving
+  around, etc.
+   */
+  final int? pointsCollected;
+  final int? distanceTraveled;
+  List<dynamic>? sessionDataPoints;
+
+  SessionData({required this.date, required this.game, this.pointsCollected,
+    this.distanceTraveled, this.sessionDataPoints});
+}
 
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
@@ -18,6 +41,7 @@ class UserDataProvider extends ChangeNotifier {
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
+  int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
   // Fetch data for the currently logged-in user
@@ -25,7 +49,6 @@ class UserDataProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      print('❌ No user logged in');
       return;
     }
 
@@ -42,17 +65,17 @@ class UserDataProvider extends ChangeNotifier {
 
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
-        print('✅ Data loaded:');
+        print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
       } else {
-        print('❌ No document found, creating one...');
+        print('No document found, creating one...');
         // Create document if it doesn't exist
         await createUserDocument(user);
         await fetchUserData(); // Try again
       }
     } catch (e) {
-      print('❌ Error: $e');
+      print('Error: $e');
     }
 
     _isLoading = false;

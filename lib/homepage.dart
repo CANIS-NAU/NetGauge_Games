@@ -578,8 +578,6 @@ class _HomePageState extends State<HomePage> {
                   'Speed Test', Icons.speed, const SpeedTestPage(), context),
               _buildMapTile('Session Data Map', Icons.map, context),
               _buildCombinedMapTile('Full Data Map', Icons.public, context),
-              _buildPageTile('Data Dashboard', Icons.leaderboard,
-                  const DataDashboard(), context),
             ],
           ),
         ],

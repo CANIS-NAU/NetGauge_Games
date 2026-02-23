@@ -2,155 +2,130 @@ import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/game_stats.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/leaderboard.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/radius_gyration.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/total_data_points.dart';
-import 'package:internet_measurement_games_app/dashboard_pages/total_distance.dart';
 import 'profile.dart';
+import 'user_data_manager.dart';
+import 'game_catalog.dart';
+import 'widgets/buttons.dart';
+import 'user_data_manager.dart';
+import 'package:provider/provider.dart';
 
-//this list defines all the different panels in the dashboard
-// new panels can be added by adding a new "map" to this list
-final List<Map<String, dynamic>> panelData = [
-  {
-    'title': 'Total Distance Traveled',
-    'icon': Icons.directions_walk,
-    'color': Colors.red,
-    'message': 'Total Distance Traveled During Session',
-    'navigation': TotalDistance()
-  },
-  {
-    'title': 'Total Data Points Collected',
-    'icon': Icons.scatter_plot,
-    'color': Colors.green,
-    'message': 'Total Data Points Collected During Session',
-    'navigation': TotalDataPoints()
-  },
-  {
-    'title': 'Radius of Gyration',
-    'icon': Icons.radar,
-    'color': Colors.blue,
-    'message': 'Radius of Gyration During Session',
-    'navigation': RadiusGyration()
-  },
-  {
-    'title': 'Most Played Game in Area',
-    'icon': Icons.gamepad,
-    'color': Colors.orange,
-    'message': 'Most Played Game in Area',
-    'navigation': GameStats()
-  },
-  {
-    'title': 'Leaderboard',
-    'icon': Icons.emoji_events,
-    'color': Colors.purple,
-    'message': 'Leaderboard for Data Points Collected in Area',
-    'navigation': Leaderboard()
-  },
-];
-
-class DataDashboard extends StatefulWidget {
-  const DataDashboard({Key? key}) : super(key: key);
-
-  @override
-  DataDashboardState createState() => DataDashboardState();
-}
-
-class DataDashboardState extends State<DataDashboard> {
-  late Future<List<Map<String, dynamic>>> _userDataFuture;
+class PlayerStatistics extends StatelessWidget {
+  const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Mobility Data Dashboard',
-          style: TextStyle(
-            fontFamily: 'Roboto',
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text(
+              'Player Statistics',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 25)
           ),
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.black,
-              radius: 20,
-              child: IconButton(
-                icon: Icon(Icons.person),
-                color: Colors.white,
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage())
-                  );
-                },
+      body: Column(
+          children:[
+            const Text('All-Time Statistics',
+              style:
+              TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
               ),
             ),
-          ),
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              child:
+              Text(
+                  'Total Points Collected: ${userData.measurementsTaken} \n'
+                      'Total Distance Traveled: ${userData.distanceTraveled} \n'
+                      'Total Radius of Gyration: ${userData.totalRadiusGyration}',
+                  textAlign: TextAlign.start,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                      fontSize: 20)
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Session Data',
+              style:
+               TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const ExpansionListStatistics(),
         ],
-        backgroundColor: Theme.of(context).primaryColor,
-        elevation: 0,
-      ),
-      body: Container(
-        color: Colors.white,
-        child: grid,
-      ),
+      )
     );
   }
+}
 
-  //makes up grid of panels and stylization
-  get grid => Container(
-    padding: const EdgeInsets.all(20),
-    child: GridView.count(
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      crossAxisCount: 2,
-      childAspectRatio: .90,
-      children: List.generate(panelData.length, (index) {
-        final data = panelData[index];
-        //pop up when panel is clicked
-        return InkWell(
-          onTap: () {
-            // Navigate to the page specified in the navigation field
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => data['navigation'],
-              ),
-            );
+// A new class that extends SessionData to include UI state for the panel.
+class ExpandableSessionData extends SessionData {
+  bool isExpanded;
+
+  ExpandableSessionData({
+    required super.date,
+    required super.game,
+    this.isExpanded = false,
+  });
+}
+
+/*
+TODO: This function is just to populate with dummy data. It will need to be replaced
+by a function pulling real data to populate in player statistics.
+ */
+List<ExpandableSessionData> generateItems(int numberOfItems) {
+  return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
+    return ExpandableSessionData(
+      date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
+      game: favorite_games[index % favorite_games.length], // Cycle through favorite games
+    );
+  });
+}
+
+class ExpansionListStatistics extends StatefulWidget {
+  const ExpansionListStatistics({super.key});
+
+  @override
+  State<ExpansionListStatistics> createState() =>
+      _ExpansionListStatisticsState();
+}
+
+class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
+  // The list now correctly holds the expandable data objects.
+  final List<ExpandableSessionData> _data = generateItems(8);
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(child: Container(child: _buildPanel()));
+  }
+
+  Widget _buildPanel() {
+    return ExpansionPanelList(
+      expansionCallback: (int index, bool isExpanded) {
+        setState(() {
+          _data[index].isExpanded = isExpanded;
+        });
+      },
+      children: _data.map<ExpansionPanel>((ExpandableSessionData item) {
+        return ExpansionPanel(
+          headerBuilder: (BuildContext context, bool isExpanded) {
+            return ListTile(title: Text(item.date.toString()));
           },
-          //continued box style
-          borderRadius: BorderRadius.circular(12),
-          child: Card(
-            elevation: 4,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(data['icon'], color: data['color'], size: 40),
-                  const SizedBox(height: 8),
-                  Text(
-                    data['title'],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: data['color'],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          body: ListTile(
+            title: Text(item.game.text), // Correctly display the game's text property.
           ),
+          isExpanded: item.isExpanded,
         );
-      }),
-    ),
-  );
+      }).toList(),
+    );
+  }
 }

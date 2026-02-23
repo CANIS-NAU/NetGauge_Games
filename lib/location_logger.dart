@@ -1,8 +1,9 @@
 import 'location_service.dart';
 import 'session_manager.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 // class that manages logging of persistent location data to firestore
 class LocationLogger {
@@ -13,38 +14,43 @@ class LocationLogger {
     LocationDispatcher.stream.listen((Position pos) async {
       _writeCount++;
 
-      debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
+      /*debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
       debugPrint("[LOCATION_LOGGER] Current game: ${SessionManager.currentGame}");
       //debugPrint("[LOCATION_LOGGER] Player name: ${SessionManager.playerName}");
-      debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
+      debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}"); */
 
       // only writing every 5th location update and only if a game is being played and a player has been declared
       if (_writeCount % 5 == 0 && (SessionManager.currentGame != null)) {
         debugPrint("[LOCATION_LOGGER] Writing location data to Firestore...");
         
-        final firestore = FirebaseFirestore.instance;
+        final firestoreDb = firestore.FirebaseFirestore.instance;
         final sessionId = SessionManager.sessionId;
         
         // First, ensure the session document exists
-        await firestore
+        await firestoreDb
           .collection('Movement Data')
           .doc(sessionId)
           .set({
             'sessionId': sessionId,
             //'playerName': SessionManager.playerName,
             'created': DateTime.now().toIso8601String(),
-          }, SetOptions(merge: true)); // merge: true prevents overwriting existing data
-        
+          }, firestore.SetOptions(merge: true)); // merge: true prevents overwriting existing data
+
+        final geoPoint = GeoFirePoint(firestore.GeoPoint(pos.latitude, pos.longitude));
+
         // Then add the location data to the subcollection
-        await firestore
+        await firestoreDb
           .collection('Movement Data')
           .doc(sessionId)
           .collection('LocationData')
           .add({
-            'latitude': pos.latitude,
-            'longitude': pos.longitude,
+          // commenting instead of removing just in case, should be replaced by geopoint
+            //'latitude': pos.latitude,
+            //'longitude': pos.longitude,
             'datetime': DateTime.now().toIso8601String(),
             'game': SessionManager.currentGame,
+            'geopoint': geoPoint.geopoint,
+            'geohash': geoPoint.geohash
             //'player': SessionManager.playerName,
           });
         debugPrint("[LOCATION_LOGGER] Location Logged successfully to session: $sessionId");
