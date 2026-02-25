@@ -20,7 +20,7 @@ final List<GameData> favorite_games = [
 // Data pulled from provider gets stored as SessionData items for player history
 class SessionData {
   final DateTime date;
-  final GameData game;
+  final String game;
   /*
   pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
   in the event that someone starts a game and closes it before collecting measurements, moving
@@ -28,10 +28,14 @@ class SessionData {
    */
   final int? pointsCollected;
   final int? distanceTraveled;
+  final double? averageUploadSpeed;
+  final double? averageDownloadSpeed;
+  final double? radiusGyration;
   List<dynamic>? sessionDataPoints;
 
   SessionData({required this.date, required this.game, this.pointsCollected,
-    this.distanceTraveled, this.sessionDataPoints});
+    this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
+  this.averageUploadSpeed, this.radiusGyration});
 }
 
 // radius-based stream for gathering points from firestore

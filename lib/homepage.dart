@@ -669,7 +669,6 @@ class _WebViewPageState extends State<WebViewPage> {
           final jsonPayload = data['payload'];
           final mapPayload = Map<String, dynamic>.from(jsonPayload);
 
-          // TODO: Grab the internet metrics using MSAK toolkit, send to JS
           grabMetrics();
 
           // write the payload data to firestore
@@ -702,16 +701,6 @@ class _WebViewPageState extends State<WebViewPage> {
           break;*/
 
         case 'setPOIs':
-          // extract POI list from payload
-          final rawPOIs = data['payload'];
-
-          /*final poiList = (rawPOIs as List).map((entry) {
-            return {
-              'latitude': (entry['latitude'] as num).toDouble(),
-              'longitude': (entry['longitude'] as num).toDouble(),
-            };
-          }).toList();*/
-
           PoiListGenerator poi_generator = new PoiListGenerator();
           final poiList = poi_generator.generatePOIList(5);
 

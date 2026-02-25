@@ -4,6 +4,7 @@
 // import needed files and libraries
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
+import 'package:internet_measurement_games_app/speed_test_page.dart';
 import 'widgets/buttons.dart';
 import 'homepage.dart';
 import 'session_manager.dart';
@@ -125,9 +126,9 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
   if (game.text == "Measure Internet") {
     title = "Measure Internet";
     content = "Measure your connectivity!";
-    gameURL = '';
     imagePath = game.imagePath;
   }
+
 
   return showDialog(
     context: context,
@@ -184,26 +185,35 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   // begin location logging
   LocationLogger.start();
 
-  // navigate to the WebViewPage
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => WebViewPage(title: title, gameFile: gameFile),
-    ),
-  ).then((_) async {
-    // log the game end with the session manager
-    SessionManager.endGame(); // also will stop logging location
-    // Stop the vibration service, in case the game started it
-    VibrationController.stop();
+  if(title == 'Measure Internet') {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => const SpeedTestPage()
+        )
+    );
+  } else {
+    // navigate to the WebViewPage
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WebViewPage(title: title, gameFile: gameFile),
+      ),
+    ).then((_) async {
+      // log the game end with the session manager
+      SessionManager.endGame(); // also will stop logging location
+      // Stop the vibration service, in case the game started it
+      VibrationController.stop();
 
-    // TODO: Navigate to home page
-    /*Navigator.push(
+      // TODO: Navigate to home page
+      /*Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => home(gameTitle: title),
       ),
     );*/
-  });
+    });
+  }
 }
 
 void updateFavorites(GameData game, BuildContext context) {
