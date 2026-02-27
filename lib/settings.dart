@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'home.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'metux.dart';
 
 class Settings extends StatelessWidget {
   const Settings({super.key});
@@ -28,6 +29,32 @@ class Settings extends StatelessWidget {
         body: Column(
           children:[
             const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => METUXState()),
+                )
+              },
+              style: TextButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      color: Colors.black, // Specify the border color
+                      width: 3,           // Specify the border width
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  fixedSize: const Size(500, 25),
+                  //backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.black,
+                  textStyle: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
+                  )
+              ),
+              child: const Text("Take METUX Survey"),
+              //TODO: Nice-to-have-->add a trailing expand icon here
+            ),
           ],
         )
     );
