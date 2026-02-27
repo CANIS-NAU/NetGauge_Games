@@ -7,6 +7,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'game_catalog.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'package:latlong2/latlong.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 final List<GameData> favorite_games = [
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
@@ -16,7 +20,7 @@ final List<GameData> favorite_games = [
 // Data pulled from provider gets stored as SessionData items for player history
 class SessionData {
   final DateTime date;
-  final GameData game;
+  final String game;
   /*
   pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
   in the event that someone starts a game and closes it before collecting measurements, moving
@@ -24,10 +28,54 @@ class SessionData {
    */
   final int? pointsCollected;
   final int? distanceTraveled;
+  final double? averageUploadSpeed;
+  final double? averageDownloadSpeed;
+  final double? radiusGyration;
   List<dynamic>? sessionDataPoints;
 
   SessionData({required this.date, required this.game, this.pointsCollected,
-    this.distanceTraveled, this.sessionDataPoints});
+    this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
+  this.averageUploadSpeed, this.radiusGyration});
+}
+
+// radius-based stream for gathering points from firestore
+final GeoCollectionReference<Map<String, dynamic>> geoCollection =
+GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
+
+Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm) {
+  return geoCollection.subscribeWithin(
+    center: GeoFirePoint(firestore.GeoPoint(center.latitude, center.longitude)),
+    radiusInKm: radiusKm,
+    field: 'location',
+    geopointFrom: (data) => data['location']['geopoint'] as firestore.GeoPoint,
+  );
+}
+
+// Data Point Class
+class DataPoint {
+  final LatLng point;
+  final DateTime timestamp;
+  final double uploadSpeed;
+  final double downloadSpeed;
+  final double latency;
+  final String gamePlayed;
+
+  DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
+    required this.downloadSpeed, required this.latency, required this.gamePlayed});
+
+  factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final firestore.GeoPoint geoPoint = data['location']['geopoint'] as firestore.GeoPoint;
+
+    return DataPoint(
+      point: LatLng(geoPoint.latitude, geoPoint.longitude),
+      timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
+      uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
+      downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
+      latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
+      gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
+    );
+  }
 }
 
 class UserDataProvider extends ChangeNotifier {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'game_catalog.dart'; // Replace with your actual page file
 import 'home.dart';
+import 'surveys.dart';
 
 void main() {
   runApp(const PreviewApp());
@@ -13,7 +14,7 @@ class PreviewApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: GameCatalog(), // Replace with your actual page widget
+      //home: METUX(), // Replace with your actual page widget
     );
   }
 }
