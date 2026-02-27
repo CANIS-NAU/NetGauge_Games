@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'game_catalog.dart'; // Replace with your actual page file
 import 'home.dart';
-import 'metux.dart';
+import 'surveys.dart';
 
 void main() {
   runApp(const PreviewApp());

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'home.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
-import 'metux.dart';
+import 'surveys.dart';
 
 class Settings extends StatelessWidget {
   const Settings({super.key});
@@ -33,7 +33,10 @@ class Settings extends StatelessWidget {
               onPressed: () => {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => METUXState()),
+                  MaterialPageRoute(builder: (context) => const SurveyState(
+                    surveyDocId: 'METUX',
+                    responseCollection: 'survey_responses',
+                  )),
                 )
               },
               style: TextButton.styleFrom(
