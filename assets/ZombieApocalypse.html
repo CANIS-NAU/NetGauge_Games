@@ -465,7 +465,6 @@ window.requestMetricsAndWriteData = function()
   FlutterBridge.postMessage(JSON.stringify({
     command: "requestMetricsAndWriteData",
     payload: {
-      nickname: State.variables.playerName,
       datetime: new Date().toISOString(),
       game: "ZombieApocalypse.html",
       hexagon: site,
@@ -862,7 +861,6 @@ window.publishLikertResponses = function()
     var envValue = envConnection.value;
     var playerValue = playerConnection.value;
     
-    var playerName = State.variables.playerName;
     var currentGame = "ZombieApocalypse.html";
     
     showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
@@ -872,7 +870,6 @@ window.publishLikertResponses = function()
    	FlutterBridge.postMessage(JSON.stringify({
       command: "publishLikertResponses",
       payload: {
-      	nickname: playerName,
         game: currentGame,
         envConnection: envValue,
         plrConnection: playerValue
@@ -893,7 +890,7 @@ MUST. EAT. BRAINS.
 
 [[How to play as the Zombie|ZombieInstructions]]
 
-</tw-passagedata><tw-passagedata pid="3" name="RoleSelect" tags="" position="1200,450" size="100,100">Welcome, $playerName! &lt;&lt;print $locationMessage&gt;&gt;
+</tw-passagedata><tw-passagedata pid="3" name="RoleSelect" tags="" position="1200,450" size="100,100">Welcome! &lt;&lt;print $locationMessage&gt;&gt;
 
 To begin, you and your fellow players need to coordinate about who will play what role in the game. There should be more Zombies than Scientists for proper balance- three Zombies for every one Scientist is a good goal to aim for. 
 
@@ -950,11 +947,7 @@ To begin, you and your fellow players need to coordinate about who will play wha
 
 [[Thanks for playing! Please fill out this brief form about the game.|AfterForm]]</tw-passagedata><tw-passagedata pid="9" name="Setup" tags="" position="1200,150" size="100,100">Hello, and welcome to NetPlay&#39;s Zombie Apocalypse game!&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
 
-Please start by entering your experiment nickname in the box below.
-&lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
-&lt;&lt;button &quot;Submit&quot;&gt;&gt;
-	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-    &lt;&lt;run publishPlayerName()&gt;&gt;
+
     &lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
@@ -983,7 +976,7 @@ Please start by entering your experiment nickname in the box below.
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;&lt;run requestPOICheck()&gt;&gt;</tw-passagedata><tw-passagedata pid="11" name="NoLocation" tags="" position="1200,300" size="100,100">Sorry $playerName, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
+&lt;&lt;run requestPOICheck()&gt;&gt;</tw-passagedata><tw-passagedata pid="11" name="NoLocation" tags="" position="1200,300" size="100,100">Sorry, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
 
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 

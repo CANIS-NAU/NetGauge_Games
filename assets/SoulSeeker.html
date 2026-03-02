@@ -427,7 +427,6 @@ window.requestMetricsAndWriteData = function()
   FlutterBridge.postMessage(JSON.stringify({
     command: "requestMetricsAndWriteData",
     payload: {
-      nickname: State.variables.playerName,
       datetime: new Date().toISOString(),
       game: "SoulSeeker.html",
       hexagon: site,
@@ -865,7 +864,6 @@ window.publishLikertResponses = function()
     var envValue = envConnection.value;
     var playerValue = playerConnection.value;
     
-    var playerName = State.variables.playerName;
     var currentGame = "SoulSeeker.html";
     
     showCustomAlert("Post-Game Form", "You rated your connection to the environment as: " + envValue + ".\n" + "You rated your connection to your fellow players as: " + playerValue + ".");
@@ -875,7 +873,6 @@ window.publishLikertResponses = function()
    	FlutterBridge.postMessage(JSON.stringify({
       command: "publishLikertResponses",
       payload: {
-      	nickname: playerName,
         game: currentGame,
         envConnection: envValue,
         plrConnection: playerValue
@@ -1119,11 +1116,7 @@ How do you approach defeating the golem?
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker! &lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
 
-Please start by entering your experiment nickname in the box below.
-&lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
-&lt;&lt;button &quot;Submit&quot;&gt;&gt;
-	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-    &lt;&lt;run publishPlayerName()&gt;&gt;
+
     &lt;&lt;if State.variables.insideCampus&gt;&gt;
     	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
         &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
@@ -1139,11 +1132,11 @@ Please start by entering your experiment nickname in the box below.
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome, $playerName! &lt;&lt;print $locationMessage&gt;&gt;
+&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome! &lt;&lt;print $locationMessage&gt;&gt;
 
 Before you begin, please read over the instructions!
 
-[[Take me there!|Instructions]]</tw-passagedata><tw-passagedata pid="20" name="NoLocation" tags="" position="1400,200" size="100,100">Sorry $playerName, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
+[[Take me there!|Instructions]]</tw-passagedata><tw-passagedata pid="20" name="NoLocation" tags="" position="1400,200" size="100,100">Sorry, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
 
 If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
 
