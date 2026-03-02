@@ -62,7 +62,7 @@ class AppButtons extends StatelessWidget {
                   color: textColor,
                   size: iconSize ?? 24,
                 ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 text,
                 textAlign: TextAlign.center,

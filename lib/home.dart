@@ -1,6 +1,5 @@
 // New homepage, so I can easily refer to the original home page as needed
 import 'package:flutter/material.dart';
-import 'speed_test_page.dart';
 import 'widgets/buttons.dart';
 import 'game_catalog.dart';
 import 'user_data_manager.dart';
@@ -68,7 +67,7 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         title: const Text(
             'NetGauge Games',
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontSize: 25)

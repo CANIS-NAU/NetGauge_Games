@@ -11,7 +11,6 @@ import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'user_data_manager.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 
@@ -46,7 +45,7 @@ class GameCatalog extends StatelessWidget {
         centerTitle: true,
         title: const Text(
             'Game Catalog',
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontSize: 25)
@@ -185,7 +184,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
 
 void _launchGame(String title, String gameFile, BuildContext context) {
 
-  loggingService.logEvent('Launching ${title}');
+  loggingService.logEvent('Launching $title');
 
   // Close the dialog first
   Navigator.pop(context);
@@ -215,7 +214,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       SessionManager.endGame(); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
-      loggingService.logEvent('Game complete: ${title}');
+      loggingService.logEvent('Game complete: $title');
 
       // TODO: Navigate to home page
       /*Navigator.push(

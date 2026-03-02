@@ -36,9 +36,9 @@ class DataPoint {
 
 // Dummy DataPoint list
 final List<DataPoint> dummyPoints = [
-  DataPoint(point: LatLng(35.1861, -111.6583), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: LatLng(35.5, -111.5), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: LatLng(35.25, -111.8), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.1861, -111.6583), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.5, -111.5), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.25, -111.8), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
 ];
 
 // radius-based stream for gathering points from firestore
@@ -64,7 +64,7 @@ class DynamicMap extends StatefulWidget {
 
 // Establishing the map state
 class _DynamicMapState extends State<DynamicMap> {
-  List<DataPoint> _displayedPoints = [];
+  final List<DataPoint> _displayedPoints = [];
   late MapController _mapController;
   // this is important for us to grab points from Firebase
   late StreamSubscription _streamSubscription;
@@ -72,7 +72,7 @@ class _DynamicMapState extends State<DynamicMap> {
   /* As points get read in from firebase, we want to make sure
   * any that come in early before the map is done rendering is not
   * lost. Therefore, we use the _pendingPoints list as a buffer.*/
-  List<DataPoint> _pendingPoints = [];
+  final List<DataPoint> _pendingPoints = [];
 
   @override
   void initState() {
@@ -83,8 +83,8 @@ class _DynamicMapState extends State<DynamicMap> {
       initPosition: GeoPoint(latitude: 35.1861, longitude: -111.6583),
     );
 
-    final LatLng center = LatLng(35.1861, -111.6583);
-    final double radiusKm = 50.0; // Increased radius for testing
+    const LatLng center = LatLng(35.1861, -111.6583);
+    const double radiusKm = 50.0; // Increased radius for testing
 
     _streamSubscription = getPointsStream(center, radiusKm).listen((docs) async {
       // Dummy points for testing
@@ -204,7 +204,7 @@ class _DynamicMapState extends State<DynamicMap> {
           ),
         ),
         onGeoPointClicked: (point) {
-          loggingService.logEvent('Clicked on point: ${point}');
+          loggingService.logEvent('Clicked on point: $point');
           try {
             final clickedDp = _displayedPoints.firstWhere(
                   (dp) =>
@@ -216,7 +216,7 @@ class _DynamicMapState extends State<DynamicMap> {
               context: context,
               builder: (context) => PointerInterceptor(
                 child: AlertDialog(
-                  title: Text('Measurement Details'),
+                  title: const Text('Measurement Details'),
                   content: SingleChildScrollView(
                     child: ListBody(
                       children: <Widget>[

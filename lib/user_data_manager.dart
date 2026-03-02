@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'homepage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';

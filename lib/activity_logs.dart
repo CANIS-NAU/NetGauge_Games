@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -54,6 +55,7 @@ class LoggingService {
     Connectivity().onConnectivityChanged.listen((result) {
       if (result != ConnectivityResult.none) {
         syncToFirestore();
+        debugPrint("ACTIVITY_LOGS: Logging data to sync to firestore");
       }
     });
 
@@ -63,6 +65,7 @@ class LoggingService {
 
   // Your app calls this every time something happens
   Future<void> logEvent(String name, {Map<String, dynamic>? params, String? userId}) async {
+    debugPrint("ACTIVITY_LOGS: logEvent called");
     // Enforce queue size limit — drop oldest if full
     if (_box.length >= _maxQueueSize) {
       final oldestKey = _box.keys.first;

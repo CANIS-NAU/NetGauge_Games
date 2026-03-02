@@ -3,16 +3,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'homepage.dart';
 import 'home.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'dart:io' show Platform;
-import 'firebase_options.dart';
 import 'login_page.dart';
-import 'profile.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 import 'activity_logs.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/hive_flutter.dart'; // for Hive.initFlutter()
+// for Hive.initFlutter()
 import 'package:get_it/get_it.dart';
 
 // app initialization
@@ -28,12 +23,14 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (context) => UserDataProvider(),
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

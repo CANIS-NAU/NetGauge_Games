@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'session_manager.dart';
 import 'speed_test_page.dart';
 import 'location_logger.dart';
 

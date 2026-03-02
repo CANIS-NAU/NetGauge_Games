@@ -2,7 +2,6 @@
 // importing libraries, pages, and packages
 
 import 'package:flutter/material.dart';
-import 'home.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 
@@ -90,7 +89,7 @@ class Information extends StatelessWidget {
                       'Generally speaking, your upload speed is good if it is at least '
                       '10 Mbps. Your download speed should be at least 100 Mbps.',
                   textAlign: TextAlign.start,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w400,
                       color: Colors.black,
                       fontSize: 20)

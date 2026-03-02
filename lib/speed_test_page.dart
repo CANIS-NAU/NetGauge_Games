@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
-import 'likert_form.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
-import 'dart:convert';
 import 'dart:io';
 
 class SpeedTestPage extends StatefulWidget{
@@ -94,7 +92,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       // Call the download test with callback
       final download = await service.runDownloadTest((status) {
         setState(() {
-          detailedLog += status + '\n';
+          detailedLog += '$status\n';
         });
       });
 
@@ -118,7 +116,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       // Call the upload test with callback
       final upload = await service.runUploadTest((status) {
         setState(() {
-          detailedLog += status + '\n';
+          detailedLog += '$status\n';
         });
       });
 
