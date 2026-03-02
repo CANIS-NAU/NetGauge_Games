@@ -14,6 +14,7 @@ class PlayerStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    loggingService.logEvent('User is in player statistics page.');
     final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
         appBar: AppBar(
@@ -124,6 +125,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
+          loggingService.logEvent('Expanded data for session on: ${_data[index].date}');
           _data[index].isExpanded = isExpanded;
         });
       },

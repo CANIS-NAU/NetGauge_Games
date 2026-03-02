@@ -11,6 +11,11 @@ import 'dynamic_map.dart';
 import 'information.dart';
 import 'community_statistics.dart';
 import 'settings.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+
+final loggingService = GetIt.instance<LoggingService>();
 
 class Utilities {
   final String text;
@@ -40,12 +45,20 @@ class _HomePageState extends State<HomePage> {
   }
   @override
   Widget build(BuildContext context) {
+    loggingService.logEvent('User is in home page');
     final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.help_outline_rounded),
           onPressed: () {
+            FirebaseAnalytics.instance.logEvent(
+              name: 'page_navigation',
+              parameters: {
+                'current_page': 'home',
+                'new_page': 'information',
+              },
+            );
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const Information()),
@@ -90,7 +103,8 @@ class _HomePageState extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const PlayerStatistics()),
-                  )
+                  ),
+                  loggingService.logEvent('Clicked expand player statistics')
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -170,7 +184,8 @@ class _HomePageState extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const DynamicMap()),
-                  )
+                  ),
+                  loggingService.logEvent('Clicked expand map')
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -219,6 +234,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () async {
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
+                        loggingService.logEvent('Clicked on settings');
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -226,6 +242,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                       } else if (buttonText == 'Game Catalog') {
+                        loggingService.logEvent('Clicked game catalog');
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
@@ -233,6 +250,7 @@ class _HomePageState extends State<HomePage> {
                         // After returning, rebuild the UI to show the new favorites
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
+                        loggingService.logEvent('Clicked community statistics');
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const CommunityStatistics())
@@ -267,6 +285,7 @@ class _HomePageState extends State<HomePage> {
                     buttonHeight: 45,
                     buttonLength: 45,
                     onTap: () async {
+                      loggingService.logEvent('Opened pop-up for ${favorite_games[index]}');
                       await showCustomPopup(context, favorite_games[index]);
                       setState(() {});
                     },

@@ -74,6 +74,7 @@ class _SurveyState extends State<SurveyState> {
               ),
               child: const Text("Submit"),
                 onPressed: () {
+                  loggingService.logEvent('Clicked submit survey.');
                   if (_formKey.currentState!.validate()) {
                     addUserData("some_user_id", _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(

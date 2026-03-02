@@ -11,6 +11,11 @@ import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'user_data_manager.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+
+final loggingService = GetIt.instance<LoggingService>();
 
 class GameData {
   final String text;
@@ -25,6 +30,7 @@ class GameCatalog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    loggingService.logEvent('User is in game catalog page');
     // Store your button data in a list
     final List<GameData> games = [
       GameData(text: "Measure Internet", icon: Icons.wifi),
@@ -87,6 +93,7 @@ Widget gameCatalogPreview() {
 }
 
 Future<void> showCustomPopup(BuildContext context, GameData game) {
+  loggingService.logEvent('Showing pop-up for ${game.text}');
   String title = "Title";
   String content = "Content";
   String gameURL = "URL";
@@ -177,6 +184,9 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
 }
 
 void _launchGame(String title, String gameFile, BuildContext context) {
+
+  loggingService.logEvent('Launching ${title}');
+
   // Close the dialog first
   Navigator.pop(context);
 
@@ -186,6 +196,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   LocationLogger.start();
 
   if(title == 'Measure Internet') {
+    loggingService.logEvent('Clicked measure internet.');
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -204,6 +215,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       SessionManager.endGame(); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
+      loggingService.logEvent('Game complete: ${title}');
 
       // TODO: Navigate to home page
       /*Navigator.push(
@@ -223,8 +235,10 @@ void updateFavorites(GameData game, BuildContext context) {
   if (isFavorited) {
     // remove from favorites
     favorite_games.removeWhere((favGame) => favGame.text == game.text);
+    loggingService.logEvent('${game.text} removed from favorites.');
   } else {
     // add to favorites
     favorite_games.add(game);
+    loggingService.logEvent('${game.text} added to favorites.');
   }
 }

@@ -10,11 +10,20 @@ import 'login_page.dart';
 import 'profile.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'activity_logs.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // for Hive.initFlutter()
+import 'package:get_it/get_it.dart';
 
 // app initialization
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  final getIt = GetIt.instance;
+  final loggingService = LoggingService();
+  await loggingService.init();
+  getIt.registerSingleton<LoggingService>(loggingService);
 
   runApp(
     ChangeNotifierProvider(
