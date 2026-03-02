@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_survey/flutter_survey.dart';
 import 'home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 
 // Setting up a data file with question, question type, answer in a json or csv
 //more easily create new surveys
@@ -50,6 +54,7 @@ class _SurveyState extends State<SurveyState> {
 
   @override
   Widget build(BuildContext context) {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       body:
       _isLoading
@@ -74,9 +79,9 @@ class _SurveyState extends State<SurveyState> {
               ),
               child: const Text("Submit"),
                 onPressed: () {
-                  loggingService.logEvent('Clicked submit survey.');
+                  loggingService.logEvent('Clicked submit survey.', phone: userData.phone);
                   if (_formKey.currentState!.validate()) {
-                    addUserData("some_user_id", _questionResults, widget.surveyDocId).then((_) {
+                    addUserData(userData.phone, _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const HomePage()),

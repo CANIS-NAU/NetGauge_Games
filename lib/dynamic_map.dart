@@ -6,6 +6,10 @@ import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:async'; // needed for StreamSubscription
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 
 // Data Point Class
 class DataPoint {
@@ -137,7 +141,8 @@ class _DynamicMapState extends State<DynamicMap> {
 
   @override
   Widget build(BuildContext context) {
-    loggingService.logEvent('User is in dynamic map page.');
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('User is in dynamic map page.', phone: userData.phone);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -204,7 +209,7 @@ class _DynamicMapState extends State<DynamicMap> {
           ),
         ),
         onGeoPointClicked: (point) {
-          loggingService.logEvent('Clicked on point: $point');
+          loggingService.logEvent('Clicked on point: $point', phone: userData.phone);
           try {
             final clickedDp = _displayedPoints.firstWhere(
                   (dp) =>

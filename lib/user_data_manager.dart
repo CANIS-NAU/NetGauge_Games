@@ -82,7 +82,7 @@ class UserDataProvider extends ChangeNotifier {
 
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
-  String get email => _userData?['email'] ?? '';
+  String get phone => _userData?['phone'] ?? '1111111111';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];

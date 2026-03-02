@@ -44,8 +44,8 @@ class _HomePageState extends State<HomePage> {
   }
   @override
   Widget build(BuildContext context) {
-    loggingService.logEvent('User is in home page');
-    final userData = Provider.of<UserDataProvider>(context);
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('User is in home page', phone: userData.phone);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -103,7 +103,7 @@ class _HomePageState extends State<HomePage> {
                     context,
                     MaterialPageRoute(builder: (context) => const PlayerStatistics()),
                   ),
-                  loggingService.logEvent('Clicked expand player statistics')
+                  loggingService.logEvent('Clicked expand player statistics', phone: userData.phone)
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -184,7 +184,7 @@ class _HomePageState extends State<HomePage> {
                     context,
                     MaterialPageRoute(builder: (context) => const DynamicMap()),
                   ),
-                  loggingService.logEvent('Clicked expand map')
+                  loggingService.logEvent('Clicked expand map', phone: userData.phone)
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -233,7 +233,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () async {
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
-                        loggingService.logEvent('Clicked on settings');
+                        loggingService.logEvent('Clicked on settings', phone: userData.phone);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -241,7 +241,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                       } else if (buttonText == 'Game Catalog') {
-                        loggingService.logEvent('Clicked game catalog');
+                        loggingService.logEvent('Clicked game catalog', phone: userData.phone);
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
@@ -249,7 +249,7 @@ class _HomePageState extends State<HomePage> {
                         // After returning, rebuild the UI to show the new favorites
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
-                        loggingService.logEvent('Clicked community statistics');
+                        loggingService.logEvent('Clicked community statistics', phone: userData.phone);
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const CommunityStatistics())
@@ -284,7 +284,7 @@ class _HomePageState extends State<HomePage> {
                     buttonHeight: 45,
                     buttonLength: 45,
                     onTap: () async {
-                      loggingService.logEvent('Opened pop-up for ${favorite_games[index]}');
+                      loggingService.logEvent('Opened pop-up for ${favorite_games[index]}', phone: userData.phone);
                       await showCustomPopup(context, favorite_games[index]);
                       setState(() {});
                     },

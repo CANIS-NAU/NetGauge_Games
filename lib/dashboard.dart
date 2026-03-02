@@ -5,14 +5,18 @@ import 'package:latlong2/latlong.dart';
 import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'package:provider/provider.dart';
+import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
-    loggingService.logEvent('User is in player statistics page.');
-    final userData = Provider.of<UserDataProvider>(context);
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('User is in player statistics page.', phone: userData.phone);
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -119,10 +123,11 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
   }
 
   Widget _buildPanel() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          loggingService.logEvent('Expanded data for session on: ${_data[index].date}');
+          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', phone: userData.phone);
           _data[index].isExpanded = isExpanded;
         });
       },
