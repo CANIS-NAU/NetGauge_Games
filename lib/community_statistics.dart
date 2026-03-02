@@ -4,12 +4,7 @@
 import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:latlong2/latlong.dart';
-import 'profile.dart';
 import 'user_data_manager.dart';
-import 'game_catalog.dart';
-import 'widgets/buttons.dart';
 import 'package:provider/provider.dart';
 
 // Declare class

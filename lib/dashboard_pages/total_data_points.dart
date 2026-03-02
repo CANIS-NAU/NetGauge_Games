@@ -29,7 +29,7 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
         backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView( // Allows scrolling if list is long
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -42,7 +42,7 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
                 letterSpacing: 1.5,
               ),
             ),
-            SizedBox(height: 20), // Spacing
+            const SizedBox(height: 20), // Spacing
             const Text(
               'Data Points',
               style: TextStyle(
@@ -52,14 +52,14 @@ class _TotalDataPointsState extends State<TotalDataPoints> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             // Display each data point
             ...userDataProvider.dataPoints.map((point) =>
                 Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
                   child: Text(
                     '(${point.latitude}, ${point.longitude})', // Convert to string for display
-                    style: TextStyle(fontSize: 16),
+                    style: const TextStyle(fontSize: 16),
                   ),
                 )
             ).toList(),

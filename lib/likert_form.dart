@@ -81,7 +81,7 @@ class _LikertFormState extends State<LikertForm> {
             data: mapData,
             gradients: gradients,
             index: 0,
-            rebuildStream: Stream<void>.empty(),
+            rebuildStream: const Stream<void>.empty(),
             center: LatLng(loc.position.latitude, loc.position.longitude),
           ),
         ),

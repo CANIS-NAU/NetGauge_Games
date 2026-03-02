@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../user_data_manager.dart';
-import 'package:geolocator/geolocator.dart';
 
 
 class TotalDistance extends StatefulWidget {

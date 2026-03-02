@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 
-final double pinchZoomThreshold = 40.0;
+const double pinchZoomThreshold = 40.0;
 class TimedWeightedLatLng {
   final LatLng point;
   final double intensity;
@@ -156,7 +156,7 @@ class _MapPageState extends State<MapPage> {
   } catch (e) {
     print("ERROR setting center: $e");
     setState(() {
-      _center = LatLng(35.1983, -111.6513); // fallback if location fails
+      _center = const LatLng(35.1983, -111.6513); // fallback if location fails
     });
   }
 }
@@ -208,9 +208,9 @@ class _MapPageState extends State<MapPage> {
         children: [
           TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            subdomains: ['a', 'b', 'c'],
+            subdomains: const ['a', 'b', 'c'],
             userAgentPackageName: 'com.example.internet_measurement_games_app',
-            additionalOptions: {
+            additionalOptions: const {
               'User-Agent': 'NetGauge Games Testing App',
             },
           ),

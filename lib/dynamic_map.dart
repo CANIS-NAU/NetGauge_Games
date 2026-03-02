@@ -6,6 +6,10 @@ import 'package:flutter_osm_plugin/flutter_osm_plugin.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:async'; // needed for StreamSubscription
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
 
 // Data Point Class
 class DataPoint {
@@ -36,9 +40,9 @@ class DataPoint {
 
 // Dummy DataPoint list
 final List<DataPoint> dummyPoints = [
-  DataPoint(point: LatLng(35.1861, -111.6583), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: LatLng(35.5, -111.5), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: LatLng(35.25, -111.8), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.1861, -111.6583), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.5, -111.5), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
+  DataPoint(point: const LatLng(35.25, -111.8), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
 ];
 
 // radius-based stream for gathering points from firestore
@@ -64,7 +68,7 @@ class DynamicMap extends StatefulWidget {
 
 // Establishing the map state
 class _DynamicMapState extends State<DynamicMap> {
-  List<DataPoint> _displayedPoints = [];
+  final List<DataPoint> _displayedPoints = [];
   late MapController _mapController;
   // this is important for us to grab points from Firebase
   late StreamSubscription _streamSubscription;
@@ -72,7 +76,7 @@ class _DynamicMapState extends State<DynamicMap> {
   /* As points get read in from firebase, we want to make sure
   * any that come in early before the map is done rendering is not
   * lost. Therefore, we use the _pendingPoints list as a buffer.*/
-  List<DataPoint> _pendingPoints = [];
+  final List<DataPoint> _pendingPoints = [];
 
   @override
   void initState() {
@@ -83,8 +87,8 @@ class _DynamicMapState extends State<DynamicMap> {
       initPosition: GeoPoint(latitude: 35.1861, longitude: -111.6583),
     );
 
-    final LatLng center = LatLng(35.1861, -111.6583);
-    final double radiusKm = 50.0; // Increased radius for testing
+    const LatLng center = LatLng(35.1861, -111.6583);
+    const double radiusKm = 50.0; // Increased radius for testing
 
     _streamSubscription = getPointsStream(center, radiusKm).listen((docs) async {
       // Dummy points for testing
@@ -137,7 +141,8 @@ class _DynamicMapState extends State<DynamicMap> {
 
   @override
   Widget build(BuildContext context) {
-
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('User is in dynamic map page.', phone: userData.phone);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -204,6 +209,7 @@ class _DynamicMapState extends State<DynamicMap> {
           ),
         ),
         onGeoPointClicked: (point) {
+          loggingService.logEvent('Clicked on point: $point', phone: userData.phone);
           try {
             final clickedDp = _displayedPoints.firstWhere(
                   (dp) =>
@@ -215,7 +221,7 @@ class _DynamicMapState extends State<DynamicMap> {
               context: context,
               builder: (context) => PointerInterceptor(
                 child: AlertDialog(
-                  title: Text('Measurement Details'),
+                  title: const Text('Measurement Details'),
                   content: SingleChildScrollView(
                     child: ListBody(
                       children: <Widget>[

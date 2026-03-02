@@ -244,11 +244,11 @@ class PoiListGenerator {
   double max_distance = 5.0; // kilometers
   int num_pois = 0; // reset when class is initialized
 
-  Future<List<PointOfInterest>> generatePOIList(int list_size) async{
-    num_pois = list_size;
+  Future<List<PointOfInterest>> generatePOIList(int listSize) async{
+    num_pois = listSize;
     getCurrentLocation();
-    List<PointOfInterest> poi_list = await callOverpassAPI();
-    return poi_list;
+    List<PointOfInterest> poiList = await callOverpassAPI();
+    return poiList;
   }
 
 
@@ -274,7 +274,7 @@ class PoiListGenerator {
    */
   Future<List<PointOfInterest>> callOverpassAPI() async{
     // start service, call instance of class
-    final service = await OverpassService();
+    final service = OverpassService();
     final allPois = service.fetchNearestPOIs(
       latitude: user_latitude,
       longitude: user_longitude,

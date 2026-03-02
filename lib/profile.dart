@@ -17,7 +17,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await FirebaseAuth.instance.signOut();
       // Optional: Navigate to the login screen or a different screen after logout
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => LoginPage()));
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
     } on FirebaseAuthException catch (e) {
       // Handle potential errors during sign out
       print('Error signing out: $e');
@@ -48,7 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.purple,
                 radius: 100,
                 child: Icon(
@@ -60,8 +60,8 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 350),
               ElevatedButton(
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all<Color>(Colors.purple),
-                  foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                  backgroundColor: WidgetStateProperty.all<Color>(Colors.purple),
+                  foregroundColor: WidgetStateProperty.all<Color>(Colors.white),
                 ),
                 onPressed: () {
                   logout();

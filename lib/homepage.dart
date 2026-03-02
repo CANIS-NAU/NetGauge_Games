@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:internet_measurement_games_app/dashboard.dart';
-import 'package:firebase_core/firebase_core.dart';
 //import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
@@ -11,13 +9,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
-import 'name_entry_page.dart';
 import 'likert_form.dart';
 import 'dart:async';
 import 'ndt7_service.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'poi_generator.dart';
 import 'speed_test_page.dart';
 import 'profile.dart';
@@ -36,7 +31,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String _sessionId = '';
+  final String _sessionId = '';
 
   @override
   void initState() {
@@ -182,7 +177,7 @@ class _HomePageState extends State<HomePage> {
                 data: mapData,
                 gradients: gradients,
                 index: 0,
-                rebuildStream: Stream<void>.empty(),
+                rebuildStream: const Stream<void>.empty(),
               ),
             ),
           );
@@ -218,7 +213,7 @@ class _HomePageState extends State<HomePage> {
                 data: mapData,
                 gradients: gradients,
                 index: 0,
-                rebuildStream: Stream<void>.empty(),
+                rebuildStream: const Stream<void>.empty(),
               ),
             ),
           );
@@ -544,7 +539,7 @@ class _HomePageState extends State<HomePage> {
                 backgroundColor: Colors.black,
                 radius: 20,
                 child: IconButton(
-                  icon: Icon(Icons.person),
+                  icon: const Icon(Icons.person),
                   color: Colors.white,
                   onPressed: () {
                     Navigator.push(
@@ -701,8 +696,8 @@ class _WebViewPageState extends State<WebViewPage> {
           break;*/
 
         case 'setPOIs':
-          PoiListGenerator poi_generator = new PoiListGenerator();
-          final poiList = poi_generator.generatePOIList(5);
+          PoiListGenerator poiGenerator = PoiListGenerator();
+          final poiList = poiGenerator.generatePOIList(5);
 
           debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
 
