@@ -9,7 +9,6 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
-  GameData(text: "Space Explorers", icon: Icons.settings),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),

@@ -117,12 +117,6 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     gameURL = 'ScavengerHunt.html';
     imagePath = game.imagePath;
   }
-  if (game.text == "Space Explorers") {
-    title = "Space Explorers";
-    content = "Coming soon!";
-    gameURL = '';
-    imagePath = game.imagePath;
-  }
   if (game.text == "Measure Internet") {
     title = "Measure Internet";
     content = "Measure your connectivity!";
