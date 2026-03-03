@@ -22,7 +22,10 @@ final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
+  // is this the game title?
   final String title;
+  //TODO: It may make more sense for this to be the GameData object, then call the html file from it later
+  // that would help with easily grabbing the game name
   final String gameFile; // holds the html file to be loaded into webview
 
   const WebViewPage({Key? key, required this.title, required this.gameFile})
@@ -73,7 +76,9 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// parses the incoming message from the JavaScript channel.
   /// it decodes the JSON string and calls corresponding methods based on the 'command' field
-  void handleNativeMessage(String message) {
+  /// I'm making this async to try and get it to work with NDT7 how it is currently set up..
+  /// that may be a mistake. Making a note here in case things aren't working right.
+  void handleNativeMessage(String message) async {
     try {
       final Map<String, dynamic> data = json.decode(message);
       final String command = data['command'];
@@ -89,7 +94,7 @@ class _WebViewPageState extends State<WebViewPage> {
           break;
 
         // JS is requesting metrics
-        //TODO: I think we can remove this one, but need to verify first
+
         case 'requestMetricsAndWriteData':
           // get the session ID
           final sessionId = SessionManager.sessionId;
@@ -178,7 +183,37 @@ class _WebViewPageState extends State<WebViewPage> {
         // collects internet measurements, sends back to game
         case 'getInternetMeasurement':
           // call NDT7-client
-          // save collected data as a payload to return to the game
+          final service = NDT7Service();
+          final download = await service.runDownloadTest((status) {});
+          final upload = await service.runUploadTest((status) {});
+
+          // get user location
+          final loc = await determineLocationData();
+
+          // upload data to firebase
+          final checkData = {
+            'game': 'Speedtest',
+            'latitude': loc.position.latitude,
+            'longitude': loc.position.longitude,
+            'download_speed': download['speedMbps'],
+            'upload_speed': upload['speedMbps'],
+            'latency': download['latency'],
+            'timestamp': FieldValue.serverTimestamp(),
+          };
+
+          await FirebaseFirestore.instance
+              .collection('measurements')
+              .doc('internet_measurement')
+              .collection('collected_data')
+              .add(checkData);
+
+          // TODO: Send data back to game (or should that be it's own case?)
+          /*
+          Currently, none of the games have logic based on internet measurement results. I am aware
+          that that is a long-term goal. I am wondering if it makes sense to have two separate cases:
+          one for just recording and one for recording and retrieving?
+           */
+
           break;
 
         default:

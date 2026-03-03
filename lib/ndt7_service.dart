@@ -73,7 +73,6 @@ class NDT7Service {
 
         onStatus('Connecting to: ${downloadUrl.substring(0, 50)}...');
 
-        // KEY FIX: Use the correct protocol string
         final socket = await WebSocket.connect(
             downloadUrl,
             protocols: ['net.measurementlab.ndt.v7'],

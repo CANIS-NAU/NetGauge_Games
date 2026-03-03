@@ -80,7 +80,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
     // write data to firestore
     final loc = await determineLocationData();
     //final nickname = SessionManager.playerName;
-    final sessionId = SessionManager.sessionId;
+    //final sessionId = SessionManager.sessionId;
 
     try {
       final service = NDT7Service();
@@ -144,17 +144,16 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'game': 'Speedtest',
         'latitude': loc.position.latitude,
         'longitude': loc.position.longitude,
-        'sessionID': sessionId,
-        'downloadSpeed': download['speedMbps'],
-        'uploadSpeed': upload['speedMbps'],
+        'download_speed': download['speedMbps'],
+        'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
         'timestamp': FieldValue.serverTimestamp(),
       };
 
       await FirebaseFirestore.instance
-          .collection('Movement Data')
-          .doc(sessionId)
-          .collection('CheckData')
+          .collection('measurements')
+          .doc('internet_measurement')
+          .collection('collected_data')
           .add(checkData);
 
       setState(() {
