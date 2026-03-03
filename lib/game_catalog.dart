@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:internet_measurement_games_app/speed_test_page.dart';
 import 'widgets/buttons.dart';
-import 'homepage.dart';
+import 'flutter_bridge.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
