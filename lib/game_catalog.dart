@@ -13,9 +13,6 @@ import 'vibration_controller.dart';
 import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
-import 'user_data_manager.dart';
-import 'activity_logs.dart';
-import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -33,17 +30,8 @@ class GameCatalog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    final userData = Provider.of<UserDataProvider>(context);
     loggingService.logEvent('User is in game catalog page', phone: userData.phone);
-    // Store your button data in a list
-    final List<GameData> games = [
-      GameData(text: "Measure Internet", icon: Icons.wifi),
-      GameData(text: "Space Explorers", icon: Icons.settings),
-      GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
-      GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-      GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-      GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
-    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -147,6 +135,10 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     builder: (BuildContext context) {
       return StatefulBuilder(
         builder: (context, dialogSetState) {
+          // Listen to the provider to get the most up-to-date favorites
+          final currentFavorites = Provider.of<UserDataProvider>(context).favoriteGames;
+          final isFavorited = currentFavorites.any((favGame) => favGame.text == game.text);
+
           return AlertDialog(
             backgroundColor: Colors.white,
             title: Text(title),
@@ -163,13 +155,12 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
             actions: [
               IconButton(
                 icon: Icon(
-                  favorite_games.any((favGame) => favGame.text == game.text)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
+                  isFavorited ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorited ? Colors.red : null,
                 ),
                 onPressed: () {
                   updateFavorites(game, context);
-                  dialogSetState(() {});
+                  // No need for dialogSetState(() {}) because Provider will rebuild the widget
                 },
               ),
               TextButton(
@@ -235,16 +226,14 @@ void _launchGame(String title, String gameFile, BuildContext context) {
 
 void updateFavorites(GameData game, BuildContext context) {
   final userData = Provider.of<UserDataProvider>(context, listen: false);
-  // Check if a game with the same text is already in favorites
-  final isFavorited = favorite_games.any((favGame) => favGame.text == game.text);
-
+  // Call the new provider method to handle the update and Firestore sync
+  userData.toggleFavorite(game.text);
+  
+  // Log the event
+  final isFavorited = userData.favoriteGames.any((favGame) => favGame.text == game.text);
   if (isFavorited) {
-    // remove from favorites
-    favorite_games.removeWhere((favGame) => favGame.text == game.text);
     loggingService.logEvent('${game.text} removed from favorites.', phone: userData.phone);
   } else {
-    // add to favorites
-    favorite_games.add(game);
     loggingService.logEvent('${game.text} added to favorites.', phone: userData.phone);
   }
 }

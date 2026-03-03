@@ -209,7 +209,7 @@ class _WebViewPageState extends State<WebViewPage> {
     // use the NDT7 service to get the metrics
     final results = await NDT7Service().runFullTest();
     final json = jsonEncode(results);
-    
+
     // return the placeholder json
     controller.runJavaScript(
         "window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception

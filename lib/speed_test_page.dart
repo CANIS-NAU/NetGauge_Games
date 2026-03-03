@@ -97,13 +97,13 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       });
 
       setState(() {
-        detailedLog += '\n✅ Download complete!\n';
+        detailedLog += '\nDownload complete!\n';
         detailedLog += 'Speed: ${download['speedMbps']?.toStringAsFixed(2)} Mbps\n';
         detailedLog += 'Bytes: ${download['bytesReceived']}\n';
         detailedLog += 'Duration: ${download['duration']?.toStringAsFixed(2)} sec\n';
         detailedLog += 'Messages: ${download['messageCount']}\n\n';
-        detailedLog += 'Raw bytes received: ${download['bytesReceived']}\n';  // ADD THIS
-        detailedLog += 'Raw duration: ${download['duration']} sec\n';  // ADD THIS
+        detailedLog += 'Raw bytes received: ${download['bytesReceived']}\n';
+        detailedLog += 'Raw duration: ${download['duration']} sec\n';
 
         downloadSpeed = '${download['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
         latency = '${download['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
@@ -173,19 +173,35 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         downloadSpeed = 'Failed';
         uploadSpeed = 'Failed';
         latency = 'Failed';
-        errorLog = '❌ ERROR:\n${e.toString()}\n\nStack trace:\n${stackTrace.toString()}';
-        detailedLog += '\n❌ TEST FAILED: $e\n';
+        errorLog = 'ERROR:\n${e.toString()}\n\nStack trace:\n${stackTrace.toString()}';
+        detailedLog += '\nTEST FAILED: $e\n';
       });
     }
   }
 
   // constructor for UI elements
   Widget _buildMetricsCard(String label, String value) {
-    return Card(
+    return Card.outlined(
+      color: Colors.white,
+      borderOnForeground: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0), // Optional: set corner radius
+        side: BorderSide(
+          color: Colors.deepPurple, // Set the border color
+          width: 3.0, // Set the desired border thickness
+        ),
+      ),
       margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: ListTile(
-        title: Text(label),
-        trailing: Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(label, style:
+          const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple
+          ),),
+        trailing: Text(value, style:
+        const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20)),
       ),
     );
   }
@@ -196,7 +212,16 @@ class SpeedTestPageState extends State<SpeedTestPage> {
     SessionManager.startGame('Speed Tester');
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Internet Speed Test'),
+        centerTitle: true,
+        title: const Text(
+            'Measure Internet',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 25)
+        ),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
@@ -212,8 +237,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red),
+                  color: Colors.white,
+                  border: Border.all(color: Colors.black),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: SelectableText(
@@ -224,8 +249,17 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             ),
           const SizedBox(height: 20),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.all(20),
+            ),
             onPressed: _runSpeedTest,
-            child: const Text('Run Test'),
+            child: const Text('Run Test',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 20)),
           ),
           const SizedBox(height: 20),
         ],

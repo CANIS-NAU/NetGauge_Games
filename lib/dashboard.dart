@@ -15,6 +15,7 @@ class PlayerStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in player statistics page.', phone: userData.phone);
     return Scaffold(
@@ -94,7 +95,7 @@ List<ExpandableSessionData> generateItems(int numberOfItems) {
   return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
     return ExpandableSessionData(
       date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
-      game: favorite_games[index % favorite_games.length].text, // Cycle through favorite games
+      game: games[index % games.length].text, // Cycle through favorite games
       averageDownloadSpeed: 12.345,
       averageUploadSpeed: 6.789,
       distanceTraveled: 5,

@@ -7,9 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
-final List<GameData> favorite_games = [
+final List<GameData> games = [
+  GameData(text: "Measure Internet", icon: Icons.wifi),
+  GameData(text: "Space Explorers", icon: Icons.settings),
+  GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
 ];
 
 // Data pulled from provider gets stored as SessionData items for player history
@@ -74,6 +78,7 @@ class DataPoint {
 }
 
 class UserDataProvider extends ChangeNotifier {
+
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
 
@@ -87,6 +92,66 @@ class UserDataProvider extends ChangeNotifier {
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
+  // This is the new getter replacing the old function
+  List<GameData> get favoriteGames {
+    if (_userData == null) {
+      return [];
+    }
+
+    List<GameData> favoritesList = [];
+    final rawFavorites = _userData!['favorite_games'];
+    
+    // Add a strict type check to avoid the Map vs List crash
+    List<dynamic> favoriteNames;
+    if (rawFavorites is List) {
+      favoriteNames = rawFavorites;
+    } else {
+      // Fallback if data is missing or malformed in DB
+      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+    }
+
+    for (var name in favoriteNames) {
+      for (var game in games) {
+        if (game.text == name) {
+          favoritesList.add(game);
+        }
+      }
+    }
+    return favoritesList;
+  }
+
+  // Method to add/remove a game from favorites in Firestore
+  Future<void> toggleFavorite(String gameName) async {
+    if (_userData == null) return;
+
+    // Use current list or default if it has never been modified
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> currentFavorites = (rawFavorites is List) 
+        ? List.from(rawFavorites) 
+        : ['Zombie Apocalypse', 'Soul Seeker'];
+
+    if (currentFavorites.contains(gameName)) {
+      currentFavorites.remove(gameName);
+    } else {
+      currentFavorites.add(gameName);
+    }
+
+    // Update local state immediately for UI responsiveness
+    _userData!['favorite_games'] = currentFavorites;
+    notifyListeners();
+
+    // Update Firestore
+    try {
+      await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(uid)
+          .update({'favorite_games': currentFavorites});
+      print('Favorites updated in Firestore');
+    } catch (e) {
+      print('Error updating favorites: $e');
+    }
+  }
+
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -95,7 +160,7 @@ class UserDataProvider extends ChangeNotifier {
       return;
     }
 
-    print('🔍 Fetching data for user: ${user.email} (${user.uid})');
+    print('Fetching data for user: ${user.email} (${user.uid})');
 
     _isLoading = true;
     notifyListeners();
@@ -111,6 +176,7 @@ class UserDataProvider extends ChangeNotifier {
         print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
+        print('   Favorite Games: ${_userData?['favorite_games']}');
       } else {
         print('No document found, creating one...');
         // Create document if it doesn't exist
@@ -137,6 +203,7 @@ class UserDataProvider extends ChangeNotifier {
       'distanceTraveled': 0,
       'dataPoints': [],
       'radGyration': [0],
+      'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
@@ -144,7 +211,7 @@ class UserDataProvider extends ChangeNotifier {
   void clearData() {
     _userData = null;
     notifyListeners();
-    print('🗑️ User data cleared');
+    print('User data cleared');
   }
 
 }
