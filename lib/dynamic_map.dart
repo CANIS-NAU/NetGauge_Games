@@ -142,7 +142,7 @@ class _DynamicMapState extends State<DynamicMap> {
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    loggingService.logEvent('User is in dynamic map page.', phone: userData.phone);
+    loggingService.logEvent('User is in dynamic map page.', email: userData.email);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -209,7 +209,7 @@ class _DynamicMapState extends State<DynamicMap> {
           ),
         ),
         onGeoPointClicked: (point) {
-          loggingService.logEvent('Clicked on point: $point', phone: userData.phone);
+          loggingService.logEvent('Clicked on point: $point', email: userData.email);
           try {
             final clickedDp = _displayedPoints.firstWhere(
                   (dp) =>

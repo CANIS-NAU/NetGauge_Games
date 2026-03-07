@@ -1,3 +1,7 @@
+// References
+// https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
+
+// import packages and libraries
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -57,21 +61,28 @@ class DataPoint {
   final double downloadSpeed;
   final double latency;
   final String gamePlayed;
+  final String email;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
-    required this.downloadSpeed, required this.latency, required this.gamePlayed});
+    required this.downloadSpeed, required this.latency, required this.gamePlayed,
+    required this.email});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final firestore.GeoPoint geoPoint = data['location']['geopoint'] as firestore.GeoPoint;
+    final GeoPoint geopoint = data['location'] as GeoPoint;
+    final double lat = geopoint.latitude;
+    final double lng = geopoint.longitude;
+
+    //final dataPoints = snapshot.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
 
     return DataPoint(
-      point: LatLng(geoPoint.latitude, geoPoint.longitude),
+      point: LatLng(lat, lng),
       timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
       uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
       downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
+      email: data['email'] as String? ?? "email not found",
     );
   }
 }
@@ -83,10 +94,9 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
-
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
-  String get phone => _userData?['phone'] ?? '1111111111';
+  String get email => _userData?['email'] ?? 'email not defined'; //message if not defined (can prob remove this after testing)
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
@@ -151,9 +161,35 @@ class UserDataProvider extends ChangeNotifier {
     }
   }
 
+  Future<List<DataPoint>> fetchCollectedMeasurements() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (email == null) return [];
+
+    final snapshot_collected_points = await FirebaseFirestore.instance
+        .collection('measurements')
+        .doc(email)
+        .collection('collected_measurements')
+        .get();
+
+    return snapshot_collected_points.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
+  }
+
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email;
+    if (user == null) return;
+    // gather measurements already taken
+    List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
+    // update firebase userData DB
+    await FirebaseFirestore.instance
+        .collection('userData')
+        .doc(user.uid)
+        .update({'measurementsTaken': collectedMeasurements.length});
+    // print debug, can be removed later
+    debugPrint("[USER_DATA_MANAGER]: Collected points from DB: ${collectedMeasurements}");
+
+    // gather distance and radius of gyration based on collected measurements
 
     if (user == null) {
       return;
@@ -167,7 +203,7 @@ class UserDataProvider extends ChangeNotifier {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userData')
-          .doc(user.uid) // Use the Auth UID directly!
+          .doc(user.uid)
           .get();
 
       if (doc.exists) {
@@ -185,7 +221,6 @@ class UserDataProvider extends ChangeNotifier {
     } catch (e) {
       print('Error: $e');
     }
-
     _isLoading = false;
     notifyListeners();
   }

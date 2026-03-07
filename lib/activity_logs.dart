@@ -65,7 +65,7 @@ class LoggingService {
   }
 
   // Your app calls this every time something happens
-  Future<void> logEvent(String name, {required String phone, Map<String, dynamic>? params, String? userId}) async {
+  Future<void> logEvent(String name, {required String email, Map<String, dynamic>? params, String? userId}) async {
     debugPrint("ACTIVITY_LOGS: logEvent called");
     // Enforce queue size limit — drop oldest if full
     if (_box.length >= _maxQueueSize) {
@@ -77,7 +77,7 @@ class LoggingService {
       id: _uuid.v4(),
       name: name,
       params: {
-        'phone': phone, // Add the phone number to the params map
+        'email': email, // Add the phone number to the params map
         ...?params,
         if (userId != null) 'userId': userId,
       },

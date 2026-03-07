@@ -282,6 +282,7 @@ ruralSpace = calculateHexagonVertices(35.234485, -111.666281, 0.7);
 window.grabAndCheckLocation = function() {
   
   // Grab JSON string via the AndroidBridge
+  // is this the same as the flutter bridge?
   var locationData = AndroidBridge.getLocationJSON();
   
   // Parse the JSON string into a JavaScript object
@@ -500,6 +501,16 @@ window.publishPlayerName = function()
       playerName: State.variables.playerName
     }));
 }; // no callback needed, only sends
+
+
+// get NDT7-measurements
+window.getInternetMeasurement = function()
+{
+	FlutterBridge.postMessage(JSON.stringify({
+      command: "getInternetMeasurment",
+    }));
+}; // not doing a callback for now, just requesting measurement is taken
+
 
 // END OF FUNCTIONS FOR COLLECTING LOCATION/INTERNET METRICS //
 

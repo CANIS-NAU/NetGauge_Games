@@ -1,3 +1,7 @@
+// References
+// https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
+
+// importing libraries and packages
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 

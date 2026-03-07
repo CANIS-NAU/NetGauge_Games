@@ -4,6 +4,10 @@ import 'package:internet_measurement_games_app/session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
 import 'dart:io';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
+import 'user_data_manager.dart';
+import 'package:uuid/uuid.dart';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -70,6 +74,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   }
 
   void _runSpeedTest() async {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     setState(() {
       downloadSpeed = 'Testing...';
       uploadSpeed = 'Testing...';
@@ -140,6 +145,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       final loc = await determineLocationData();
       final sessionId = SessionManager.sessionId;
 
+      var gameSessionID = Uuid();
+
       final checkData = {
         'game': 'Speedtest',
         'latitude': loc.position.latitude,
@@ -148,19 +155,23 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
         'timestamp': FieldValue.serverTimestamp(),
+        'session_id': gameSessionID,
       };
 
       await FirebaseFirestore.instance
           .collection('measurements')
-          .doc('internet_measurement')
-          .collection('collected_data')
+          .doc(userData.email)
+          .collection('collected_measurements')
           .add(checkData);
 
       setState(() {
-        detailedLog += '✅ Data saved to Firestore!\n';
+        detailedLog += 'Data saved to Firestore\n';
         jitter = '-1';
         packetLoss = '-1';
       });
+
+      // TODO: Total points collected should be incremented here (lazy approach)
+      // Savvy and better approach (albeit more time-consuming): count up points collected by user when home and stats pages render
 
       debugPrint('[SPEED_TEST] Test completed successfully');
 

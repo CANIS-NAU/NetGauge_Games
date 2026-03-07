@@ -16,6 +16,10 @@ import 'package:latlong2/latlong.dart';
 import 'poi_generator.dart';
 import 'speed_test_page.dart';
 import 'profile.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
+import 'user_data_manager.dart';
+import 'package:uuid/uuid.dart';
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
@@ -79,6 +83,15 @@ class _WebViewPageState extends State<WebViewPage> {
   /// I'm making this async to try and get it to work with NDT7 how it is currently set up..
   /// that may be a mistake. Making a note here in case things aren't working right.
   void handleNativeMessage(String message) async {
+    // unique session ID for game
+    /*
+    Shelby's note to self: I was originally declaring this in the WebViewState, but
+    it was not recognized within this function. I am wondering if the WebViewState is
+    still the ideal place to declare this? If so, I can pass it in through the function
+    parameters.
+     */
+    var gameSessionID = Uuid();
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     try {
       final Map<String, dynamic> data = json.decode(message);
       final String command = data['command'];
@@ -199,19 +212,25 @@ class _WebViewPageState extends State<WebViewPage> {
             'upload_speed': upload['speedMbps'],
             'latency': download['latency'],
             'timestamp': FieldValue.serverTimestamp(),
+            'session_id': gameSessionID,
           };
 
-          await FirebaseFirestore.instance
-              .collection('measurements')
-              .doc('internet_measurement')
-              .collection('collected_data')
-              .add(checkData);
-
+          try {
+            debugPrint("Attempting to write to Firestore...");
+            await FirebaseFirestore.instance
+                .collection('measurements')
+                .doc(userData.email)
+                .collection('collected_measurements')
+                .add(checkData);
+            debugPrint("Write successful!");
+          } catch (e) {
+            debugPrint("Firestore Error: $e");
+          }
           // TODO: Send data back to game (or should that be it's own case?)
           /*
           Currently, none of the games have logic based on internet measurement results. I am aware
           that that is a long-term goal. I am wondering if it makes sense to have two separate cases:
-          one for just recording and one for recording and retrieving?
+          one for just recording and one for retrieving?
            */
 
           break;

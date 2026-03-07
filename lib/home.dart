@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    loggingService.logEvent('User is in home page', phone: userData.phone);
+    loggingService.logEvent('User is in home page', email: userData.email);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -104,7 +104,7 @@ class _HomePageState extends State<HomePage> {
                     context,
                     MaterialPageRoute(builder: (context) => const PlayerStatistics()),
                   ),
-                  loggingService.logEvent('Clicked expand player statistics', phone: userData.phone)
+                  loggingService.logEvent('Clicked expand player statistics', email: userData.email)
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -185,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                     context,
                     MaterialPageRoute(builder: (context) => const DynamicMap()),
                   ),
-                  loggingService.logEvent('Clicked expand map', phone: userData.phone)
+                  loggingService.logEvent('Clicked expand map', email: userData.email)
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
                     onTap: () async {
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
-                        loggingService.logEvent('Clicked on settings', phone: userData.phone);
+                        loggingService.logEvent('Clicked on settings', email: userData.email);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -242,7 +242,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                         );
                       } else if (buttonText == 'Game Catalog') {
-                        loggingService.logEvent('Clicked game catalog', phone: userData.phone);
+                        loggingService.logEvent('Clicked game catalog', email: userData.email);
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
@@ -250,7 +250,7 @@ class _HomePageState extends State<HomePage> {
                         // After returning, rebuild the UI to show the new favorites
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
-                        loggingService.logEvent('Clicked community statistics', phone: userData.phone);
+                        loggingService.logEvent('Clicked community statistics', email: userData.email);
                         await Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => const CommunityStatistics())
@@ -285,7 +285,7 @@ class _HomePageState extends State<HomePage> {
                     buttonHeight: 45,
                     buttonLength: 45,
                     onTap: () async {
-                      loggingService.logEvent('Opened pop-up for ${favoriteGames[index]}', phone: userData.phone);
+                      loggingService.logEvent('Opened pop-up for ${favoriteGames[index]}', email: userData.email);
                       await showCustomPopup(context, favoriteGames[index]);
                       setState(() {});
                     },
