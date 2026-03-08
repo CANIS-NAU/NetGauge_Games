@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   }
   @override
   Widget build(BuildContext context) {
+    // get user data from firebase
     final userData = Provider.of<UserDataProvider>(context);
     return Scaffold(
       appBar: AppBar(
