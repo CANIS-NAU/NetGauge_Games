@@ -154,7 +154,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
                 ),
                 onPressed: () {
                   updateFavorites(game, context);
-                  // No need for dialogSetState(() {}) because Provider will rebuild the widget
+                  dialogSetState(() {}); // may be able to remove this bc provider rebuilds widget
                 },
               ),
               TextButton(
