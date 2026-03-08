@@ -73,6 +73,7 @@ dependencies:
 
   ## Survey
   flutter_survey: '^1.0.1'
+  detect_fake_location: ^2.3.2
 
 
 dev_dependencies:

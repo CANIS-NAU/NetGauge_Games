@@ -217,6 +217,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.7.12"
+  detect_fake_location:
+    dependency: "direct main"
+    description:
+      name: detect_fake_location
+      sha256: fd6f00370333e912adbbde4e52dffc9ebb1b6df84d8beb5c840dd32388d5d148
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.2"
   device_info_plus:
     dependency: transitive
     description:
