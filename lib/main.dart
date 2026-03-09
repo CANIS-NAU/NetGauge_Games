@@ -10,8 +10,6 @@ import 'login_page.dart';
 import 'profile.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:vpn_connection_detector/vpn_connection_detector.dart';
-import 'package:detect_fake_location/detect_fake_location.dart';
 
 // app initialization
 void main() async {
@@ -27,19 +25,6 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-
-  // security things
-  Future<bool> checkVPN() async {
-    bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
-    return isVpnConnected;
-  }
-
-  Future<bool> checkFakeLocation() async {
-    bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
-    return isFakeLocation;
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -60,7 +45,6 @@ class MyApp extends StatelessWidget {
               Provider.of<UserDataProvider>(context, listen: false)
                   .fetchUserData();
             });
-            checkVPN();
             return const HomePage();
           }
 

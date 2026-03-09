@@ -11,6 +11,19 @@ import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:vpn_connection_detector/vpn_connection_detector.dart';
+import 'package:detect_fake_location/detect_fake_location.dart';
+
+// security things
+Future<bool> checkVPN() async {
+  bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
+  return isVpnConnected;
+}
+
+Future<bool> checkFakeLocation() async {
+  bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
+  return isFakeLocation;
+}
 
 final List<GameData> favorite_games = [
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
@@ -59,9 +72,12 @@ class DataPoint {
   final double downloadSpeed;
   final double latency;
   final String gamePlayed;
+  final bool isVPN;
+  final bool isFakeLocation;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
-    required this.downloadSpeed, required this.latency, required this.gamePlayed});
+    required this.downloadSpeed, required this.latency, required this.gamePlayed,
+    required this.isVPN, required this.isFakeLocation});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -74,13 +90,23 @@ class DataPoint {
       downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
+      isVPN: data['isVPN'] as bool ?? false,
+      isFakeLocation: data['isFakeLocation'] as bool ?? false,
     );
   }
 }
 
+/*
+I think I can add the security things here because I am pretty sure this is
+called every time the app opens.
+ */
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
+
+  Future<bool> isVPN = checkVPN();
+  Future<bool> isFakeLocation = checkFakeLocation();
+
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
