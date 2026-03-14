@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'homepage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
@@ -45,10 +40,12 @@ class SessionData {
   final double? averageDownloadSpeed;
   final double? radiusGyration;
   List<dynamic>? sessionDataPoints;
+  final bool? isVPN;
+  final bool? isFakeLocation;
 
   SessionData({required this.date, required this.game, this.pointsCollected,
     this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
-  this.averageUploadSpeed, this.radiusGyration});
+  this.averageUploadSpeed, this.radiusGyration, this.isFakeLocation, this.isVPN});
 }
 
 // radius-based stream for gathering points from firestore
@@ -90,23 +87,15 @@ class DataPoint {
       downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
-      isVPN: data['isVPN'] as bool ?? false,
-      isFakeLocation: data['isFakeLocation'] as bool ?? false,
+      isVPN: data['isVPN'] as bool? ?? false,
+      isFakeLocation: data['isFakeLocation'] as bool? ?? false,
     );
   }
 }
 
-/*
-I think I can add the security things here because I am pretty sure this is
-called every time the app opens.
- */
 class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
-
-  Future<bool> isVPN = checkVPN();
-  Future<bool> isFakeLocation = checkFakeLocation();
-
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
@@ -139,6 +128,18 @@ class UserDataProvider extends ChangeNotifier {
 
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
+        
+        // Update security status in Firebase every time the app loads data
+        bool vpn = await checkVPN();
+        bool fake = await checkFakeLocation();
+        await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
+          'isVPN': vpn,
+          'isFakeLocation': fake,
+        });
+        // Update local map as well
+        _userData?['isVPN'] = vpn;
+        _userData?['isFakeLocation'] = fake;
+
         print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
@@ -158,6 +159,9 @@ class UserDataProvider extends ChangeNotifier {
 
   // Helper method to create user document
   Future<void> createUserDocument(User user) async {
+    bool vpn = await checkVPN();
+    bool fake = await checkFakeLocation();
+
     await FirebaseFirestore.instance
         .collection('userData')
         .doc(user.uid)
@@ -169,13 +173,14 @@ class UserDataProvider extends ChangeNotifier {
       'dataPoints': [],
       'radGyration': [0],
       'createdAt': FieldValue.serverTimestamp(),
+      'isVPN' : vpn,
+      'isFakeLocation' : fake,
     }, SetOptions(merge: true));
   }
 
   void clearData() {
     _userData = null;
     notifyListeners();
-    print('🗑️ User data cleared');
   }
 
 }
