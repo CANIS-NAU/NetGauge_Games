@@ -35,6 +35,9 @@ dependencies:
   web_socket_channel: ^2.4.0
   collection: ^1.18.0 # For data smoothing
 
+  # A/B/C testing dependencies
+  flutter_riverpod: ^2.6.1
+
 
   provider: ^6.0.0
 
