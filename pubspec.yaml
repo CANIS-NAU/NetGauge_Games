@@ -84,6 +84,7 @@ dependencies:
 
 
   http: any
+  firebase_remote_config: ^5.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

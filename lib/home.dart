@@ -13,6 +13,7 @@ import 'settings.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
+import 'onboarding.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -44,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   }
   @override
   Widget build(BuildContext context) {
+    showCustomOnBoardingPopup(context);
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in home page', phone: userData.phone);
     return Scaffold(
