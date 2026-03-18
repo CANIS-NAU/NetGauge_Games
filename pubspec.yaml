@@ -35,6 +35,8 @@ dependencies:
   web_socket_channel: ^2.4.0
   collection: ^1.18.0 # For data smoothing
 
+  # Security
+  vpn_connection_detector: ^2.0.1
   # A/B/C testing dependencies
   flutter_riverpod: ^2.6.1
 
@@ -74,6 +76,7 @@ dependencies:
 
   ## Survey
   flutter_survey: '^1.0.1'
+  detect_fake_location: ^2.3.2
 
   ## Locally storing user activity
   hive: ^2.2.3

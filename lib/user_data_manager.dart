@@ -7,6 +7,19 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:vpn_connection_detector/vpn_connection_detector.dart';
+import 'package:detect_fake_location/detect_fake_location.dart';
+
+// security things
+Future<bool> checkVPN() async {
+  bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
+  return isVpnConnected;
+}
+
+Future<bool> checkFakeLocation() async {
+  bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
+  return isFakeLocation;
+}
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
@@ -26,10 +39,12 @@ class SessionData {
   final double? averageDownloadSpeed;
   final double? radiusGyration;
   List<dynamic>? sessionDataPoints;
+  final bool? isVPN;
+  final bool? isFakeLocation;
 
   SessionData({required this.date, required this.game, this.pointsCollected,
     this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
-    this.averageUploadSpeed, this.radiusGyration});
+  this.averageUploadSpeed, this.radiusGyration, this.isFakeLocation, this.isVPN});
 }
 
 final GeoCollectionReference<Map<String, dynamic>> geoCollection =
@@ -51,9 +66,12 @@ class DataPoint {
   final double downloadSpeed;
   final double latency;
   final String gamePlayed;
+  final bool isVPN;
+  final bool isFakeLocation;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
-    required this.downloadSpeed, required this.latency, required this.gamePlayed});
+    required this.downloadSpeed, required this.latency, required this.gamePlayed,
+    required this.isVPN, required this.isFakeLocation});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -66,6 +84,8 @@ class DataPoint {
       downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
+      isVPN: data['isVPN'] as bool? ?? false,
+      isFakeLocation: data['isFakeLocation'] as bool? ?? false,
     );
   }
 }
@@ -196,6 +216,18 @@ class UserDataProvider extends ChangeNotifier {
 
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
+        
+        // Update security status in Firebase every time the app loads data
+        bool vpn = await checkVPN();
+        bool fake = await checkFakeLocation();
+        await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
+          'isVPN': vpn,
+          'isFakeLocation': fake,
+        });
+        // Update local map as well
+        _userData?['isVPN'] = vpn;
+        _userData?['isFakeLocation'] = fake;
+
         print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
@@ -241,6 +273,9 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<void> createUserDocument(User user) async {
+    bool vpn = await checkVPN();
+    bool fake = await checkFakeLocation();
+
     await FirebaseFirestore.instance
         .collection('userData')
         .doc(user.uid)
@@ -253,6 +288,8 @@ class UserDataProvider extends ChangeNotifier {
       'radGyration': [0],
       'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
       'createdAt': FieldValue.serverTimestamp(),
+      'isVPN' : vpn,
+      'isFakeLocation' : fake,
     }, SetOptions(merge: true));
   }
 
@@ -317,6 +354,5 @@ class UserDataProvider extends ChangeNotifier {
     _userData = null;
     _seenMessages = null;    // FIX 6: clear this on logout too
     notifyListeners();
-    print('🗑️ User data cleared');
   }
 }

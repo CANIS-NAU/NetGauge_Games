@@ -56,6 +56,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // get user data from firebase
+    final userData = Provider.of<UserDataProvider>(context);
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     loggingService.logEvent('User is in home page', phone: userData.phone);

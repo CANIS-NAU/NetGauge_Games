@@ -51,7 +51,6 @@ class MyApp extends StatelessWidget {
               Provider.of<UserDataProvider>(context, listen: false)
                   .fetchUserData();
             });
-
             return const HomePage();
           }
 
