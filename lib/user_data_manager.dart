@@ -7,9 +7,13 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
-final List<GameData> favorite_games = [
+final List<GameData> games = [
+  GameData(text: "Measure Internet", icon: Icons.wifi),
+  GameData(text: "Space Explorers", icon: Icons.settings),
+  GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
 ];
 
 // Data pulled from provider gets stored as SessionData items for player history
@@ -77,15 +81,85 @@ class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
 
+  Map<String, bool>? _seenMessages;
+
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
 
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
+  String get email => _userData?['email'] ?? '';
   String get phone => _userData?['phone'] ?? '1111111111';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
+
+  Map<String, bool> get seenMessages {
+    return _seenMessages ?? {
+      "control_message": false,
+      "play_message": false,
+      "utility_message": false,
+    };
+  }
+
+  List<GameData> get favoriteGames {
+    if (_userData == null) {
+      return [];
+    }
+
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> favoriteNames;
+    
+    // Add a strict type check to avoid the Map vs List crash
+    if (rawFavorites is List) {
+      favoriteNames = rawFavorites;
+    } else {
+      // Fallback if data is missing or malformed in DB
+      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+    }
+
+    List<GameData> favoritesList = [];
+    for (var name in favoriteNames) {
+      for (var game in games) {
+        if (game.text == name) {
+          favoritesList.add(game);
+        }
+      }
+    }
+    return favoritesList;
+  }
+
+  // Method to add/remove a game from favorites in Firestore
+  Future<void> toggleFavorite(String gameName) async {
+    if (_userData == null) return;
+
+    // Use current list or default if it has never been modified
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> currentFavorites = (rawFavorites is List) 
+        ? List.from(rawFavorites) 
+        : ['Zombie Apocalypse', 'Soul Seeker'];
+
+    if (currentFavorites.contains(gameName)) {
+      currentFavorites.remove(gameName);
+    } else {
+      currentFavorites.add(gameName);
+    }
+
+    // Update local state immediately for UI responsiveness
+    _userData!['favorite_games'] = currentFavorites;
+    notifyListeners();
+
+    // Update Firestore
+    try {
+      await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(uid)
+          .update({'favorite_games': currentFavorites});
+      print('Favorites updated in Firestore');
+    } catch (e) {
+      print('Error updating favorites: $e');
+    }
+  }
 
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
@@ -137,6 +211,7 @@ class UserDataProvider extends ChangeNotifier {
       'distanceTraveled': 0,
       'dataPoints': [],
       'radGyration': [0],
+      'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }

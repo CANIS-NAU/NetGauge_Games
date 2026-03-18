@@ -39,14 +39,24 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _onboardingShown = false;
+
   @override
   void initState() {
     super.initState();
+    // Show the popup after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_onboardingShown) {
+        showCustomOnBoardingPopup(context);
+        _onboardingShown = true;
+      }
+    });
   }
+
   @override
   Widget build(BuildContext context) {
-    showCustomOnBoardingPopup(context);
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+    final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     loggingService.logEvent('User is in home page', phone: userData.phone);
     return Scaffold(
       appBar: AppBar(
@@ -272,22 +282,22 @@ class _HomePageState extends State<HomePage> {
                   mainAxisSpacing: 20,
                   childAspectRatio: 50 / 40,
                 ),
-                itemCount: favorite_games.length,
+                itemCount: favoriteGames.length,
                 itemBuilder: (context, index) {
                   return AppButtons(
                     textColor: Colors.black,
                     backgroundColor: Colors.white,
                     borderColor: Colors.black,
-                    text: favorite_games[index].text,
-                    icon: favorite_games[index].icon,
-                    imagePath: favorite_games[index].imagePath,
+                    text: favoriteGames[index].text,
+                    icon: favoriteGames[index].icon,
+                    imagePath: favoriteGames[index].imagePath,
                     isIcon: true,
                     iconSize: 60,
                     buttonHeight: 45,
                     buttonLength: 45,
                     onTap: () async {
-                      loggingService.logEvent('Opened pop-up for ${favorite_games[index]}', phone: userData.phone);
-                      await showCustomPopup(context, favorite_games[index]);
+                      loggingService.logEvent('Opened pop-up for ${favoriteGames[index].text}', phone: userData.phone);
+                      await showCustomPopup(context, favoriteGames[index]);
                       setState(() {});
                     },
                   );
