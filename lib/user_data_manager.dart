@@ -16,15 +16,9 @@ final List<GameData> games = [
   GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
 ];
 
-// Data pulled from provider gets stored as SessionData items for player history
 class SessionData {
   final DateTime date;
   final String game;
-  /*
-  pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
-  in the event that someone starts a game and closes it before collecting measurements, moving
-  around, etc.
-   */
   final int? pointsCollected;
   final int? distanceTraveled;
   final double? averageUploadSpeed;
@@ -34,10 +28,9 @@ class SessionData {
 
   SessionData({required this.date, required this.game, this.pointsCollected,
     this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
-  this.averageUploadSpeed, this.radiusGyration});
+    this.averageUploadSpeed, this.radiusGyration});
 }
 
-// radius-based stream for gathering points from firestore
 final GeoCollectionReference<Map<String, dynamic>> geoCollection =
 GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
 
@@ -50,7 +43,6 @@ Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double r
   );
 }
 
-// Data Point Class
 class DataPoint {
   final LatLng point;
   final DateTime timestamp;
@@ -81,6 +73,7 @@ class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
 
+  // FIX 1: This now gets populated by the new fetch logic below
   Map<String, bool>? _seenMessages;
 
   Map<String, dynamic>? get userData => _userData;
@@ -94,6 +87,7 @@ class UserDataProvider extends ChangeNotifier {
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
+  // FIX 2: Getter now just returns _seenMessages with a safe fallback
   Map<String, bool> get seenMessages {
     return _seenMessages ?? {
       "control_message": false,
@@ -103,18 +97,14 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   List<GameData> get favoriteGames {
-    if (_userData == null) {
-      return [];
-    }
+    if (_userData == null) return [];
 
     final rawFavorites = _userData!['favorite_games'];
     List<dynamic> favoriteNames;
-    
-    // Add a strict type check to avoid the Map vs List crash
+
     if (rawFavorites is List) {
       favoriteNames = rawFavorites;
     } else {
-      // Fallback if data is missing or malformed in DB
       favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
     }
 
@@ -129,14 +119,12 @@ class UserDataProvider extends ChangeNotifier {
     return favoritesList;
   }
 
-  // Method to add/remove a game from favorites in Firestore
   Future<void> toggleFavorite(String gameName) async {
     if (_userData == null) return;
 
-    // Use current list or default if it has never been modified
     final rawFavorites = _userData!['favorite_games'];
-    List<dynamic> currentFavorites = (rawFavorites is List) 
-        ? List.from(rawFavorites) 
+    List<dynamic> currentFavorites = (rawFavorites is List)
+        ? List.from(rawFavorites)
         : ['Zombie Apocalypse', 'Soul Seeker'];
 
     if (currentFavorites.contains(gameName)) {
@@ -145,11 +133,9 @@ class UserDataProvider extends ChangeNotifier {
       currentFavorites.add(gameName);
     }
 
-    // Update local state immediately for UI responsiveness
     _userData!['favorite_games'] = currentFavorites;
     notifyListeners();
 
-    // Update Firestore
     try {
       await FirebaseFirestore.instance
           .collection('userData')
@@ -161,13 +147,9 @@ class UserDataProvider extends ChangeNotifier {
     }
   }
 
-  // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
+    if (user == null) return;
 
     print('🔍 Fetching data for user: ${user.email} (${user.uid})');
 
@@ -175,9 +157,10 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Existing userData fetch — unchanged
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userData')
-          .doc(user.uid) // Use the Auth UID directly!
+          .doc(user.uid)
           .get();
 
       if (doc.exists) {
@@ -187,10 +170,37 @@ class UserDataProvider extends ChangeNotifier {
         print('   Measurements: ${_userData?['measurementsTaken']}');
       } else {
         print('No document found, creating one...');
-        // Create document if it doesn't exist
         await createUserDocument(user);
-        await fetchUserData(); // Try again
+        await fetchUserData();
+        return;
       }
+
+      // FIX 3: New fetch for ABC_Onboarding — queries by email
+      final onboardingQuery = await FirebaseFirestore.instance
+          .collection('ABC_Onboarding')
+          .doc('user')                          // the subcollection parent doc
+          .collection('user')                   // the subcollection itself
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (onboardingQuery.docs.isNotEmpty) {
+        final onboardingData = onboardingQuery.docs.first.data();
+
+        // Safely cast the messages_seen map from Firestore
+        final rawSeen = onboardingData['messages_seen'];
+        if (rawSeen is Map) {
+          _seenMessages = rawSeen.map(
+                  (key, value) => MapEntry(key.toString(), value as bool)
+          );
+        }
+        print('Onboarding data loaded: $_seenMessages');
+      } else {
+        // User has no onboarding doc yet — create one
+        print('No onboarding document found, creating one...');
+        await createOnboardingDocument(user);
+      }
+
     } catch (e) {
       print('Error: $e');
     }
@@ -199,7 +209,6 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper method to create user document
   Future<void> createUserDocument(User user) async {
     await FirebaseFirestore.instance
         .collection('userData')
@@ -216,10 +225,67 @@ class UserDataProvider extends ChangeNotifier {
     }, SetOptions(merge: true));
   }
 
+  // FIX 4: New helper to create an onboarding doc for new users
+  Future<void> createOnboardingDocument(User user) async {
+    await FirebaseFirestore.instance
+        .collection('ABC_Onboarding')
+        .doc('user')
+        .collection('user')
+        .add({
+      'email': user.email,
+      'messages_seen': {
+        'control_message': false,
+        'play_message': false,
+        'utility_message': false,
+      },
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Set local state to match
+    _seenMessages = {
+      'control_message': false,
+      'play_message': false,
+      'utility_message': false,
+    };
+  }
+
+  // FIX 5: New method to mark a message as seen — call this after dialog is dismissed
+  Future<void> markMessageAsSeen(String messageId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Update local state immediately for UI responsiveness
+    _seenMessages = {
+      ...seenMessages,
+      messageId: true,
+    };
+    notifyListeners();
+
+    // Find the user's onboarding doc and update it
+    try {
+      final onboardingQuery = await FirebaseFirestore.instance
+          .collection('ABC_Onboarding')
+          .doc('user')
+          .collection('user')
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (onboardingQuery.docs.isNotEmpty) {
+        await onboardingQuery.docs.first.reference.update({
+          'messages_seen.$messageId': true,   // dot notation updates just this key
+        });
+        print('Marked $messageId as seen');
+      }
+    } catch (e) {
+      print('Error marking message as seen: $e');
+    }
+  }
+
   void clearData() {
     _userData = null;
+    _seenMessages = null;    // FIX 6: clear this on logout too
     notifyListeners();
     print('🗑️ User data cleared');
   }
-
 }
