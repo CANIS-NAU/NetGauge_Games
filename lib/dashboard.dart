@@ -13,8 +13,10 @@ class PlayerStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    loggingService.logEvent('User is in player statistics page.', phone: userData.phone);
+    loggingService.logEvent('User is in player statistics page.', email: userData.email);
+    final collectedMeasurements = userData.fetchCollectedMeasurements();
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -126,7 +128,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', phone: userData.phone);
+          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', email: userData.email);
           _data[index].isExpanded = isExpanded;
         });
       },

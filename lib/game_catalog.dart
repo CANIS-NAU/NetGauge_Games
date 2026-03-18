@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:internet_measurement_games_app/speed_test_page.dart';
 import 'widgets/buttons.dart';
-import 'homepage.dart';
+import 'flutter_bridge.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
@@ -31,7 +31,7 @@ class GameCatalog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context);
-    loggingService.logEvent('User is in game catalog page', phone: userData.phone);
+    loggingService.logEvent('User is in game catalog page', email: userData.email);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,7 +86,7 @@ Widget gameCatalogPreview() {
 
 Future<void> showCustomPopup(BuildContext context, GameData game) {
   final userData = Provider.of<UserDataProvider>(context, listen: false);
-  loggingService.logEvent('Showing pop-up for ${game.text}', phone: userData.phone);
+  loggingService.logEvent('Showing pop-up for ${game.text}', email: userData.email);
   String title = "Title";
   String content = "Content";
   String gameURL = "URL";
@@ -115,12 +115,6 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     title = "Scavenger Hunt";
     content = "Look for points of interest in your area!";
     gameURL = 'ScavengerHunt.html';
-    imagePath = game.imagePath;
-  }
-  if (game.text == "Space Explorers") {
-    title = "Space Explorers";
-    content = "Coming soon!";
-    gameURL = '';
     imagePath = game.imagePath;
   }
   if (game.text == "Measure Internet") {
@@ -181,7 +175,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
 
 void _launchGame(String title, String gameFile, BuildContext context) {
   final userData = Provider.of<UserDataProvider>(context, listen: false);
-  loggingService.logEvent('Launching $title', phone: userData.phone);
+  loggingService.logEvent('Launching $title', email: userData.email);
 
   // Close the dialog first
   Navigator.pop(context);
@@ -192,7 +186,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   LocationLogger.start();
 
   if(title == 'Measure Internet') {
-    loggingService.logEvent('Clicked measure internet.', phone: userData.phone);
+    loggingService.logEvent('Clicked measure internet.', email: userData.email);
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -211,7 +205,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       SessionManager.endGame(); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
-      loggingService.logEvent('Game complete: $title', phone: userData.phone);
+      loggingService.logEvent('Game complete: $title', email: userData.email);
 
       // TODO: Navigate to home page
       /*Navigator.push(
@@ -232,8 +226,8 @@ void updateFavorites(GameData game, BuildContext context) {
   // Log the event
   final isFavorited = userData.favoriteGames.any((favGame) => favGame.text == game.text);
   if (isFavorited) {
-    loggingService.logEvent('${game.text} removed from favorites.', phone: userData.phone);
+    loggingService.logEvent('${game.text} removed from favorites.', email: userData.email);
   } else {
-    loggingService.logEvent('${game.text} added to favorites.', phone: userData.phone);
+    loggingService.logEvent('${game.text} added to favorites.', email: userData.email);
   }
 }

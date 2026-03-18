@@ -1,3 +1,7 @@
+// References
+// https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
+
+// import packages and libraries
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -75,10 +79,14 @@ class DataPoint {
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final firestore.GeoPoint geoPoint = data['location']['geopoint'] as firestore.GeoPoint;
+    final GeoPoint geopoint = data['location'] as GeoPoint;
+    final double lat = geopoint.latitude;
+    final double lng = geopoint.longitude;
+
+    //final dataPoints = snapshot.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
 
     return DataPoint(
-      point: LatLng(geoPoint.latitude, geoPoint.longitude),
+      point: LatLng(lat, lng),
       timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
       uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
       downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
@@ -91,6 +99,7 @@ class DataPoint {
 }
 
 class UserDataProvider extends ChangeNotifier {
+
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
 
@@ -99,7 +108,6 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
-
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
@@ -108,6 +116,95 @@ class UserDataProvider extends ChangeNotifier {
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
+  // This is the new getter replacing the old function
+  List<GameData> get favoriteGames {
+    if (_userData == null) {
+      return [];
+    }
+
+    List<GameData> favoritesList = [];
+    final rawFavorites = _userData!['favorite_games'];
+    
+    // Add a strict type check to avoid the Map vs List crash
+    List<dynamic> favoriteNames;
+    if (rawFavorites is List) {
+      favoriteNames = rawFavorites;
+    } else {
+      // Fallback if data is missing or malformed in DB
+      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+    }
+
+    for (var name in favoriteNames) {
+      for (var game in games) {
+        if (game.text == name) {
+          favoritesList.add(game);
+        }
+      }
+    }
+    return favoritesList;
+  }
+
+  // Method to add/remove a game from favorites in Firestore
+  Future<void> toggleFavorite(String gameName) async {
+    if (_userData == null) return;
+
+    // Use current list or default if it has never been modified
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> currentFavorites = (rawFavorites is List) 
+        ? List.from(rawFavorites) 
+        : ['Zombie Apocalypse', 'Soul Seeker'];
+
+    if (currentFavorites.contains(gameName)) {
+      currentFavorites.remove(gameName);
+    } else {
+      currentFavorites.add(gameName);
+    }
+
+    // Update local state immediately for UI responsiveness
+    _userData!['favorite_games'] = currentFavorites;
+    notifyListeners();
+
+    // Update Firestore
+    try {
+      await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(uid)
+          .update({'favorite_games': currentFavorites});
+      print('Favorites updated in Firestore');
+    } catch (e) {
+      print('Error updating favorites: $e');
+    }
+  }
+
+  Future<List<DataPoint>> fetchCollectedMeasurements() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (email == null) return [];
+
+    final snapshot_collected_points = await FirebaseFirestore.instance
+        .collection('measurements')
+        .doc(email)
+        .collection('collected_measurements')
+        .get();
+
+    return snapshot_collected_points.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
+  }
+
+  // Fetch data for the currently logged-in user
+  Future<void> fetchUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email;
+    if (user == null) return;
+    // gather measurements already taken
+    List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
+    // update firebase userData DB
+    await FirebaseFirestore.instance
+        .collection('userData')
+        .doc(user.uid)
+        .update({'measurementsTaken': collectedMeasurements.length});
+    // print debug, can be removed later
+    debugPrint("[USER_DATA_MANAGER]: Collected points from DB: ${collectedMeasurements}");
+
+    // gather distance and radius of gyration based on collected measurements
   // FIX 2: Getter now just returns _seenMessages with a safe fallback
   Map<String, bool> get seenMessages {
     return _seenMessages ?? {
@@ -202,7 +299,7 @@ class UserDataProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    print('🔍 Fetching data for user: ${user.email} (${user.uid})');
+    print('Fetching data for user: ${user.email} (${user.uid})');
 
     _isLoading = true;
     notifyListeners();
@@ -231,6 +328,7 @@ class UserDataProvider extends ChangeNotifier {
         print('Data loaded:');
         print('   Email: ${_userData?['email']}');
         print('   Measurements: ${_userData?['measurementsTaken']}');
+        print('   Favorite Games: ${_userData?['favorite_games']}');
       } else {
         print('No document found, creating one...');
         await createUserDocument(user);
@@ -267,7 +365,6 @@ class UserDataProvider extends ChangeNotifier {
     } catch (e) {
       print('Error: $e');
     }
-
     _isLoading = false;
     notifyListeners();
   }

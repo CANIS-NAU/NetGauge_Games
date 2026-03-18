@@ -31,7 +31,7 @@ class LocationLogger {
           .collection('Movement Data')
           .doc(sessionId)
           .set({
-            'sessionId': sessionId,
+            //'sessionId': sessionId,
             //'playerName': SessionManager.playerName,
             'created': DateTime.now().toIso8601String(),
           }, firestore.SetOptions(merge: true)); // merge: true prevents overwriting existing data
@@ -44,9 +44,9 @@ class LocationLogger {
           .doc(sessionId)
           .collection('LocationData')
           .add({
-          // commenting instead of removing just in case, should be replaced by geopoint
-            //'latitude': pos.latitude,
-            //'longitude': pos.longitude,
+          // may not need lat/lon and geopoint, just keeping everything while i test things out
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
             'datetime': DateTime.now().toIso8601String(),
             'game': SessionManager.currentGame,
             'geopoint': geoPoint.geopoint,
@@ -58,7 +58,7 @@ class LocationLogger {
         debugPrint("[LOCATION_LOGGER] Skipped Location Logging");
         debugPrint("[LOCATION_LOGGER] Game: ${SessionManager.currentGame}");
         //debugPrint("[LOCATION_LOGGER] Name: ${SessionManager.playerName}");
-        debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
+        //debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
       }
     });
   }

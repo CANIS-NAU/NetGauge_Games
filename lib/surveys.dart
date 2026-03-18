@@ -56,6 +56,18 @@ class _SurveyState extends State<SurveyState> {
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+            'Survey',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 25)
+        ),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
       body:
       _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -69,19 +81,23 @@ class _SurveyState extends State<SurveyState> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 5),
           SizedBox(
             width: double.infinity,
-            height: 56,
+            height: 50,
             child: TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.deepPurple, // Background Color
               ),
-              child: const Text("Submit"),
+              child: const Text("Submit",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20)),
                 onPressed: () {
-                  loggingService.logEvent('Clicked submit survey.', phone: userData.phone);
+                  loggingService.logEvent('Clicked submit survey.', email: userData.email);
                   if (_formKey.currentState!.validate()) {
-                    addUserData(userData.phone, _questionResults, widget.surveyDocId).then((_) {
+                    addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const HomePage()),
@@ -91,6 +107,7 @@ class _SurveyState extends State<SurveyState> {
                 }
             ),
           ),
+          const SizedBox(height: 5),
         ],
       ),
     );
