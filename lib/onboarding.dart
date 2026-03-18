@@ -9,15 +9,6 @@ import 'activity_logs.dart';
 import 'package:provider/provider.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'game_catalog.dart';
-import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
-import 'package:latlong2/latlong.dart';
-import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
-import 'user_data_manager.dart';
 
 // setting up global var for activity logging
 final loggingService = GetIt.instance<LoggingService>();
