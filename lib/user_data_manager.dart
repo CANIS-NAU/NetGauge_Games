@@ -5,6 +5,7 @@ import 'game_catalog.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 
 final List<GameData> games = [
@@ -145,6 +146,36 @@ class UserDataProvider extends ChangeNotifier {
     } catch (e) {
       print('Error updating favorites: $e');
     }
+  }
+
+  // TODO: This never actually updates because we are working with a COPY of the seenMessages map, not the real one
+  // needs to be fixed
+  Future<void> updateOnboardingStatus(String experiment, context) async {
+    debugPrint("[USER_DATA_MANAGER]: Updating onboarding status for $experiment to true.");
+
+    // if _seenMessages is null, initialize
+    _seenMessages ??= {
+      "control_message": false,
+      "play_message": false,
+      "utility_message": false,
+    };
+
+    _seenMessages![experiment] = true;
+
+    final onboardingQuery = await FirebaseFirestore.instance
+        .collection('ABC_Onboarding')
+        .doc('user')                          // the subcollection parent doc
+        .collection('user')                   // the subcollection itself
+        .where('email', isEqualTo: this.email)
+        .limit(1)
+        .get();
+
+    if(onboardingQuery.docs.isNotEmpty) {
+      await onboardingQuery.docs.first.reference.update({
+        'messages_seen.$experiment': true,   // dot notation updates just this key
+      });
+    }
+    notifyListeners();
   }
 
   Future<void> fetchUserData() async {

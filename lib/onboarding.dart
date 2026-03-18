@@ -9,12 +9,21 @@ import 'activity_logs.dart';
 import 'package:provider/provider.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'game_catalog.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'package:latlong2/latlong.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'user_data_manager.dart';
 
 // setting up global var for activity logging
 final loggingService = GetIt.instance<LoggingService>();
 
 // class def
-class OnBoardingType {
+class OnBoardingType extends ChangeNotifier{
   final String onboarding_header;
   final String onboarding_main_message;
   final String onboarding_secondary_message;
@@ -37,10 +46,13 @@ Future<void> showCustomOnBoardingPopup(BuildContext context) async {
   }
 
   debugPrint("[ONBOARDING] Showing user message $messageId for the first time.");
+  // in condition where it's not been seen, can now be set to true
+  debugPrint("[ONBOARDING] Calling updateOnboardingStatus.");
+  userData.updateOnboardingStatus(messageId, context);
 
   try {
     debugPrint("ONBOARDING: Initializing Remote Config...");
-    
+
     // 1. Set defaults (used if fetch fails or keys aren't in console)
     await remoteConfig.setDefaults(const {
       "onboarding_header": "Welcome to NetGauge!",
@@ -89,7 +101,7 @@ Future<void> showCustomOnBoardingPopup(BuildContext context) async {
       phone: userData.phone
   );
 
-  debugPrint("ACTIVITY_LOGS: ONBOARDING: Displaying Dialog...");
+  debugPrint("ONBOARDING: Displaying Dialog...");
 
   return showDialog(
     context: context,
@@ -114,7 +126,6 @@ Future<void> showCustomOnBoardingPopup(BuildContext context) async {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text("Got it!"),
-                //TODO: Update Firebase to show user has seen this message already
               ),
             ],
           );
