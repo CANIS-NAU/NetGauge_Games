@@ -5,10 +5,8 @@ import 'package:latlong2/latlong.dart';
 import 'user_data_manager.dart';
 import 'game_catalog.dart';
 import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
-import 'package:provider/provider.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
@@ -96,7 +94,8 @@ List<ExpandableSessionData> generateItems(int numberOfItems) {
   return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
     return ExpandableSessionData(
       date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
-      game: games[index % games.length].text, // Cycle through favorite games
+      // UPDATED: Using the 'games' list instead of the deleted 'favorite_games'
+      game: games[index % games.length].text,
       averageDownloadSpeed: 12.345,
       averageUploadSpeed: 6.789,
       distanceTraveled: 5,

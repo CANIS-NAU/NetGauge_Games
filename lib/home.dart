@@ -13,6 +13,7 @@ import 'settings.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
+import 'onboarding.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -38,10 +39,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  bool _onboardingShown = false;
+
   @override
   void initState() {
     super.initState();
+    // Show the popup after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_onboardingShown) {
+        showCustomOnBoardingPopup(context);
+        _onboardingShown = true;
+
+      }
+    });
   }
+
   @override
   Widget build(BuildContext context) {
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
@@ -299,3 +311,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
