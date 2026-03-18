@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 //these will likely be used in the future when implementing real data
 //to dashboard
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
-import 'profile.dart';
 import 'user_data_manager.dart';
 import 'game_catalog.dart';
-import 'widgets/buttons.dart';
 import 'package:provider/provider.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<UserDataProvider>(context);
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('User is in player statistics page.', phone: userData.phone);
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -92,13 +92,14 @@ List<ExpandableSessionData> generateItems(int numberOfItems) {
   return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
     return ExpandableSessionData(
       date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
-      game: favorite_games[index % favorite_games.length].text, // Cycle through favorite games
+      // UPDATED: Using the 'games' list instead of the deleted 'favorite_games'
+      game: games[index % games.length].text,
       averageDownloadSpeed: 12.345,
       averageUploadSpeed: 6.789,
       distanceTraveled: 5,
       pointsCollected: 10,
       radiusGyration: 15.5,
-      sessionDataPoints: [LatLng(0.0, 0.0), LatLng(0.0, 0.0), LatLng(0.0, 0.0)],
+      sessionDataPoints: [const LatLng(0.0, 0.0), const LatLng(0.0, 0.0), const LatLng(0.0, 0.0)],
     );
   });
 }
@@ -121,9 +122,11 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
   }
 
   Widget _buildPanel() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
+          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', phone: userData.phone);
           _data[index].isExpanded = isExpanded;
         });
       },
@@ -131,7 +134,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
         return ExpansionPanel(
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
-              title: Text('${item.game}'),
+              title: Text(item.game),
               subtitle: Text('Date: ${item.date.toIso8601String().substring(0, 10)}'),
             );
           },

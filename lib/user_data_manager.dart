@@ -5,6 +5,7 @@ import 'game_catalog.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
@@ -20,20 +21,18 @@ Future<bool> checkFakeLocation() async {
   return isFakeLocation;
 }
 
-final List<GameData> favorite_games = [
+final List<GameData> games = [
+  GameData(text: "Measure Internet", icon: Icons.wifi),
+  GameData(text: "Space Explorers", icon: Icons.settings),
+  GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
 ];
 
-// Data pulled from provider gets stored as SessionData items for player history
 class SessionData {
   final DateTime date;
   final String game;
-  /*
-  pointsCollected, sessionDataPoints, and distanceTraveled will not be required,
-  in the event that someone starts a game and closes it before collecting measurements, moving
-  around, etc.
-   */
   final int? pointsCollected;
   final int? distanceTraveled;
   final double? averageUploadSpeed;
@@ -48,7 +47,6 @@ class SessionData {
   this.averageUploadSpeed, this.radiusGyration, this.isFakeLocation, this.isVPN});
 }
 
-// radius-based stream for gathering points from firestore
 final GeoCollectionReference<Map<String, dynamic>> geoCollection =
 GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
 
@@ -61,7 +59,6 @@ Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double r
   );
 }
 
-// Data Point Class
 class DataPoint {
   final LatLng point;
   final DateTime timestamp;
@@ -97,23 +94,113 @@ class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
 
+  // FIX 1: This now gets populated by the new fetch logic below
+  Map<String, bool>? _seenMessages;
+
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
 
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
+  String get phone => _userData?['phone'] ?? '1111111111';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
-  // Fetch data for the currently logged-in user
+  // FIX 2: Getter now just returns _seenMessages with a safe fallback
+  Map<String, bool> get seenMessages {
+    return _seenMessages ?? {
+      "control_message": false,
+      "play_message": false,
+      "utility_message": false,
+    };
+  }
+
+  List<GameData> get favoriteGames {
+    if (_userData == null) return [];
+
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> favoriteNames;
+
+    if (rawFavorites is List) {
+      favoriteNames = rawFavorites;
+    } else {
+      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+    }
+
+    List<GameData> favoritesList = [];
+    for (var name in favoriteNames) {
+      for (var game in games) {
+        if (game.text == name) {
+          favoritesList.add(game);
+        }
+      }
+    }
+    return favoritesList;
+  }
+
+  Future<void> toggleFavorite(String gameName) async {
+    if (_userData == null) return;
+
+    final rawFavorites = _userData!['favorite_games'];
+    List<dynamic> currentFavorites = (rawFavorites is List)
+        ? List.from(rawFavorites)
+        : ['Zombie Apocalypse', 'Soul Seeker'];
+
+    if (currentFavorites.contains(gameName)) {
+      currentFavorites.remove(gameName);
+    } else {
+      currentFavorites.add(gameName);
+    }
+
+    _userData!['favorite_games'] = currentFavorites;
+    notifyListeners();
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(uid)
+          .update({'favorite_games': currentFavorites});
+      print('Favorites updated in Firestore');
+    } catch (e) {
+      print('Error updating favorites: $e');
+    }
+  }
+
+  // TODO: This never actually updates because we are working with a COPY of the seenMessages map, not the real one
+  // needs to be fixed
+  Future<void> updateOnboardingStatus(String experiment, context) async {
+    debugPrint("[USER_DATA_MANAGER]: Updating onboarding status for $experiment to true.");
+
+    // if _seenMessages is null, initialize
+    _seenMessages ??= {
+      "control_message": false,
+      "play_message": false,
+      "utility_message": false,
+    };
+
+    _seenMessages![experiment] = true;
+
+    final onboardingQuery = await FirebaseFirestore.instance
+        .collection('ABC_Onboarding')
+        .doc('user')                          // the subcollection parent doc
+        .collection('user')                   // the subcollection itself
+        .where('email', isEqualTo: this.email)
+        .limit(1)
+        .get();
+
+    if(onboardingQuery.docs.isNotEmpty) {
+      await onboardingQuery.docs.first.reference.update({
+        'messages_seen.$experiment': true,   // dot notation updates just this key
+      });
+    }
+    notifyListeners();
+  }
+
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
+    if (user == null) return;
 
     print('🔍 Fetching data for user: ${user.email} (${user.uid})');
 
@@ -121,9 +208,10 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Existing userData fetch — unchanged
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userData')
-          .doc(user.uid) // Use the Auth UID directly!
+          .doc(user.uid)
           .get();
 
       if (doc.exists) {
@@ -145,10 +233,37 @@ class UserDataProvider extends ChangeNotifier {
         print('   Measurements: ${_userData?['measurementsTaken']}');
       } else {
         print('No document found, creating one...');
-        // Create document if it doesn't exist
         await createUserDocument(user);
-        await fetchUserData(); // Try again
+        await fetchUserData();
+        return;
       }
+
+      // FIX 3: New fetch for ABC_Onboarding — queries by email
+      final onboardingQuery = await FirebaseFirestore.instance
+          .collection('ABC_Onboarding')
+          .doc('user')                          // the subcollection parent doc
+          .collection('user')                   // the subcollection itself
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (onboardingQuery.docs.isNotEmpty) {
+        final onboardingData = onboardingQuery.docs.first.data();
+
+        // Safely cast the messages_seen map from Firestore
+        final rawSeen = onboardingData['messages_seen'];
+        if (rawSeen is Map) {
+          _seenMessages = rawSeen.map(
+                  (key, value) => MapEntry(key.toString(), value as bool)
+          );
+        }
+        print('Onboarding data loaded: $_seenMessages');
+      } else {
+        // User has no onboarding doc yet — create one
+        print('No onboarding document found, creating one...');
+        await createOnboardingDocument(user);
+      }
+
     } catch (e) {
       print('Error: $e');
     }
@@ -157,7 +272,6 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Helper method to create user document
   Future<void> createUserDocument(User user) async {
     bool vpn = await checkVPN();
     bool fake = await checkFakeLocation();
@@ -172,15 +286,73 @@ class UserDataProvider extends ChangeNotifier {
       'distanceTraveled': 0,
       'dataPoints': [],
       'radGyration': [0],
+      'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
       'createdAt': FieldValue.serverTimestamp(),
       'isVPN' : vpn,
       'isFakeLocation' : fake,
     }, SetOptions(merge: true));
   }
 
-  void clearData() {
-    _userData = null;
-    notifyListeners();
+  // FIX 4: New helper to create an onboarding doc for new users
+  Future<void> createOnboardingDocument(User user) async {
+    await FirebaseFirestore.instance
+        .collection('ABC_Onboarding')
+        .doc('user')
+        .collection('user')
+        .add({
+      'email': user.email,
+      'messages_seen': {
+        'control_message': false,
+        'play_message': false,
+        'utility_message': false,
+      },
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    // Set local state to match
+    _seenMessages = {
+      'control_message': false,
+      'play_message': false,
+      'utility_message': false,
+    };
   }
 
+  // FIX 5: New method to mark a message as seen — call this after dialog is dismissed
+  Future<void> markMessageAsSeen(String messageId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Update local state immediately for UI responsiveness
+    _seenMessages = {
+      ...seenMessages,
+      messageId: true,
+    };
+    notifyListeners();
+
+    // Find the user's onboarding doc and update it
+    try {
+      final onboardingQuery = await FirebaseFirestore.instance
+          .collection('ABC_Onboarding')
+          .doc('user')
+          .collection('user')
+          .where('email', isEqualTo: user.email)
+          .limit(1)
+          .get();
+
+      if (onboardingQuery.docs.isNotEmpty) {
+        await onboardingQuery.docs.first.reference.update({
+          'messages_seen.$messageId': true,   // dot notation updates just this key
+        });
+        print('Marked $messageId as seen');
+      }
+    } catch (e) {
+      print('Error marking message as seen: $e');
+    }
+  }
+
+  void clearData() {
+    _userData = null;
+    _seenMessages = null;    // FIX 6: clear this on logout too
+    notifyListeners();
+  }
 }

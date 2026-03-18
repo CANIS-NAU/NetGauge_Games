@@ -11,6 +11,11 @@ import 'session_manager.dart';
 import 'location_logger.dart';
 import 'vibration_controller.dart';
 import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
+
+final loggingService = GetIt.instance<LoggingService>();
 
 class GameData {
   final String text;
@@ -25,22 +30,15 @@ class GameCatalog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Store your button data in a list
-    final List<GameData> games = [
-      GameData(text: "Measure Internet", icon: Icons.wifi),
-      GameData(text: "Space Explorers", icon: Icons.settings),
-      GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
-      GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-      GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-      GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
-    ];
+    final userData = Provider.of<UserDataProvider>(context);
+    loggingService.logEvent('User is in game catalog page', phone: userData.phone);
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: const Text(
             'Game Catalog',
-            style: const TextStyle(
+            style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontSize: 25)
@@ -87,6 +85,8 @@ Widget gameCatalogPreview() {
 }
 
 Future<void> showCustomPopup(BuildContext context, GameData game) {
+  final userData = Provider.of<UserDataProvider>(context, listen: false);
+  loggingService.logEvent('Showing pop-up for ${game.text}', phone: userData.phone);
   String title = "Title";
   String content = "Content";
   String gameURL = "URL";
@@ -135,6 +135,10 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     builder: (BuildContext context) {
       return StatefulBuilder(
         builder: (context, dialogSetState) {
+          // Listen to the provider to get the most up-to-date favorites
+          final currentFavorites = Provider.of<UserDataProvider>(context).favoriteGames;
+          final isFavorited = currentFavorites.any((favGame) => favGame.text == game.text);
+
           return AlertDialog(
             backgroundColor: Colors.white,
             title: Text(title),
@@ -151,13 +155,12 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
             actions: [
               IconButton(
                 icon: Icon(
-                  favorite_games.any((favGame) => favGame.text == game.text)
-                      ? Icons.favorite
-                      : Icons.favorite_border,
+                  isFavorited ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorited ? Colors.red : null,
                 ),
                 onPressed: () {
                   updateFavorites(game, context);
-                  dialogSetState(() {});
+                  // No need for dialogSetState(() {}) because Provider will rebuild the widget
                 },
               ),
               TextButton(
@@ -177,6 +180,9 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
 }
 
 void _launchGame(String title, String gameFile, BuildContext context) {
+  final userData = Provider.of<UserDataProvider>(context, listen: false);
+  loggingService.logEvent('Launching $title', phone: userData.phone);
+
   // Close the dialog first
   Navigator.pop(context);
 
@@ -186,6 +192,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   LocationLogger.start();
 
   if(title == 'Measure Internet') {
+    loggingService.logEvent('Clicked measure internet.', phone: userData.phone);
     Navigator.push(
         context,
         MaterialPageRoute(
@@ -204,6 +211,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       SessionManager.endGame(); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
+      loggingService.logEvent('Game complete: $title', phone: userData.phone);
 
       // TODO: Navigate to home page
       /*Navigator.push(
@@ -217,14 +225,15 @@ void _launchGame(String title, String gameFile, BuildContext context) {
 }
 
 void updateFavorites(GameData game, BuildContext context) {
-  // Check if a game with the same text is already in favorites
-  final isFavorited = favorite_games.any((favGame) => favGame.text == game.text);
-
+  final userData = Provider.of<UserDataProvider>(context, listen: false);
+  // Call the new provider method to handle the update and Firestore sync
+  userData.toggleFavorite(game.text);
+  
+  // Log the event
+  final isFavorited = userData.favoriteGames.any((favGame) => favGame.text == game.text);
   if (isFavorited) {
-    // remove from favorites
-    favorite_games.removeWhere((favGame) => favGame.text == game.text);
+    loggingService.logEvent('${game.text} removed from favorites.', phone: userData.phone);
   } else {
-    // add to favorites
-    favorite_games.add(game);
+    loggingService.logEvent('${game.text} added to favorites.', phone: userData.phone);
   }
 }
