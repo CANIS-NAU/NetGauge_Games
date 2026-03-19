@@ -9,7 +9,6 @@ import 'game_catalog.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
-import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
@@ -27,7 +26,6 @@ Future<bool> checkFakeLocation() async {
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
-  GameData(text: "Space Explorers", icon: Icons.settings),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
@@ -82,8 +80,6 @@ class DataPoint {
     final GeoPoint geopoint = data['location'] as GeoPoint;
     final double lat = geopoint.latitude;
     final double lng = geopoint.longitude;
-
-    //final dataPoints = snapshot.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
 
     return DataPoint(
       point: LatLng(lat, lng),
@@ -140,9 +136,11 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<void> toggleFavorite(String gameName) async {
-    if (_userData == null) return;
+    if (_userData == null) {
+      debugPrint("[USER_DATA_MANAGER]: Cannot toggle favorite, _userData is null.");
+      return;
+    }
 
-    // Use current list or default if it has never been modified
     final rawFavorites = _userData!['favorite_games'];
     List<dynamic> currentFavorites = (rawFavorites is List) 
         ? List.from(rawFavorites) 
@@ -154,19 +152,20 @@ class UserDataProvider extends ChangeNotifier {
       currentFavorites.add(gameName);
     }
 
-    // Update local state immediately for UI responsiveness
     _userData!['favorite_games'] = currentFavorites;
     notifyListeners();
 
-    // Update Firestore
     try {
-      await FirebaseFirestore.instance
-          .collection('userData')
-          .doc(uid)
-          .update({'favorite_games': currentFavorites});
-      print('Favorites updated in Firestore');
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('userData')
+            .doc(user.uid)
+            .update({'favorite_games': currentFavorites});
+        debugPrint('Favorites updated in Firestore');
+      }
     } catch (e) {
-      print('Error updating favorites: $e');
+      debugPrint('Error updating favorites: $e');
     }
   }
 
@@ -183,37 +182,33 @@ class UserDataProvider extends ChangeNotifier {
     return snapshot_collected_points.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
   }
 
-  // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final email = user?.email;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      // gather measurements already taken
-      List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
-      // update firebase userData DB
-      await FirebaseFirestore.instance
-          .collection('userData')
-          .doc(user.uid)
-          .update({'measurementsTaken': collectedMeasurements.length});
-      // print debug, can be removed later
-      debugPrint(
-          "[USER_DATA_MANAGER]: Collected points from DB: ${collectedMeasurements}");
-
+      // 1. First, GET the document to see if it exists
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userData')
           .doc(user.uid)
           .get();
 
       if (doc.exists) {
-        // 3. Assign the data so toggleFavorite and getters work
         _userData = doc.data() as Map<String, dynamic>;
 
-        // Update security status
+        // 2. Now that we know it exists, update the measurement count
+        List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
+        await FirebaseFirestore.instance
+            .collection('userData')
+            .doc(user.uid)
+            .update({'measurementsTaken': collectedMeasurements.length});
+        
+        _userData?['measurementsTaken'] = collectedMeasurements.length;
+
+        // 3. Update security status
         bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
         await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
@@ -224,21 +219,38 @@ class UserDataProvider extends ChangeNotifier {
         _userData?['isVPN'] = vpn;
         _userData?['isFakeLocation'] = fake;
 
+        // 4. Fetch onboarding status
+        final onboardingQuery = await FirebaseFirestore.instance
+            .collection('ABC_Onboarding')
+            .doc('user')
+            .collection('user')
+            .where('email', isEqualTo: user.email)
+            .limit(1)
+            .get();
+
+        if (onboardingQuery.docs.isNotEmpty) {
+          final rawSeen = onboardingQuery.docs.first.data()['messages_seen'];
+          if (rawSeen is Map) {
+            _seenMessages = rawSeen.map((k, v) => MapEntry(k.toString(), v as bool));
+          }
+        } else {
+          await createOnboardingDocument(user);
+        }
+
         debugPrint("Data loaded for: ${user.email}");
       } else {
-        // Handle new user
+        debugPrint("No document found for UID: ${user.uid}, creating one...");
         await createUserDocument(user);
         await fetchUserData();
       }
-      } catch (e) {
-        debugPrint('Error fetching user data: $e');
-      }
+    } catch (e) {
+      debugPrint('Error fetching user data: $e');
+    }
+    
     _isLoading = false;
     notifyListeners();
   }
 
-  // gather distance and radius of gyration based on collected measurements
-  // FIX 2: Getter now just returns _seenMessages with a safe fallback
   Map<String, bool> get seenMessages {
     return _seenMessages ?? {
       "control_message": false,
@@ -247,59 +259,6 @@ class UserDataProvider extends ChangeNotifier {
     };
   }
 
-  /*List<GameData> get favoriteGames {
-    if (_userData == null) return [];
-
-    final rawFavorites = _userData!['favorite_games'];
-    List<dynamic> favoriteNames;
-
-    if (rawFavorites is List) {
-      favoriteNames = rawFavorites;
-    } else {
-      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
-    }
-
-    List<GameData> favoritesList = [];
-    for (var name in favoriteNames) {
-      for (var game in games) {
-        if (game.text == name) {
-          favoritesList.add(game);
-        }
-      }
-    }
-    return favoritesList;
-  }*/
-
-  /*Future<void> toggleFavorite(String gameName) async {
-    if (_userData == null) return;
-
-    final rawFavorites = _userData!['favorite_games'];
-    List<dynamic> currentFavorites = (rawFavorites is List)
-        ? List.from(rawFavorites)
-        : ['Zombie Apocalypse', 'Soul Seeker'];
-
-    if (currentFavorites.contains(gameName)) {
-      currentFavorites.remove(gameName);
-    } else {
-      currentFavorites.add(gameName);
-    }
-
-    _userData!['favorite_games'] = currentFavorites;
-    notifyListeners();
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('userData')
-          .doc(uid)
-          .update({'favorite_games': currentFavorites});
-      print('Favorites updated in Firestore');
-    } catch (e) {
-      print('Error updating favorites: $e');
-    }
-  }*/
-
-  // TODO: This never actually updates because we are working with a COPY of the seenMessages map, not the real one
-  // needs to be fixed
   Future<void> updateOnboardingStatus(String experiment, context) async {
     debugPrint("[USER_DATA_MANAGER]: Updating onboarding status for $experiment to true.");
 
@@ -311,96 +270,25 @@ class UserDataProvider extends ChangeNotifier {
     };
 
     _seenMessages![experiment] = true;
+    notifyListeners();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
     final onboardingQuery = await FirebaseFirestore.instance
         .collection('ABC_Onboarding')
-        .doc('user')                          // the subcollection parent doc
-        .collection('user')                   // the subcollection itself
-        .where('email', isEqualTo: this.email)
+        .doc('user')
+        .collection('user')
+        .where('email', isEqualTo: user.email)
         .limit(1)
         .get();
 
     if(onboardingQuery.docs.isNotEmpty) {
       await onboardingQuery.docs.first.reference.update({
-        'messages_seen.$experiment': true,   // dot notation updates just this key
+        'messages_seen.$experiment': true,
       });
     }
-    notifyListeners();
   }
-
-  /*Future<void> fetchUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    print('Fetching data for user: ${user.email} (${user.uid})');
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Existing userData fetch — unchanged
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('userData')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists) {
-        _userData = doc.data() as Map<String, dynamic>;
-        
-        // Update security status in Firebase every time the app loads data
-        bool vpn = await checkVPN();
-        bool fake = await checkFakeLocation();
-        await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
-          'isVPN': vpn,
-          'isFakeLocation': fake,
-        });
-        // Update local map as well
-        _userData?['isVPN'] = vpn;
-        _userData?['isFakeLocation'] = fake;
-
-        print('Data loaded:');
-        print('   Email: ${_userData?['email']}');
-        print('   Measurements: ${_userData?['measurementsTaken']}');
-        print('   Favorite Games: ${_userData?['favorite_games']}');
-      } else {
-        print('No document found, creating one...');
-        await createUserDocument(user);
-        await fetchUserData();
-        return;
-      }
-
-      // FIX 3: New fetch for ABC_Onboarding — queries by email
-      final onboardingQuery = await FirebaseFirestore.instance
-          .collection('ABC_Onboarding')
-          .doc('user')                          // the subcollection parent doc
-          .collection('user')                   // the subcollection itself
-          .where('email', isEqualTo: user.email)
-          .limit(1)
-          .get();
-
-      if (onboardingQuery.docs.isNotEmpty) {
-        final onboardingData = onboardingQuery.docs.first.data();
-
-        // Safely cast the messages_seen map from Firestore
-        final rawSeen = onboardingData['messages_seen'];
-        if (rawSeen is Map) {
-          _seenMessages = rawSeen.map(
-                  (key, value) => MapEntry(key.toString(), value as bool)
-          );
-        }
-        print('Onboarding data loaded: $_seenMessages');
-      } else {
-        // User has no onboarding doc yet — create one
-        print('No onboarding document found, creating one...');
-        await createOnboardingDocument(user);
-      }
-
-    } catch (e) {
-      print('Error: $e');
-    }
-    _isLoading = false;
-    notifyListeners();
-  } */
 
   Future<void> createUserDocument(User user) async {
     bool vpn = await checkVPN();
@@ -423,7 +311,6 @@ class UserDataProvider extends ChangeNotifier {
     }, SetOptions(merge: true));
   }
 
-  // FIX 4: New helper to create an onboarding doc for new users
   Future<void> createOnboardingDocument(User user) async {
     await FirebaseFirestore.instance
         .collection('ABC_Onboarding')
@@ -432,57 +319,17 @@ class UserDataProvider extends ChangeNotifier {
         .add({
       'email': user.email,
       'messages_seen': {
-        'control_message': false,
-        'play_message': false,
-        'utility_message': false,
-      },
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    // Set local state to match
-    _seenMessages = {
-      'control_message': false,
-      'play_message': false,
-      'utility_message': false,
-    };
-  }
-
-  // FIX 5: New method to mark a message as seen — call this after dialog is dismissed
-  Future<void> markMessageAsSeen(String messageId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    // Update local state immediately for UI responsiveness
-    _seenMessages = {
-      ...seenMessages,
-      messageId: true,
-    };
-    notifyListeners();
-
-    // Find the user's onboarding doc and update it
-    try {
-      final onboardingQuery = await FirebaseFirestore.instance
-          .collection('ABC_Onboarding')
-          .doc('user')
-          .collection('user')
-          .where('email', isEqualTo: user.email)
-          .limit(1)
-          .get();
-
-      if (onboardingQuery.docs.isNotEmpty) {
-        await onboardingQuery.docs.first.reference.update({
-          'messages_seen.$messageId': true,   // dot notation updates just this key
-        });
-        print('Marked $messageId as seen');
+        "control_message": false,
+        "play_message": false,
+        "utility_message": false,
       }
-    } catch (e) {
-      print('Error marking message as seen: $e');
-    }
+    });
   }
 
   void clearData() {
     _userData = null;
-    _seenMessages = null;    // FIX 6: clear this on logout too
+    _seenMessages = null;
     notifyListeners();
+    debugPrint('🗑️ User data cleared');
   }
 }
