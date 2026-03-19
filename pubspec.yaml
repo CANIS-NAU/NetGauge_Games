@@ -81,7 +81,7 @@ dependencies:
   ## Locally storing user activity
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  connectivity_plus: ^5.0.0
+  connectivity_plus: ^7.0.0
   uuid: ^4.0.0
   get_it: ^7.6.0
 

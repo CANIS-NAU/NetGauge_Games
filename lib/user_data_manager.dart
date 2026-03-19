@@ -102,8 +102,6 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
-
-  // FIX 1: This now gets populated by the new fetch logic below
   Map<String, bool>? _seenMessages;
 
   Map<String, dynamic>? get userData => _userData;
@@ -116,24 +114,21 @@ class UserDataProvider extends ChangeNotifier {
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
-  // This is the new getter replacing the old function
   List<GameData> get favoriteGames {
     if (_userData == null) {
       return [];
     }
 
-    List<GameData> favoritesList = [];
     final rawFavorites = _userData!['favorite_games'];
-    
-    // Add a strict type check to avoid the Map vs List crash
     List<dynamic> favoriteNames;
+    
     if (rawFavorites is List) {
       favoriteNames = rawFavorites;
     } else {
-      // Fallback if data is missing or malformed in DB
       favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
     }
 
+    List<GameData> favoritesList = [];
     for (var name in favoriteNames) {
       for (var game in games) {
         if (game.text == name) {
@@ -144,7 +139,6 @@ class UserDataProvider extends ChangeNotifier {
     return favoritesList;
   }
 
-  // Method to add/remove a game from favorites in Firestore
   Future<void> toggleFavorite(String gameName) async {
     if (_userData == null) return;
 
@@ -192,19 +186,58 @@ class UserDataProvider extends ChangeNotifier {
   // Fetch data for the currently logged-in user
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
-    final email = user?.email;
     if (user == null) return;
-    // gather measurements already taken
-    List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
-    // update firebase userData DB
-    await FirebaseFirestore.instance
-        .collection('userData')
-        .doc(user.uid)
-        .update({'measurementsTaken': collectedMeasurements.length});
-    // print debug, can be removed later
-    debugPrint("[USER_DATA_MANAGER]: Collected points from DB: ${collectedMeasurements}");
+    final email = user?.email;
 
-    // gather distance and radius of gyration based on collected measurements
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // gather measurements already taken
+      List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
+      // update firebase userData DB
+      await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(user.uid)
+          .update({'measurementsTaken': collectedMeasurements.length});
+      // print debug, can be removed later
+      debugPrint(
+          "[USER_DATA_MANAGER]: Collected points from DB: ${collectedMeasurements}");
+
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('userData')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists) {
+        // 3. Assign the data so toggleFavorite and getters work
+        _userData = doc.data() as Map<String, dynamic>;
+
+        // Update security status
+        bool vpn = await checkVPN();
+        bool fake = await checkFakeLocation();
+        await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
+          'isVPN': vpn,
+          'isFakeLocation': fake,
+        });
+
+        _userData?['isVPN'] = vpn;
+        _userData?['isFakeLocation'] = fake;
+
+        debugPrint("Data loaded for: ${user.email}");
+      } else {
+        // Handle new user
+        await createUserDocument(user);
+        await fetchUserData();
+      }
+      } catch (e) {
+        debugPrint('Error fetching user data: $e');
+      }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // gather distance and radius of gyration based on collected measurements
   // FIX 2: Getter now just returns _seenMessages with a safe fallback
   Map<String, bool> get seenMessages {
     return _seenMessages ?? {
@@ -214,7 +247,7 @@ class UserDataProvider extends ChangeNotifier {
     };
   }
 
-  List<GameData> get favoriteGames {
+  /*List<GameData> get favoriteGames {
     if (_userData == null) return [];
 
     final rawFavorites = _userData!['favorite_games'];
@@ -235,9 +268,9 @@ class UserDataProvider extends ChangeNotifier {
       }
     }
     return favoritesList;
-  }
+  }*/
 
-  Future<void> toggleFavorite(String gameName) async {
+  /*Future<void> toggleFavorite(String gameName) async {
     if (_userData == null) return;
 
     final rawFavorites = _userData!['favorite_games'];
@@ -263,7 +296,7 @@ class UserDataProvider extends ChangeNotifier {
     } catch (e) {
       print('Error updating favorites: $e');
     }
-  }
+  }*/
 
   // TODO: This never actually updates because we are working with a COPY of the seenMessages map, not the real one
   // needs to be fixed
@@ -295,7 +328,7 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> fetchUserData() async {
+  /*Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -367,7 +400,7 @@ class UserDataProvider extends ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners();
-  }
+  } */
 
   Future<void> createUserDocument(User user) async {
     bool vpn = await checkVPN();
