@@ -9,6 +9,7 @@ import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 // Setting up a data file with question, question type, answer in a json or csv
 //more easily create new surveys
@@ -42,6 +43,10 @@ class _SurveyState extends State<SurveyState> {
   @override
   void initState() {
     super.initState();
+    // set up firebase config
+    final remoteConfig = FirebaseRemoteConfig.instance;
+    // use remote config to get the survey ID
+
     _fetchQuestions().then((questions) {
       setState(() {
         _initialData = questions;
@@ -51,6 +56,21 @@ class _SurveyState extends State<SurveyState> {
       setState(() { _isLoading = false; });
     });
   }
+
+  /*
+  One way that I can keep the code written here (which works nicely with the imported
+  survey library)-->trigger a pop-up window using this function via remote config,
+  which prompts the user to click a button to be taken to the survey page.
+
+  This would also make the transition from opening the app to being in the survey
+  a little less jarring.
+
+  This may be unnecessary idk yet
+   */
+  Future<void> showSurveyPopup(BuildContext context) async {
+
+  }
+
 
   @override
   Widget build(BuildContext context) {
