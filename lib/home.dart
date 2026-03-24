@@ -13,7 +13,9 @@ import 'settings.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
-import 'onboarding.dart';
+import 'abc_onboarding.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'surveys.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -39,13 +41,49 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // TODO: Change this to match whatever is reflected in user data manager
   bool _onboardingShown = false;
+
+
+  /*
+  Remote config survey prompting code
+  Ref: https://firebase.google.com/docs/tutorials/welcome-back-screen
+   */
+  Future setupInteractedMessage() async {
+    // Get any messages which caused the application to open from
+    // a terminated state.
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+    // If the message also contains a data property with a "type" of "chat",
+    // navigate to a chat screen
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+
+    // Also handle any interaction when the app is in the background using a
+    // Stream listener
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    if (message.data['type'] == 'survey') {
+      Navigator.pushNamed(context, '/survey',
+        arguments: SurveyState(surveyDocId: message.data['type'], responseCollection: 'survey_responses',),
+      );
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    setupInteractedMessage();
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     // Show the popup after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!userData.demographics_taken) {
+        showSurveyPopup(context, "demographic");
+        userData.setDemographicStatus();
+      }
       if (!_onboardingShown) {
         showCustomOnBoardingPopup(context);
         _onboardingShown = true;
@@ -312,3 +350,60 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+Future<void> showSurveyPopup(BuildContext context, String surveyID) {
+  final userData = Provider.of<UserDataProvider>(context, listen: false);
+  loggingService.logEvent('Showing pop-up for $surveyID)', email: userData.email);
+  String title = "Title";
+  String content = "Content";
+
+
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (context, dialogSetState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Please take this survey to support our research."),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SurveyState(
+                      surveyDocId: surveyID,
+                      responseCollection: 'survey_responses',
+                    )),
+                  )
+                },
+                style: TextButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      side: const BorderSide(
+                        color: Colors.black, // Specify the border color
+                        width: 3,           // Specify the border width
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    fixedSize: const Size(500, 25),
+                    //backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                    )
+                ),
+                child: const Text("Take METUX Survey"),
+                //TODO: Nice-to-have-->add a trailing expand icon here
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}

@@ -105,6 +105,7 @@ class UserDataProvider extends ChangeNotifier {
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
+  bool get demographics_taken => _userData?['demographics_taken'] ?? false;
   String get phone => _userData?['phone'] ?? '1111111111';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
@@ -180,6 +181,27 @@ class UserDataProvider extends ChangeNotifier {
         .get();
 
     return snapshot_collected_points.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
+  }
+
+  Future<void> setDemographicStatus() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance
+            .collection('userData')
+            .doc(user.uid)
+            .update({'demographics_taken': true});
+
+        if (_userData != null) {
+          _userData!['demographics_taken'] = true;
+        }
+
+        notifyListeners();
+        debugPrint('Demographic survey status updated in Firestore');
+      }
+    } catch (e) {
+      debugPrint('Error updating demographic survey status: $e');
+    }
   }
 
   Future<void> fetchUserData() async {
@@ -300,6 +322,7 @@ class UserDataProvider extends ChangeNotifier {
         .set({
       'uid': user.uid,
       'email': user.email,
+      'demographics_taken' : false,
       'measurementsTaken': 0,
       'distanceTraveled': 0,
       'dataPoints': [],
@@ -330,6 +353,6 @@ class UserDataProvider extends ChangeNotifier {
     _userData = null;
     _seenMessages = null;
     notifyListeners();
-    debugPrint('🗑️ User data cleared');
+    debugPrint('User data cleared');
   }
 }
