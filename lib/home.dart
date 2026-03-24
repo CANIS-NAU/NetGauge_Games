@@ -80,6 +80,7 @@ class _HomePageState extends State<HomePage> {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     // Show the popup after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      //if the user has never taken the demographic survey, ask them to complete it
       if (!userData.demographics_taken) {
         showSurveyPopup(context, "demographic");
         userData.setDemographicStatus();
@@ -397,7 +398,7 @@ Future<void> showSurveyPopup(BuildContext context, String surveyID) {
                       fontWeight: FontWeight.w400,
                     )
                 ),
-                child: const Text("Take METUX Survey"),
+                child: const Text("Take Survey"),
                 //TODO: Nice-to-have-->add a trailing expand icon here
               ),
             ],

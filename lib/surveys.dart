@@ -18,8 +18,8 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 final FirebaseFirestore db = FirebaseFirestore.instance;
 
 class SurveyState extends StatefulWidget {
-  final String surveyDocId;      // e.g. 'metux' or 'survey_a'
-  final String responseCollection; // e.g. 'METUX' or 'survey_a_responses'
+  final String surveyDocId;      // e.g. 'metux' or 'gemographic'
+  final String responseCollection; // all going to survey responses right now...
 
   const SurveyState({
     super.key,
