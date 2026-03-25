@@ -81,7 +81,11 @@ class _HomePageState extends State<HomePage> {
     // Show the popup after the first frame is rendered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       //if the user has never taken the demographic survey, ask them to complete it
-      if (!userData.demographics_taken) {
+      //bool demographicsStatus = Provider.of<UserDataProvider>(context, listen: false).demographics_taken;
+      bool demographicStatus = userData.getDemographicStatus();
+      debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
+      if (demographicStatus == false) {
+        debugPrint("[HOME] Demographic survey has not been taken. Request user take survey.");
         showSurveyPopup(context, "demographic");
         userData.setDemographicStatus();
       }

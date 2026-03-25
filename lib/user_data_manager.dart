@@ -204,6 +204,11 @@ class UserDataProvider extends ChangeNotifier {
     }
   }
 
+
+  bool getDemographicStatus() {
+    return demographics_taken ?? false;
+  }
+
   Future<void> fetchUserData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
