@@ -9,6 +9,7 @@ import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 // Setting up a data file with question, question type, answer in a json or csv
 //more easily create new surveys
@@ -17,8 +18,8 @@ import 'package:provider/provider.dart';
 final FirebaseFirestore db = FirebaseFirestore.instance;
 
 class SurveyState extends StatefulWidget {
-  final String surveyDocId;      // e.g. 'metux' or 'survey_a'
-  final String responseCollection; // e.g. 'METUX' or 'survey_a_responses'
+  final String surveyDocId;      // e.g. 'metux' or 'gemographic'
+  final String responseCollection; // all going to survey responses right now...
 
   const SurveyState({
     super.key,
@@ -94,8 +95,11 @@ class _SurveyState extends State<SurveyState> {
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20)),
-                onPressed: () {
+                onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
+                  if(widget.surveyDocId == 'demographic') {
+                    userData.setDemographicStatus();
+                  }
                   if (_formKey.currentState!.validate()) {
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(
@@ -104,6 +108,7 @@ class _SurveyState extends State<SurveyState> {
                       );
                     });
                   }
+                  debugPrint("[SURVEYS] Something went wrong with surveys. Check for recording.");
                 }
             ),
           ),

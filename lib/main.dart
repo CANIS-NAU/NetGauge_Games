@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'activity_logs.dart';
 // for Hive.initFlutter()
 import 'package:get_it/get_it.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // app initialization
 void main() async {
@@ -19,6 +20,9 @@ void main() async {
   final loggingService = LoggingService();
   await loggingService.init();
   getIt.registerSingleton<LoggingService>(loggingService);
+
+  final notificationSettings = await FirebaseMessaging.instance.requestPermission(provisional: true);
+  final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
 
   runApp(
     ChangeNotifierProvider(
