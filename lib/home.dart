@@ -16,6 +16,9 @@ import 'package:get_it/get_it.dart';
 import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
+import 'package:provider/provider.dart';
+import 'package:get_it/get_it.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -43,7 +46,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   // TODO: Change this to match whatever is reflected in user data manager
   bool _onboardingShown = false;
-
+  VoidCallback? _loadingListener;
 
   /*
   Remote config survey prompting code
@@ -77,28 +80,57 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     setupInteractedMessage();
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
-    // Show the popup after the first frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      //if the user has never taken the demographic survey, ask them to complete it
-      //bool demographicsStatus = Provider.of<UserDataProvider>(context, listen: false).demographics_taken;
-      bool demographicStatus = userData.getDemographicStatus();
-      debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
-      if (demographicStatus == false) {
-        debugPrint("[HOME] Demographic survey has not been taken. Request user take survey.");
-        showSurveyPopup(context, "demographic");
-        userData.setDemographicStatus();
-      }
-      if (!_onboardingShown) {
-        showCustomOnBoardingPopup(context);
-        _onboardingShown = true;
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+      final userData = Provider.of<UserDataProvider>(context, listen: false);
+
+      if (userData.isLoading) {
+        _loadingListener = () {
+          if (!userData.isLoading && mounted) {
+            userData.removeListener(_loadingListener!);
+            _loadingListener = null;
+            _runStartupChecks(userData);
+          }
+        };
+        userData.addListener(_loadingListener!);
+      } else {
+        _runStartupChecks(userData);
       }
     });
   }
 
+  void _runStartupChecks(UserDataProvider userData) {
+    if (!mounted) return;
+
+    final demographicStatus = userData.getDemographicStatus;
+    debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
+
+    if (!demographicStatus) {
+      debugPrint("[HOME] Demographic survey not taken. Prompting user.");
+      showSurveyPopup(context, "demographic");
+    }
+
+    if (!_onboardingShown) {
+      showCustomOnBoardingPopup(context);
+      if (mounted) setState(() => _onboardingShown = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    if (_loadingListener != null) {
+      userData.removeListener(_loadingListener!);
+    }
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
+    /*String surveyType = listenRemoteConfig();
+    if (surveyType != 'none') {
+      showSurveyPopup(context, surveyType);
+    }*/
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in home page', email: userData.email);
@@ -411,4 +443,36 @@ Future<void> showSurveyPopup(BuildContext context, String surveyID) {
       );
     },
   );
+}
+
+Future<String> listenRemoteConfig() async{
+  // TODO: Listen for Firebase remoteConfig messaging
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  final String messageId = remoteConfig.getString('onboarding_experiment');
+
+  try {
+    debugPrint("ONBOARDING: Initializing Remote Config...");
+    // getting remote config settings
+    await remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 10), // shorter timeout for better UX
+      minimumFetchInterval: Duration.zero,       // allow frequent updates for testing
+    ));
+
+    // Fetch and activate the latest values from the server
+    // We add a timeout to ensure the popup shows even if the network is slow
+    await remoteConfig.fetchAndActivate().timeout(const Duration(seconds: 5), onTimeout: () {
+      debugPrint("[HOME] RemoteConfig fetch timed out, using defaults.");
+      /*
+      Set messageID to default control setting. Doing this so we can tell Firebase
+      that the user has already seen this message so they are not shown it again.
+       */
+      String messageID = "none";
+      return false;
+    });
+  } catch (e) {
+    debugPrint("[HOME] Error with Remote Config: $e");
+  }
+
+  final String surveyType = remoteConfig.getString('survey');
+  return surveyType;
 }

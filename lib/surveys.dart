@@ -43,10 +43,6 @@ class _SurveyState extends State<SurveyState> {
   @override
   void initState() {
     super.initState();
-    // set up firebase config
-    final remoteConfig = FirebaseRemoteConfig.instance;
-    // use remote config to get the survey ID
-
     _fetchQuestions().then((questions) {
       setState(() {
         _initialData = questions;
@@ -56,21 +52,6 @@ class _SurveyState extends State<SurveyState> {
       setState(() { _isLoading = false; });
     });
   }
-
-  /*
-  One way that I can keep the code written here (which works nicely with the imported
-  survey library)-->trigger a pop-up window using this function via remote config,
-  which prompts the user to click a button to be taken to the survey page.
-
-  This would also make the transition from opening the app to being in the survey
-  a little less jarring.
-
-  This may be unnecessary idk yet
-   */
-  Future<void> showSurveyPopup(BuildContext context) async {
-
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -114,8 +95,11 @@ class _SurveyState extends State<SurveyState> {
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20)),
-                onPressed: () {
+                onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
+                  if(widget.surveyDocId == 'demographic') {
+                    userData.setDemographicStatus();
+                  }
                   if (_formKey.currentState!.validate()) {
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(
@@ -124,6 +108,7 @@ class _SurveyState extends State<SurveyState> {
                       );
                     });
                   }
+                  debugPrint("[SURVEYS] Something went wrong with surveys. Check for recording.");
                 }
             ),
           ),

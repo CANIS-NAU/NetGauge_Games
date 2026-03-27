@@ -105,7 +105,9 @@ class UserDataProvider extends ChangeNotifier {
   int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
-  bool get demographics_taken => _userData?['demographics_taken'] ?? false;
+
+  bool get getDemographicStatus => (_userData?['demographics_taken'] as bool?) ?? false;
+  
   String get phone => _userData?['phone'] ?? '1111111111';
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
@@ -197,16 +199,11 @@ class UserDataProvider extends ChangeNotifier {
         }
 
         notifyListeners();
-        debugPrint('Demographic survey status updated in Firestore');
+        debugPrint('Demographic survey status updated successfully');
       }
     } catch (e) {
       debugPrint('Error updating demographic survey status: $e');
     }
-  }
-
-
-  bool getDemographicStatus() {
-    return demographics_taken ?? false;
   }
 
   Future<void> fetchUserData() async {
@@ -217,7 +214,6 @@ class UserDataProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. First, GET the document to see if it exists
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userData')
           .doc(user.uid)
@@ -226,7 +222,6 @@ class UserDataProvider extends ChangeNotifier {
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
 
-        // 2. Now that we know it exists, update the measurement count
         List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
         await FirebaseFirestore.instance
             .collection('userData')
@@ -235,7 +230,6 @@ class UserDataProvider extends ChangeNotifier {
         
         _userData?['measurementsTaken'] = collectedMeasurements.length;
 
-        // 3. Update security status
         bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
         await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
@@ -246,7 +240,6 @@ class UserDataProvider extends ChangeNotifier {
         _userData?['isVPN'] = vpn;
         _userData?['isFakeLocation'] = fake;
 
-        // 4. Fetch onboarding status
         final onboardingQuery = await FirebaseFirestore.instance
             .collection('ABC_Onboarding')
             .doc('user')
