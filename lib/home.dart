@@ -111,10 +111,10 @@ class _HomePageState extends State<HomePage> {
       showSurveyPopup(context, "demographic");
     }
 
-    if (!_onboardingShown) {
+    /*if (!_onboardingShown) {
       showCustomOnBoardingPopup(context);
       if (mounted) setState(() => _onboardingShown = true);
-    }
+    }*/
   }
 
   @override
