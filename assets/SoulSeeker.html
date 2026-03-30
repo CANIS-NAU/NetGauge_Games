@@ -695,6 +695,8 @@ window.requestPOICheck = function(){
 // callback function to handle the POI check returned from flutter
 window.onPOICheck = function(json){
   //const data = JSON.parse(json);
+  // take a measurement here-->getInternetMeasurement
+  FlutterBridge.postMessage(JSON.stringify({command: "getInternetMeasurement"}));
   if (json.collected) {
     console.log("POI Found!");
     showCustomAlert("Search Results", "You have found a soul fragment!", function() {
@@ -1114,50 +1116,12 @@ How do you approach defeating the golem?
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;ch1FightStrFail&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker! &lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
-
-
-    &lt;&lt;if State.variables.insideCampus&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideUrban&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Heritage Square.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the &#39;Mozelle&#39;s Bakery&#39; hanging sign&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideRural&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Museum of Northern Arizona.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the large yellow sculpture near the museum entrance&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-    	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-&lt;&lt;/button&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="LocationDisplay" tags="" position="900,250" size="100,100">Welcome! &lt;&lt;print $locationMessage&gt;&gt;
-
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="18" name="Setup" tags="" position="900,125" size="100,100">Hello, and welcome to NetPlay&#39;s Soul Seeker!
 Before you begin, please read over the instructions!
 
-[[Take me there!|Instructions]]</tw-passagedata><tw-passagedata pid="20" name="NoLocation" tags="" position="1400,200" size="100,100">Sorry, something went wrong as we attempted to locate you in one of our play areas. Please use the link below to re-check your location.
+[[Take me there!|Instructions]]</tw-passagedata>
 
-If the issue persists, please ensure that you have location services enabled on your device and that you have granted the NAUIMG app access to location data.
-
-&lt;&lt;link &quot;Check my location&quot;&gt;&gt;
-	&lt;&lt;run requestLocation(&quot;zoneCheck&quot;)&gt;&gt;
-    &lt;&lt;if State.variables.insideCampus&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you on the NAU Campus.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the SICCS patio&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideUrban&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Heritage Square.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the &#39;Mozelle&#39;s Bakery&#39; hanging sign&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;elseif State.variables.insideRural&gt;&gt;
-    	&lt;&lt;set $locationMessage to &quot;We have located you at Museum of Northern Arizona.&quot;&gt;&gt;
-        &lt;&lt;set $tutorialMessage to &quot;of the large yellow sculpture near the museum entrance&quot;&gt;&gt;
-        &lt;&lt;goto &quot;LocationDisplay&quot;&gt;&gt;
-    &lt;&lt;else&gt;&gt;
-    	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
-    &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="21" name="HallOfReflections" tags="" position="1550,1300" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
+<tw-passagedata pid="21" name="HallOfReflections" tags="" position="1550,1300" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/cathedral_hallway.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
 	&lt;/div&gt;
 Beyond the entrance to the cathderal is an enormous hallway, flanked on both sides by floor-to-ceiling mirrors, all of which produce an ethereal glow that bathes the space in blue light.
@@ -1190,6 +1154,7 @@ Omni&#39;s voice is harsher now, almost pleading. &quot;I know not how this feat
     &lt;&lt;set State.variables.choiceType to &quot;story choice&quot;&gt;&gt;
     &lt;&lt;run writeTaylenData()&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - OmniWins&quot;&gt;&gt;
+        &lt;&lt;run endGameSession()&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
 or
@@ -1210,6 +1175,7 @@ or
     	&lt;&lt;goto &quot;FeatherFail&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="23" name="Epilogue - OmniWins" tags="" position="1475,1975" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|AfterForm]]. But first, you can view your epilogue below!
+
 
 &lt;&lt;linkreplace &quot;EPILOGUE - Ending 1 of 3&quot;&gt;&gt;EPILOGUE - Ending 1 of 3&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
 You finally reach the top of the tower, and find yourself standing before Omni, seated on a golden throne.
@@ -1273,11 +1239,14 @@ Do you reconsider?
 &lt;&lt;link &quot;I care not, monster. I wil suffer here for an eternity with you if it means saving the land of living.&quot;&gt;&gt;
 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - RejectOmni&quot;&gt;&gt;
+        &lt;&lt;run endGameSession()&gt;&gt;
+
 &lt;&lt;/link&gt;&gt;
 
 &lt;&lt;link &quot;...Very well, you have convinced me. I will serve you, monster, just free me from this hell.&quot;&gt;&gt;
 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;&gt;
 	&lt;&lt;goto &quot;Epilogue - ServeOmni&quot;&gt;&gt;
+        &lt;&lt;run endGameSession()&gt;&gt;
 &lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="26" name="Epilogue - RejectOmni" tags="" position="1750,2700" size="100,100">Congrats, you have completed Soul Seeker! When you&#39;re ready, please proceed to our [[post-game survey|AfterForm]]. But first, you can view your epilogue below!
 
 &lt;&lt;linkreplace &quot;EPILOGUE - Ending 3 of 3&quot;&gt;&gt;EPILOGUE - Ending 3 of 3&lt;&lt;run grabMetricsAndWriteData()&gt;&gt;
@@ -1302,6 +1271,7 @@ And so, the centuries pass.
 
 You are not free.
 But neither is Omni.
+
 &lt;&lt;/linkreplace&gt;&gt;</tw-passagedata><tw-passagedata pid="27" name="FeatherMemory" tags="" position="1550,2100" size="100,100">It takes every ounce of your mental and physical strength, but you finally manage to reach within the pillar of light and grab the feather.
 
 &quot;NO!&quot;, you hear Omni screech, but it is too late. You have already touched the feather, and the memory begins to flood into your mind.

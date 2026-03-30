@@ -22,6 +22,8 @@ class LocationLogger {
       // only writing every 5th location update and only if a game is being played and a player has been declared
       if (_writeCount % 5 == 0 && (SessionManager.currentGame != null)) {
         debugPrint("[LOCATION_LOGGER] Writing location data to Firestore...");
+
+        // get instance of user data
         
         final firestoreDb = firestore.FirebaseFirestore.instance;
         final sessionId = SessionManager.sessionId;
@@ -37,6 +39,7 @@ class LocationLogger {
           }, firestore.SetOptions(merge: true)); // merge: true prevents overwriting existing data
 
         final geoPoint = GeoFirePoint(firestore.GeoPoint(pos.latitude, pos.longitude));
+
 
         // Then add the location data to the subcollection
         await firestoreDb

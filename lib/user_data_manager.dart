@@ -77,9 +77,9 @@ class DataPoint {
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final GeoPoint geopoint = data['location'] as GeoPoint;
-    final double lat = geopoint.latitude;
-    final double lng = geopoint.longitude;
+    GeoPoint location = (doc['location'] ?? const GeoPoint(0, 0)) as GeoPoint;
+    final double lat = location.latitude;
+    final double lng = location.longitude;
 
     return DataPoint(
       point: LatLng(lat, lng),
@@ -99,6 +99,9 @@ class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
   Map<String, bool>? _seenMessages;
+  List<DataPoint> _collectedMeasurements = [];
+  bool _vpnStatus = false;
+  bool _fakeLocationStatus = false;
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
@@ -109,6 +112,10 @@ class UserDataProvider extends ChangeNotifier {
   int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
+  List<DataPoint> get collectedMeasurements => _collectedMeasurements;
+
+  // Inside UserDataProvider class in user_data_manager.dart
+  bool get vpnStatus => (_userData?['isVPN'] as bool?) ?? false;
 
   List<GameData> get favoriteGames {
     if (_userData == null) {
@@ -200,17 +207,21 @@ class UserDataProvider extends ChangeNotifier {
         _userData = doc.data() as Map<String, dynamic>;
 
         // 2. Now that we know it exists, update the measurement count
-        List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
+        _collectedMeasurements = await fetchCollectedMeasurements();
         await FirebaseFirestore.instance
             .collection('userData')
             .doc(user.uid)
-            .update({'measurementsTaken': collectedMeasurements.length});
+            .update({'measurementsTaken': _collectedMeasurements.length});
+
+        notifyListeners();
         
-        _userData?['measurementsTaken'] = collectedMeasurements.length;
+        _userData?['measurementsTaken'] = _collectedMeasurements.length;
 
         // 3. Update security status
         bool vpn = await checkVPN();
+        _vpnStatus = vpn;
         bool fake = await checkFakeLocation();
+        _fakeLocationStatus = fake;
         await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
           'isVPN': vpn,
           'isFakeLocation': fake,

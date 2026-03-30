@@ -7,16 +7,16 @@ import 'game_catalog.dart';
 import 'package:provider/provider.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
+import 'package:geolocator/geolocator.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in player statistics page.', email: userData.email);
-    final collectedMeasurements = userData.fetchCollectedMeasurements();
+    
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -86,26 +86,6 @@ class ExpandableSessionData extends SessionData {
   });
 }
 
-/*
-TODO: This function is just to populate with dummy data. It will need to be replaced
-by a function pulling real data to populate in player statistics.
- */
-List<ExpandableSessionData> generateItems(int numberOfItems) {
-  return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
-    return ExpandableSessionData(
-      date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
-      // UPDATED: Using the 'games' list instead of the deleted 'favorite_games'
-      game: games[index % games.length].text,
-      averageDownloadSpeed: 12.345,
-      averageUploadSpeed: 6.789,
-      distanceTraveled: 5,
-      pointsCollected: 10,
-      radiusGyration: 15.5,
-      sessionDataPoints: [const LatLng(0.0, 0.0), const LatLng(0.0, 0.0), const LatLng(0.0, 0.0)],
-    );
-  });
-}
-
 class ExpansionListStatistics extends StatefulWidget {
   const ExpansionListStatistics({super.key});
 
@@ -115,16 +95,42 @@ class ExpansionListStatistics extends StatefulWidget {
 }
 
 class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
-  // The list now correctly holds the expandable data objects.
-  final List<ExpandableSessionData> _data = generateItems(8);
+  List<ExpandableSessionData> _data = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final measurements = Provider.of<UserDataProvider>(context).collectedMeasurements;
+    debugPrint("Total collected measurements is ${measurements.length}");
+    
+    // Only update if the number of measurements has changed to avoid resetting expansion state
+    if (_data.length != measurements.length) {
+      setState(() {
+        _data = measurements.map((dp) => ExpandableSessionData(
+          date: dp.timestamp,
+          game: dp.gamePlayed,
+          averageDownloadSpeed: dp.downloadSpeed,
+          averageUploadSpeed: dp.uploadSpeed,
+          distanceTraveled: 0, // Placeholder
+          pointsCollected: measurements.length,  // Placeholder
+          radiusGyration: 0.0, // Placeholder
+          sessionDataPoints: [dp.point],
+        )).toList();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_data.isEmpty) {
+      return const Center(child: Text("Looks like you haven't collected measurements yet. Go play some games to collect data!"));
+    }
     return SingleChildScrollView(child: _buildPanel());
   }
 
   Widget _buildPanel() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
@@ -136,7 +142,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
         return ExpansionPanel(
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
-              title: Text(item.game),
+              title: Text('Game: ${item.game}'),
               subtitle: Text('Date: ${item.date.toIso8601String().substring(0, 10)}'),
             );
           },
@@ -145,11 +151,11 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Average Download: ${item.averageDownloadSpeed} Mbps'),
-                Text('Average Upload: ${item.averageUploadSpeed} Mbps'),
-                Text('Distance Traveled: ${item.distanceTraveled} m'),
-                Text('Points Collected: ${item.pointsCollected}'),
-                Text('Radius of Gyration: ${item.radiusGyration}'),
+                Text('Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
+                Text('Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
+                // Only show these if they have data
+                if (item.distanceTraveled != 0) Text('Distance Traveled: ${item.distanceTraveled} m'),
+                Text('Session Points: ${item.pointsCollected}'),
               ],
             ),
           ),
