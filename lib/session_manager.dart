@@ -4,13 +4,16 @@
 // importing libraries and packages
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'flutter_bridge.dart';
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
   static String? _sessionId;
   //static String? _playerName;
-  static String? _currentGame; 
+  static String? _currentGame;
   static List<Map<String, double>> _poiList = [];
+  // keeps track of when the game screen closes
+  static Future<void> Function()? onWebViewClose;
 
   static String? get sessionId => _sessionId;
  // static String? get playerName => _playerName;
@@ -35,9 +38,14 @@ class SessionManager {
   }
 
   // updates current game to null when game is closed
-  static void endGame(){
-    debugPrint('[SESSION_MANAGER] Game ended: $_currentGame');
+  static Future<void> endGame() async {
+    debugPrint('[SESSION_MANAGER] Game ending: $_currentGame');
+
+    // Trigger the WebView's session recording logic if the bridge is plugged in
+    await onWebViewClose?.call();
+
     _currentGame = null;
+    debugPrint('[SESSION_MANAGER] Session cleared.');
   }
 
   // sets the poi list for games that use them

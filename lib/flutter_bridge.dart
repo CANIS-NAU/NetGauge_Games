@@ -50,13 +50,51 @@ class _WebViewPageState extends State<WebViewPage> {
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
 
+
+  Future<void> endGameSession() async {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    bool vpn_status = userData.vpnStatus;
+    // calculate total distance traveled
+    double distanceTraveled = calculateDistance(locationPoints);
+    DateTime endTime = DateTime.now();
+    debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
+
+    // format data to send to firebase for this session
+    final checkData = {
+      'game': SessionManager.currentGame,
+      'start_time': startTime,
+      'end_time': endTime,
+      'session_id': gameSessionID,
+      'vpn_used' : vpn_status,
+      'session_distance': distanceTraveled,
+      'location_points': locationPoints.map((p) => {
+        'latitude': p.latitude,
+        'longitude': p.longitude,
+      }).toList(),
+    };
+    debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
+
+    // send to firebase
+    try {
+      debugPrint("Attempting to write to Firestore...");
+      await FirebaseFirestore.instance
+          .collection('measurements')
+          .doc(userData.email)
+          .collection('sessions')
+          .add(checkData);
+      debugPrint("Write successful!");
+    } catch (e) {
+      debugPrint("Firestore Error: $e");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
     // list containing all measurements
     Map<String, double> measurements = {};
-
+    SessionManager.onWebViewClose = endGameSession;
 
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
@@ -92,6 +130,13 @@ class _WebViewPageState extends State<WebViewPage> {
     // Load gameFile associated with tile that created the webview
     debugPrint("[FLUTTER_BRIDGE]: Loading game file...");
     controller.loadFlutterAsset('assets/${widget.gameFile}');
+  }
+
+  @override
+  void dispose() {
+    // Unplug the bridge to prevent memory leaks or crashes
+    SessionManager.onWebViewClose = null;
+    super.dispose();
   }
 
   /// parses the incoming message from the JavaScript channel.
@@ -160,38 +205,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // case for when game is complete
         case 'endGameSession':
-          // calculate total distance traveled
-          double distanceTraveled = calculateDistance(locationPoints);
-          DateTime endTime = DateTime.now();
-          debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
-
-          // format data to send to firebase for this session
-          final checkData = {
-            'game': 'Placeholder',
-            'start_time': startTime,
-            'end_time': endTime,
-            'session_id': gameSessionID,
-            'vpn_used' : vpn_status,
-            'session_distance': distanceTraveled,
-            'location_points': locationPoints.map((p) => {
-              'latitude': p.latitude,
-              'longitude': p.longitude,
-            }).toList(),
-          };
-          debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
-
-          // send to firebase
-          try {
-            debugPrint("Attempting to write to Firestore...");
-            await FirebaseFirestore.instance
-                .collection('measurements')
-                .doc(userData.email)
-                .collection('sessions')
-                .add(checkData);
-            debugPrint("Write successful!");
-          } catch (e) {
-            debugPrint("Firestore Error: $e");
-          }
+          endGameSession();
           break;
 
         /*case 'publishPlayerName':
@@ -259,7 +273,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
           // upload data to firebase
           final checkData = {
-            'game': 'Speedtest',
+            'game': SessionManager.currentGame,
             'latitude': loc.position.latitude,
             'longitude': loc.position.longitude,
             'download_speed': download['speedMbps'],
