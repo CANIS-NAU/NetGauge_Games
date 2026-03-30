@@ -22,6 +22,17 @@ class LocationPoint {
   LocationPoint({required this.longitude, required this.latitude});
 }
 
+// data type for measurements
+class InternetMeasurement {
+  final double uploadSpeed;
+  final double downloadSpeed;
+  final double jitters;
+  final double latency;
+
+  InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
+  required this.jitters, required this.latency});
+}
+
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 
@@ -49,7 +60,7 @@ class _WebViewPageState extends State<WebViewPage> {
   bool isLoading = true;
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
-
+  List<InternetMeasurement> measurements = [];
 
   Future<void> endGameSession() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
@@ -59,6 +70,8 @@ class _WebViewPageState extends State<WebViewPage> {
     DateTime endTime = DateTime.now();
     debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
+    debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
+
     // format data to send to firebase for this session
     final checkData = {
       'game': SessionManager.currentGame,
@@ -67,6 +80,12 @@ class _WebViewPageState extends State<WebViewPage> {
       'session_id': gameSessionID,
       'vpn_used' : vpn_status,
       'session_distance': distanceTraveled,
+      'collected_measurements': measurements.map((p) => {
+        'upload_speed': p.uploadSpeed,
+        'download_speed': p.downloadSpeed,
+        'latency': p.latency,
+        'jitters': p.jitters
+      }).toList(),
       'location_points': locationPoints.map((p) => {
         'latitude': p.latitude,
         'longitude': p.longitude,
@@ -92,8 +111,6 @@ class _WebViewPageState extends State<WebViewPage> {
   void initState() {
     super.initState();
 
-    // list containing all measurements
-    Map<String, double> measurements = {};
     SessionManager.onWebViewClose = endGameSession;
 
     // create parameters for the platform-specific WebView controller
@@ -265,6 +282,16 @@ class _WebViewPageState extends State<WebViewPage> {
           final service = NDT7Service();
           final download = await service.runDownloadTest((status) {});
           final upload = await service.runUploadTest((status) {});
+
+          InternetMeasurement measurement = InternetMeasurement(
+            uploadSpeed:  upload['speedMbps'],
+            downloadSpeed: download['speedMbps'],
+            latency: download['latency'],
+            jitters: 0.0,
+          );
+          debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
+          measurements.add(measurement);
+
 
           // get user location
           final loc = await determineLocationData();
