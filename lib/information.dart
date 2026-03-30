@@ -30,7 +30,7 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepPurple,
+              color: Colors.deepOrangeAccent,
               child:
               const Text(
                   'Our Mission',
@@ -59,7 +59,7 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepPurple,
+              color: Colors.deepOrangeAccent,
               child:
               const Text(
                   'How to Interpret Collected Data',
@@ -99,7 +99,7 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepPurple,
+              color: Colors.deepOrangeAccent,
               child:
               const Text(
                   'How to Collect a Measurement',

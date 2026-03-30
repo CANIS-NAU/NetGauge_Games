@@ -43,6 +43,7 @@ class SessionManager {
   // sets the poi list for games that use them
   static void setPOIs(List<Map<String, double>> pois){
     _poiList = pois;
+    debugPrint("[SESSION_MANAGER]: Setting POIs. POIs are: $_poiList");
   }
 
   // function to identify which POI in the list is closest to the user

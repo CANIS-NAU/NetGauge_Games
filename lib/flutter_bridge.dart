@@ -25,6 +25,9 @@ class LocationPoint {
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 
+// unique session ID for game
+var gameSessionID = Uuid().v4();
+
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
   // is this the game title?
@@ -46,8 +49,6 @@ class _WebViewPageState extends State<WebViewPage> {
   bool isLoading = true;
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
-  // unique session ID for game
-  var gameSessionID = const Uuid().v4();
 
   @override
   void initState() {
@@ -55,6 +56,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // list containing all measurements
     Map<String, double> measurements = {};
+
 
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
@@ -84,9 +86,11 @@ class _WebViewPageState extends State<WebViewPage> {
       );
 
     // set POIs for game session
+    debugPrint("[FLUTTER_BRIDGE]: Calling setSessionPOIs...");
     setSessionPOIs();
 
     // Load gameFile associated with tile that created the webview
+    debugPrint("[FLUTTER_BRIDGE]: Loading game file...");
     controller.loadFlutterAsset('assets/${widget.gameFile}');
   }
 
@@ -199,12 +203,16 @@ class _WebViewPageState extends State<WebViewPage> {
         case 'setPOIs':
           PoiListGenerator poiGenerator = PoiListGenerator();
           final poiList = await poiGenerator.generatePOIList(5);
+          List<Map<String, double>> poiListFormatted = poiList.map((p) => {
+            'latitude': p.latitude,
+            'longitude': p.longitude,
+          }).toList();
 
           debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
           // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
 
           // store the POIs in the Sessionmanager
-          SessionManager.setPOIs(poiList as List<Map<String, double>>);
+          SessionManager.setPOIs(poiListFormatted);
           break;
 
         case 'POICheck':
@@ -340,7 +348,7 @@ class _WebViewPageState extends State<WebViewPage> {
       debugPrint("[FLUTTER_BRIDGE]: Starting POI generation...");
       PoiListGenerator poiGenerator = PoiListGenerator();
       final poiList = await poiGenerator.generatePOIList(5);
-
+      debugPrint("[FLUTTER_BRIDGE]: POI list generated in setSessionPOIs: $poiList");
       // Safely convert the objects to the Map format the SessionManager expects
       final List<Map<String, double>> formattedPoiList = poiList.map((poi) {
         return {
