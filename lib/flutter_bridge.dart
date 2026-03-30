@@ -47,7 +47,7 @@ class _WebViewPageState extends State<WebViewPage> {
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
   // unique session ID for game
-  var gameSessionID = Uuid().v4();
+  var gameSessionID = const Uuid().v4();
 
   @override
   void initState() {
@@ -82,6 +82,9 @@ class _WebViewPageState extends State<WebViewPage> {
           handleNativeMessage(message.message);
         },
       );
+
+    // set POIs for game session
+    setSessionPOIs();
 
     // Load gameFile associated with tile that created the webview
     controller.loadFlutterAsset('assets/${widget.gameFile}');
@@ -195,9 +198,10 @@ class _WebViewPageState extends State<WebViewPage> {
 
         case 'setPOIs':
           PoiListGenerator poiGenerator = PoiListGenerator();
-          final poiList = poiGenerator.generatePOIList(5);
+          final poiList = await poiGenerator.generatePOIList(5);
 
-          debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
+          debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
+          // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
 
           // store the POIs in the Sessionmanager
           SessionManager.setPOIs(poiList as List<Map<String, double>>);
@@ -331,6 +335,26 @@ class _WebViewPageState extends State<WebViewPage> {
         "window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   }
 
+  void setSessionPOIs() async {
+    try {
+      debugPrint("[FLUTTER_BRIDGE]: Starting POI generation...");
+      PoiListGenerator poiGenerator = PoiListGenerator();
+      final poiList = await poiGenerator.generatePOIList(5);
+
+      // Safely convert the objects to the Map format the SessionManager expects
+      final List<Map<String, double>> formattedPoiList = poiList.map((poi) {
+        return {
+          'latitude': poi.latitude,
+          'longitude': poi.longitude,
+        };
+      }).toList();
+      SessionManager.setPOIs(formattedPoiList);
+    } catch (e) {
+      debugPrint("[FLUTTER_BRIDGE]: Critical error in setSessionPOIs: $e");
+    }
+
+  }
+
   // when the player makes an action that results in a measurement, this function writes the context to firestore
   Future<void> writeCheckData(
       Map<String, dynamic> payload, String? sessionId) async {
@@ -382,6 +406,9 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // grab the current poi list in the session manager
     final poiList = SessionManager.poiList;
+    debugPrint("[FLUTTER_BRIDGE]: Printing off POI list in checkPOI...");
+    debugPrint("[FLUTTER_BRIDGE]: POI List: $poiList");
+
     // create a variable to store the index of the poi to be removed if it exists
     int indexToRemove = -1;
 
@@ -392,7 +419,8 @@ class _WebViewPageState extends State<WebViewPage> {
           loc.position.longitude, poi['latitude']!, poi['longitude']!);
 
       // a poi can be collected within 7 meters of the player
-      if (distance <= 7) {
+      // TODO: changing to 1 for testing
+      if (distance <= 1) {
         indexToRemove = i;
         break;
       }

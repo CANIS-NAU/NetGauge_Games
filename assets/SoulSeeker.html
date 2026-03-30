@@ -692,6 +692,11 @@ window.requestPOICheck = function(){
   FlutterBridge.postMessage(JSON.stringify({command: "POICheck"}));
 };
 
+// set POIs at game start
+window.requestSetPOI = function(){
+  FlutterBridge.postMessage(JSON.stringify({command: "setPOIs"}));
+};
+
 // callback function to handle the POI check returned from flutter
 window.onPOICheck = function(json){
   //const data = JSON.parse(json);
@@ -924,11 +929,13 @@ window.displayLocation = function() {
 &lt;&lt;set $locationMessage to &quot;Null&quot;&gt;&gt;
 
 &lt;&lt;goto &quot;Setup&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="2" name="Angel" tags="" position="900,1000" size="100,100">&lt;&lt;run stopVibrationService()&gt;&gt;
-&lt;&lt;if State.variables.fragmentCounter is 0&gt;&gt; 
+        &lt;&lt;run requestSetPOI()&gt;&gt;
+&lt;&lt;if State.variables.fragmentCounter is 0&gt;&gt;
+
 &lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/omni.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;
 	&lt;/div&gt;
-&quot;Welcome, Lost One,&quot; Omni intones softly. &quot;Your soul has been shattered into fragments and scattered across the three realms of this dead world. To reclaim your identity and fulfill your destiny, you must traverse these realms, gather the fragments, and restore your soul. I will be your guide, offering counsel on your journey.&quot; 
+&quot;Welcome, Lost One,&quot; Omni intones softly. &quot;Your soul has been shattered into fragments and scattered across the three realms of this dead world. To reclaim your identity and fulfill your destiny, you must traverse these realms, gather the fragments, and restore your soul. I will be your guide, offering counsel on your journey.&quot;
 
 &quot;Your story begins in the [[Cave of Echoes|FirstRealm]].&quot;
 
@@ -989,7 +996,7 @@ How do you respond?
 	&lt;/div&gt;
 You awaken in a desolate wasteland, devoid of all memories save for the disorienting plunge into darkness that preceded your appearance in this empty land. Any sense of purpose you may have once had has left you, and you find yourself consumed by a profound feeling of emptiness from within, as if you have lost a vital piece of yourself.
 
-[[Seeing no other choice before you, you pick yourself off the ground, pick a direction, and begin to walk.|Startgame]].</tw-passagedata><tw-passagedata pid="6" name="Startgame" tags="" position="850,750" size="200,200">Time must work differently in this abhorrent place, as you walk for what feels like eons. You find that you need no sleep, no food, and no water, you simply exist in this place, and can only walk. 
+[[Seeing no other choice before you, you pick yourself off the ground, pick a direction, and begin to walk.|Startgame]].</tw-passagedata><tw-passagedata pid="6" name="Startgame" tags="" position="850,750" size="200,200">Time must work differently in this abhorrent place, as you walk for what feels like eons. You find that you need no sleep, no food, and no water, you simply exist in this place, and can only walk.
 
 &lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
     	&lt;img id=&quot;zoomable-map&quot; src=&quot;images/omni.png&quot; alt=&quot;Map&quot; style=&quot;width: 100%; max-width: 1000px;&quot;&gt;

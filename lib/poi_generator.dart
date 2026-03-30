@@ -247,7 +247,7 @@ class PoiListGenerator {
   Future<List<PointOfInterest>> generatePOIList(int listSize) async{
     num_pois = listSize;
     getCurrentLocation();
-    List<PointOfInterest> poiList = await callOverpassAPI();
+    List<PointOfInterest> poiList = await callOverpassAPI(num_pois);
     return poiList;
   }
 
@@ -272,8 +272,9 @@ class PoiListGenerator {
   Dependencies:
   Description: Calls the Overpass API to access POIs from Open Street Map
    */
-  Future<List<PointOfInterest>> callOverpassAPI() async{
+  Future<List<PointOfInterest>> callOverpassAPI(int num_pois) async{
     // start service, call instance of class
+    debugPrint("[POI_GENERATOR] Calling overpass API service");
     final service = OverpassService();
     final allPois = service.fetchNearestPOIs(
       latitude: user_latitude,
