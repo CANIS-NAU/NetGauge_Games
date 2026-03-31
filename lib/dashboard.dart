@@ -45,7 +45,7 @@ class PlayerStatistics extends StatelessWidget {
               child:
               Text(
                   'Total Points Collected: ${userData.measurementsTaken} \n'
-                      'Total Distance Traveled: ${userData.distanceTraveled} \n'
+                      'Total Distance Traveled: ${userData.totalDistanceTraveled} \n'
                       'Total Radius of Gyration: ${userData.totalRadiusGyration}',
                   textAlign: TextAlign.start,
                   style: const TextStyle(
@@ -74,14 +74,15 @@ class ExpandableSessionData extends SessionData {
   final String sessionId;
 
   ExpandableSessionData({
-    required super.date,
+    required super.startTime,
+    required super.endTime,
     required super.game,
-    required super.averageDownloadSpeed,
-    required super.averageUploadSpeed,
-    required super.distanceTraveled,
-    required super.pointsCollected,
-    required super.radiusGyration,
-    required super.sessionDataPoints,
+    super.averageDownloadSpeed,
+    super.averageUploadSpeed,
+    super.distanceTraveled,
+    super.pointsCollected,
+    super.radiusGyration,
+    super.sessionDataPoints,
     required this.sessionId,
     this.isExpanded = false,
   });
@@ -134,11 +135,12 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
 
           return ExpandableSessionData(
             sessionId: sessionId,
-            date: firstPoint.timestamp,
+            startTime: firstPoint.timestamp,
+            endTime: firstPoint.timestamp,
             game: firstPoint.gamePlayed,
             averageDownloadSpeed: avgDownload,
             averageUploadSpeed: avgUpload,
-            distanceTraveled: 0,
+            distanceTraveled: 0.0,
             pointsCollected: sessionPoints.length,
             radiusGyration: 0.0,
             sessionDataPoints: sessionPoints.map((p) => p.point).toList(),
@@ -146,7 +148,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
         }).toList();
         
         // Sort sessions by date (newest first)
-        _data.sort((a, b) => b.date.compareTo(a.date));
+        _data.sort((a, b) => b.endTime.compareTo(a.endTime));
       });
     }
   }
@@ -165,7 +167,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', email: userData.email);
+          loggingService.logEvent('Expanded data for session: ${_data[index].sessionId}', email: userData.email);
           _data[index].isExpanded = isExpanded;
         });
       },
@@ -174,7 +176,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
               title: Text('Game: ${item.game}'),
-              subtitle: Text('Date: ${item.date.toIso8601String().substring(0, 10)}'),
+              subtitle: Text('Date: ${item.endTime.toIso8601String().substring(0, 10)} (${item.pointsCollected} points)'),
             );
           },
           body: Padding(
@@ -185,6 +187,7 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
                 Text('Average Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
                 Text('Average Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
                 const SizedBox(height: 8),
+                Text('Session ID: ${item.sessionId}'),
               ],
             ),
           ),

@@ -19,42 +19,52 @@ class DataPoint {
   final double downloadSpeed;
   final double latency;
   final String gamePlayed;
+  final String email;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
-    required this.downloadSpeed, required this.latency, required this.gamePlayed});
+    required this.downloadSpeed, required this.latency, required this.gamePlayed, required this.email});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final firestore.GeoPoint geoPoint = data['location']['geopoint'] as firestore.GeoPoint;
+    
+    // Support both GeoPoint objects AND separate lat/long fields
+    double lat = 0.0;
+    double lng = 0.0;
+    
+    if (data['location'] is firestore.GeoPoint) {
+      lat = (data['location'] as firestore.GeoPoint).latitude;
+      lng = (data['location'] as firestore.GeoPoint).longitude;
+    } else if (data['geopoint'] is firestore.GeoPoint) {
+      lat = (data['geopoint'] as firestore.GeoPoint).latitude;
+      lng = (data['geopoint'] as firestore.GeoPoint).longitude;
+    } else {
+      lat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
+      lng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+    }
 
     return DataPoint(
-      point: LatLng(geoPoint.latitude, geoPoint.longitude),
-      timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
-      uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
-      downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
+      point: LatLng(lat, lng),
+      timestamp: (data['timestamp'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
+      uploadSpeed: (data['upload_speed'] as num? ?? data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
+      downloadSpeed: (data['download_speed'] as num? ?? data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
-      gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
+      gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
+      email: data['email'] as String? ?? 'Unknown',
     );
   }
 }
-
-// Dummy DataPoint list
-final List<DataPoint> dummyPoints = [
-  DataPoint(point: const LatLng(35.1861, -111.6583), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: const LatLng(35.5, -111.5), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-  DataPoint(point: const LatLng(35.25, -111.8), timestamp: DateTime.now(), uploadSpeed: 0.0, downloadSpeed: 0.0, latency: 0.0, gamePlayed: "Test"),
-];
 
 // radius-based stream for gathering points from firestore
 final GeoCollectionReference<Map<String, dynamic>> geoCollection =
 GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
 
-Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm) {
+// Filtered stream to only show current user's points
+Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm, String userEmail) {
   return geoCollection.subscribeWithin(
     center: GeoFirePoint(firestore.GeoPoint(center.latitude, center.longitude)),
     radiusInKm: radiusKm,
-    field: 'location',       // the nested field name you used when writing
-    geopointFrom: (data) => data['location']['geopoint'] as firestore.GeoPoint,
+    field: 'location',       
+    geopointFrom: (data) => (data['location'] ?? data['geopoint']) as firestore.GeoPoint,
   );
 }
 
@@ -70,33 +80,33 @@ class DynamicMap extends StatefulWidget {
 class _DynamicMapState extends State<DynamicMap> {
   final List<DataPoint> _displayedPoints = [];
   late MapController _mapController;
-  // this is important for us to grab points from Firebase
   late StreamSubscription _streamSubscription;
   bool _mapReady = false;
-  /* As points get read in from firebase, we want to make sure
-  * any that come in early before the map is done rendering is not
-  * lost. Therefore, we use the _pendingPoints list as a buffer.*/
   final List<DataPoint> _pendingPoints = [];
 
   @override
   void initState() {
     super.initState();
 
-    // initialize the controller
     _mapController = MapController(
       initPosition: GeoPoint(latitude: 35.1861, longitude: -111.6583),
     );
 
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     const LatLng center = LatLng(35.1861, -111.6583);
-    const double radiusKm = 50.0; // Increased radius for testing
+    const double radiusKm = 5000.0; // Large radius for testing
 
-    _streamSubscription = getPointsStream(center, radiusKm).listen((docs) async {
-      // Dummy points for testing
-      final points = dummyPoints;
+    _streamSubscription = getPointsStream(center, radiusKm, userData.email).listen((docs) async {
+      debugPrint("[DYNAMIC_MAP]: Received ${docs.length} documents from Firestore.");
+      
+      final points = docs
+          .map((doc) => DataPoint.fromFirestore(doc))
+          .toList();
 
-      // Uncomment to use actual points
-      //final points = docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
+      debugPrint("[DYNAMIC_MAP]: Processed ${points.length} points.");
+
       if (!_mapReady) {
+        _pendingPoints.clear();
         _pendingPoints.addAll(points);
         return;
       }
@@ -105,31 +115,29 @@ class _DynamicMapState extends State<DynamicMap> {
   }
 
   Future<void> _updateMapMarkers(List<DataPoint> points) async {
-    await _mapController.removeMarkers(
-      _displayedPoints
-          .map((dp) => GeoPoint(
-
-        latitude: dp.point.latitude,
-        longitude: dp.point.longitude,
-      ))
-          .toList(),
-
-    );
+    // Correctly remove old markers using the list of points
+    if (_displayedPoints.isNotEmpty) {
+      try {
+        await _mapController.removeMarkers(
+          _displayedPoints.map((dp) => GeoPoint(latitude: dp.point.latitude, longitude: dp.point.longitude)).toList(),
+        );
+      } catch (e) {
+        debugPrint("[DYNAMIC_MAP]: Error removing markers: $e");
+      }
+    }
+    
     _displayedPoints.clear();
 
     for (final dp in points) {
       _displayedPoints.add(dp);
-
       await _mapController.addMarker(
-        GeoPoint(
-          latitude: dp.point.latitude,
-          longitude: dp.point.longitude,
-        ),
+        GeoPoint(latitude: dp.point.latitude, longitude: dp.point.longitude),
         markerIcon: const MarkerIcon(
-          icon: Icon(Icons.location_pin, color: Colors.red, size: 48),
+          icon: Icon(Icons.location_on, color: Colors.red, size: 48),
         ),
       );
     }
+    debugPrint("[DYNAMIC_MAP]: Added ${_displayedPoints.length} markers to the map.");
   }
 
   @override
@@ -142,26 +150,15 @@ class _DynamicMapState extends State<DynamicMap> {
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    loggingService.logEvent('User is in dynamic map page.', email: userData.email);
+    
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home),
-          onPressed: () {
-            Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage())
-            );
-          },
+          onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomePage())),
         ),
         centerTitle: true,
-        title: const Text(
-            'Map',
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 25)
-        ),
+        title: const Text('Map', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 25)),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -169,52 +166,26 @@ class _DynamicMapState extends State<DynamicMap> {
         controller: _mapController,
         onMapIsReady: (isReady) async {
           if (isReady) {
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            setState(() {
-              _mapReady = true;
-            });
-
-            await _updateMapMarkers(dummyPoints);
+            debugPrint("[DYNAMIC_MAP]: Map is ready.");
+            setState(() => _mapReady = true);
+            if (_pendingPoints.isNotEmpty) {
+              await _updateMapMarkers(_pendingPoints);
+            }
           }
         },
         osmOption: OSMOption(
-          userTrackingOption: const UserTrackingOption(
-            enableTracking: true,
-            unFollowUser: false,
-          ),
-          zoomOption: const ZoomOption(
-            initZoom: 5,
-            minZoomLevel: 3,
-            maxZoomLevel: 19,
-            stepZoom: 1.0,
-          ),
+          userTrackingOption: const UserTrackingOption(enableTracking: true, unFollowUser: false),
+          zoomOption: const ZoomOption(initZoom: 8, minZoomLevel: 3, maxZoomLevel: 19, stepZoom: 1.0),
           userLocationMarker: UserLocationMaker(
-            personMarker: const MarkerIcon(
-              icon: Icon(
-                Icons.location_history_rounded,
-                color: Colors.red,
-                size: 48,
-              ),
-            ),
-            directionArrowMarker: const MarkerIcon(
-              icon: Icon(
-                Icons.double_arrow,
-                size: 48,
-              ),
-            ),
+            personMarker: const MarkerIcon(icon: Icon(Icons.location_history_rounded, color: Colors.red, size: 48)),
+            directionArrowMarker: const MarkerIcon(icon: Icon(Icons.double_arrow, size: 48)),
           ),
-          roadConfiguration: const RoadOption(
-            roadColor: Colors.yellowAccent,
-          ),
+          roadConfiguration: const RoadOption(roadColor: Colors.yellowAccent),
         ),
         onGeoPointClicked: (point) {
-          loggingService.logEvent('Clicked on point: $point', email: userData.email);
           try {
             final clickedDp = _displayedPoints.firstWhere(
-                  (dp) =>
-              dp.point.latitude == point.latitude &&
-                  dp.point.longitude == point.longitude,
+              (dp) => dp.point.latitude == point.latitude && dp.point.longitude == point.longitude,
             );
 
             showDialog(
@@ -232,21 +203,16 @@ class _DynamicMapState extends State<DynamicMap> {
                         Text('Latency: ${clickedDp.latency.toStringAsFixed(0)} ms'),
                         const SizedBox(height: 8),
                         Text('Timestamp: ${clickedDp.timestamp.toLocal()}'),
-                        Text('Location: (${clickedDp.point.latitude.toStringAsFixed(4)}, ${clickedDp.point.longitude.toStringAsFixed(4)})'),
+                        Text('User: ${clickedDp.email}'),
                       ],
                     ),
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Close'),
-                    ),
-                  ],
+                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
                 ),
               ),
             );
           } catch (e) {
-             print('Could not find data for point: $e');
+             debugPrint('Could not find data for point: $e');
           }
         },
       ),

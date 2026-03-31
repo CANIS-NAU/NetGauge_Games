@@ -67,6 +67,8 @@ class _WebViewPageState extends State<WebViewPage> {
     bool vpn_status = userData.vpnStatus;
     // calculate total distance traveled
     double distanceTraveled = calculateDistance(locationPoints);
+    // update user data on record
+    userData.updateDistanceTraveled(distanceTraveled);
     DateTime endTime = DateTime.now();
     debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
