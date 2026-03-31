@@ -69,9 +69,9 @@ class PlayerStatistics extends StatelessWidget {
   }
 }
 
-// A new class that extends SessionData to include UI state for the panel.
 class ExpandableSessionData extends SessionData {
   bool isExpanded;
+  final String sessionId;
 
   ExpandableSessionData({
     required super.date,
@@ -82,6 +82,7 @@ class ExpandableSessionData extends SessionData {
     required super.pointsCollected,
     required super.radiusGyration,
     required super.sessionDataPoints,
+    required this.sessionId,
     this.isExpanded = false,
   });
 }
@@ -101,21 +102,51 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final measurements = Provider.of<UserDataProvider>(context).collectedMeasurements;
-    debugPrint("Total collected measurements is ${measurements.length}");
-    
-    // Only update if the number of measurements has changed to avoid resetting expansion state
-    if (_data.length != measurements.length) {
+    debugPrint("[DASHBOARD]: Checking for collected measurements");
+    debugPrint("[DASHBOARD]: Total collected measurements is ${measurements.length}");
+
+    // 1. Group measurements by session_id
+    Map<String, List<DataPoint>> sessionBuckets = {};
+    for (var dp in measurements) {
+      sessionBuckets.putIfAbsent(dp.session_id, () => []).add(dp);
+    }
+
+    // 2. Only update if the number of SESSIONS has changed
+    if (_data.length != sessionBuckets.length) {
       setState(() {
-        _data = measurements.map((dp) => ExpandableSessionData(
-          date: dp.timestamp,
-          game: dp.gamePlayed,
-          averageDownloadSpeed: dp.downloadSpeed,
-          averageUploadSpeed: dp.uploadSpeed,
-          distanceTraveled: 0, // Placeholder
-          pointsCollected: measurements.length,  // Placeholder
-          radiusGyration: 0.0, // Placeholder
-          sessionDataPoints: [dp.point],
-        )).toList();
+        _data = sessionBuckets.entries.map((entry) {
+          final sessionId = entry.key;
+          final sessionPoints = entry.value;
+          
+          // Calculate averages for this specific session
+          double avgDownload = 0;
+          double avgUpload = 0;
+          for (var p in sessionPoints) {
+            avgDownload += p.downloadSpeed;
+            avgUpload += p.uploadSpeed;
+          }
+          if (sessionPoints.isNotEmpty) {
+            avgDownload /= sessionPoints.length;
+            avgUpload /= sessionPoints.length;
+          }
+
+          final firstPoint = sessionPoints.first;
+
+          return ExpandableSessionData(
+            sessionId: sessionId,
+            date: firstPoint.timestamp,
+            game: firstPoint.gamePlayed,
+            averageDownloadSpeed: avgDownload,
+            averageUploadSpeed: avgUpload,
+            distanceTraveled: 0,
+            pointsCollected: sessionPoints.length,
+            radiusGyration: 0.0,
+            sessionDataPoints: sessionPoints.map((p) => p.point).toList(),
+          );
+        }).toList();
+        
+        // Sort sessions by date (newest first)
+        _data.sort((a, b) => b.date.compareTo(a.date));
       });
     }
   }
@@ -151,11 +182,9 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
-                Text('Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
-                // Only show these if they have data
-                if (item.distanceTraveled != 0) Text('Distance Traveled: ${item.distanceTraveled} m'),
-                Text('Session Points: ${item.pointsCollected}'),
+                Text('Average Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
+                Text('Average Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
+                const SizedBox(height: 8),
               ],
             ),
           ),

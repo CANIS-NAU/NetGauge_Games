@@ -70,26 +70,37 @@ class DataPoint {
   final String gamePlayed;
   final bool isVPN;
   final bool isFakeLocation;
+  final String session_id;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
     required this.downloadSpeed, required this.latency, required this.gamePlayed,
-    required this.isVPN, required this.isFakeLocation});
+    required this.isVPN, required this.isFakeLocation, required this.session_id});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    GeoPoint location = (doc['location'] ?? const GeoPoint(0, 0)) as GeoPoint;
-    final double lat = location.latitude;
-    final double lng = location.longitude;
+    
+    // Handle different location formats (GeoPoint vs lat/long fields)
+    double lat = 0.0;
+    double lng = 0.0;
+    
+    if (data['location'] is firestore.GeoPoint) {
+      lat = (data['location'] as firestore.GeoPoint).latitude;
+      lng = (data['location'] as firestore.GeoPoint).longitude;
+    } else {
+      lat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
+      lng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+    }
 
     return DataPoint(
       point: LatLng(lat, lng),
-      timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
-      uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
-      downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
+      timestamp: (data['timestamp'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
+      uploadSpeed: (data['upload_speed'] as num? ?? data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
+      downloadSpeed: (data['download_speed'] as num? ?? data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
-      gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
-      isVPN: data['isVPN'] as bool? ?? false,
+      gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
+      isVPN: data['vpn_used'] as bool? ?? data['isVPN'] as bool? ?? false,
       isFakeLocation: data['isFakeLocation'] as bool? ?? false,
+      session_id: data['session_id'] as String? ?? 'Unknown',
     );
   }
 }
@@ -213,8 +224,6 @@ class UserDataProvider extends ChangeNotifier {
             .doc(user.uid)
             .update({'measurementsTaken': _collectedMeasurements.length});
 
-        notifyListeners();
-        
         _userData?['measurementsTaken'] = _collectedMeasurements.length;
 
         // 3. Update security status
@@ -248,7 +257,7 @@ class UserDataProvider extends ChangeNotifier {
           await createOnboardingDocument(user);
         }
 
-        debugPrint("Data loaded for: ${user.email}");
+        debugPrint("Data loaded for: ${user.email}. Measurements found: ${_collectedMeasurements.length}");
       } else {
         debugPrint("No document found for UID: ${user.uid}, creating one...");
         await createUserDocument(user);
