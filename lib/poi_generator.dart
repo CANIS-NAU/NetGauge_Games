@@ -84,6 +84,7 @@ class OverpassService {
     Map<String, String>? tags,
     int limit = 10,
   }) async {
+    debugPrint("[POI_GENERATION]: Fetching nearest POIs.");
     // First, get all POIs within the radius
     final pois = await fetchPOIs(
       latitude: latitude,
@@ -92,6 +93,8 @@ class OverpassService {
       amenityType: amenityType,
       tags: tags,
     );
+
+    debugPrint("[POI_GENERATION]: Nearest POIs-- $pois");
 
     // Calculate distance for each POI
     for (var poi in pois) {
@@ -146,7 +149,7 @@ class OverpassService {
   }) {
     // Build the tag filters
     String tagFilters = '';
-
+    debugPrint("[POI_GENERATION]: Building query for Overpass API");
     if (amenityType != null) {
       tagFilters += '["amenity"="$amenityType"]';
     }
@@ -178,6 +181,7 @@ class OverpassService {
     final elements = jsonData['elements'] as List<dynamic>;
 
     return elements.map((element) {
+      debugPrint("[POI_GENERATION]: Returning elements...");
       // Extract coordinates (different for nodes vs ways)
       final lat = element['lat'] ?? element['center']?['lat'];
       final lon = element['lon'] ?? element['center']?['lon'];
@@ -246,8 +250,8 @@ class PoiListGenerator {
 
   Future<List<PointOfInterest>> generatePOIList(int listSize) async{
     num_pois = listSize;
-    getCurrentLocation();
-    List<PointOfInterest> poiList = await callOverpassAPI();
+    await getCurrentLocation();
+    List<PointOfInterest> poiList = await callOverpassAPI(num_pois);
     return poiList;
   }
 
@@ -272,10 +276,11 @@ class PoiListGenerator {
   Dependencies:
   Description: Calls the Overpass API to access POIs from Open Street Map
    */
-  Future<List<PointOfInterest>> callOverpassAPI() async{
+  Future<List<PointOfInterest>> callOverpassAPI(int num_pois) async{
     // start service, call instance of class
+    debugPrint("[POI_GENERATOR] Calling overpass API service");
     final service = OverpassService();
-    final allPois = service.fetchNearestPOIs(
+    final allPois = await service.fetchNearestPOIs(
       latitude: user_latitude,
       longitude: user_longitude,
       radius: max_distance, //kilometers

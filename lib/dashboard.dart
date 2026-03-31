@@ -7,16 +7,16 @@ import 'game_catalog.dart';
 import 'package:provider/provider.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
+import 'package:geolocator/geolocator.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in player statistics page.', email: userData.email);
-    final collectedMeasurements = userData.fetchCollectedMeasurements();
+    
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -45,7 +45,7 @@ class PlayerStatistics extends StatelessWidget {
               child:
               Text(
                   'Total Points Collected: ${userData.measurementsTaken} \n'
-                      'Total Distance Traveled: ${userData.distanceTraveled} \n'
+                      'Total Distance Traveled: ${userData.totalDistanceTraveled} \n'
                       'Total Radius of Gyration: ${userData.totalRadiusGyration}',
                   textAlign: TextAlign.start,
                   style: const TextStyle(
@@ -69,40 +69,22 @@ class PlayerStatistics extends StatelessWidget {
   }
 }
 
-// A new class that extends SessionData to include UI state for the panel.
 class ExpandableSessionData extends SessionData {
   bool isExpanded;
+  final String sessionId;
 
   ExpandableSessionData({
-    required super.date,
+    required super.startTime,
+    required super.endTime,
     required super.game,
-    required super.averageDownloadSpeed,
-    required super.averageUploadSpeed,
-    required super.distanceTraveled,
-    required super.pointsCollected,
-    required super.radiusGyration,
-    required super.sessionDataPoints,
+    super.averageDownloadSpeed,
+    super.averageUploadSpeed,
+    super.distanceTraveled,
+    super.pointsCollected,
+    super.radiusGyration,
+    super.sessionDataPoints,
+    required this.sessionId,
     this.isExpanded = false,
-  });
-}
-
-/*
-TODO: This function is just to populate with dummy data. It will need to be replaced
-by a function pulling real data to populate in player statistics.
- */
-List<ExpandableSessionData> generateItems(int numberOfItems) {
-  return List<ExpandableSessionData>.generate(numberOfItems, (int index) {
-    return ExpandableSessionData(
-      date: DateTime.now().subtract(Duration(days: index)), // Use DateTime.now()
-      // UPDATED: Using the 'games' list instead of the deleted 'favorite_games'
-      game: games[index % games.length].text,
-      averageDownloadSpeed: 12.345,
-      averageUploadSpeed: 6.789,
-      distanceTraveled: 5,
-      pointsCollected: 10,
-      radiusGyration: 15.5,
-      sessionDataPoints: [const LatLng(0.0, 0.0), const LatLng(0.0, 0.0), const LatLng(0.0, 0.0)],
-    );
   });
 }
 
@@ -115,20 +97,77 @@ class ExpansionListStatistics extends StatefulWidget {
 }
 
 class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
-  // The list now correctly holds the expandable data objects.
-  final List<ExpandableSessionData> _data = generateItems(8);
+  List<ExpandableSessionData> _data = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final measurements = Provider.of<UserDataProvider>(context).collectedMeasurements;
+    debugPrint("[DASHBOARD]: Checking for collected measurements");
+    debugPrint("[DASHBOARD]: Total collected measurements is ${measurements.length}");
+
+    // 1. Group measurements by session_id
+    Map<String, List<DataPoint>> sessionBuckets = {};
+    for (var dp in measurements) {
+      sessionBuckets.putIfAbsent(dp.session_id, () => []).add(dp);
+    }
+
+    // 2. Only update if the number of SESSIONS has changed
+    if (_data.length != sessionBuckets.length) {
+      setState(() {
+        _data = sessionBuckets.entries.map((entry) {
+          final sessionId = entry.key;
+          final sessionPoints = entry.value;
+          
+          // Calculate averages for this specific session
+          double avgDownload = 0;
+          double avgUpload = 0;
+          for (var p in sessionPoints) {
+            avgDownload += p.downloadSpeed;
+            avgUpload += p.uploadSpeed;
+          }
+          if (sessionPoints.isNotEmpty) {
+            avgDownload /= sessionPoints.length;
+            avgUpload /= sessionPoints.length;
+          }
+
+          final firstPoint = sessionPoints.first;
+
+          return ExpandableSessionData(
+            sessionId: sessionId,
+            startTime: firstPoint.timestamp,
+            endTime: firstPoint.timestamp,
+            game: firstPoint.gamePlayed,
+            averageDownloadSpeed: avgDownload,
+            averageUploadSpeed: avgUpload,
+            distanceTraveled: 0.0,
+            pointsCollected: sessionPoints.length,
+            radiusGyration: 0.0,
+            sessionDataPoints: sessionPoints.map((p) => p.point).toList(),
+          );
+        }).toList();
+        
+        // Sort sessions by date (newest first)
+        _data.sort((a, b) => b.endTime.compareTo(a.endTime));
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_data.isEmpty) {
+      return const Center(child: Text("Looks like you haven't collected measurements yet. Go play some games to collect data!"));
+    }
     return SingleChildScrollView(child: _buildPanel());
   }
 
   Widget _buildPanel() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+
     return ExpansionPanelList(
       expansionCallback: (int index, bool isExpanded) {
         setState(() {
-          loggingService.logEvent('Expanded data for session on: ${_data[index].date}', email: userData.email);
+          loggingService.logEvent('Expanded data for session: ${_data[index].sessionId}', email: userData.email);
           _data[index].isExpanded = isExpanded;
         });
       },
@@ -136,8 +175,8 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
         return ExpansionPanel(
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
-              title: Text(item.game),
-              subtitle: Text('Date: ${item.date.toIso8601String().substring(0, 10)}'),
+              title: Text('Game: ${item.game}'),
+              subtitle: Text('Date: ${item.endTime.toIso8601String().substring(0, 10)} (${item.pointsCollected} points)'),
             );
           },
           body: Padding(
@@ -145,11 +184,10 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Average Download: ${item.averageDownloadSpeed} Mbps'),
-                Text('Average Upload: ${item.averageUploadSpeed} Mbps'),
-                Text('Distance Traveled: ${item.distanceTraveled} m'),
-                Text('Points Collected: ${item.pointsCollected}'),
-                Text('Radius of Gyration: ${item.radiusGyration}'),
+                Text('Average Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
+                Text('Average Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
+                const SizedBox(height: 8),
+                Text('Session ID: ${item.sessionId}'),
               ],
             ),
           ),

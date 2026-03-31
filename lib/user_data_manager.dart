@@ -33,10 +33,11 @@ final List<GameData> games = [
 ];
 
 class SessionData {
-  final DateTime date;
+  final DateTime startTime;
+  final DateTime endTime;
   final String game;
   final int? pointsCollected;
-  final int? distanceTraveled;
+  final double? distanceTraveled;
   final double? averageUploadSpeed;
   final double? averageDownloadSpeed;
   final double? radiusGyration;
@@ -44,9 +45,22 @@ class SessionData {
   final bool? isVPN;
   final bool? isFakeLocation;
 
-  SessionData({required this.date, required this.game, this.pointsCollected,
+  SessionData({required this.startTime, required this.endTime, required this.game, this.pointsCollected,
     this.distanceTraveled, this.sessionDataPoints, this.averageDownloadSpeed,
   this.averageUploadSpeed, this.radiusGyration, this.isFakeLocation, this.isVPN});
+
+  factory SessionData.fromFirestore(firestore.DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return SessionData(
+      startTime: (data['start_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
+      endTime: (data['end_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
+      game: data['game'] ?? 'Unknown',
+      distanceTraveled: (data['session_distance'] as num?)?.toDouble() ?? 0.0,
+      pointsCollected: (data['collected_measurements'] as List?)?.length ?? 0,
+      isVPN: data['vpn_used'] as bool? ?? false,
+      isFakeLocation: false, // Placeholder as it's not in the sessions doc yet
+    );
+  }
 }
 
 final GeoCollectionReference<Map<String, dynamic>> geoCollection =
@@ -70,26 +84,37 @@ class DataPoint {
   final String gamePlayed;
   final bool isVPN;
   final bool isFakeLocation;
+  final String session_id;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
     required this.downloadSpeed, required this.latency, required this.gamePlayed,
-    required this.isVPN, required this.isFakeLocation});
+    required this.isVPN, required this.isFakeLocation, required this.session_id});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final GeoPoint geopoint = data['location'] as GeoPoint;
-    final double lat = geopoint.latitude;
-    final double lng = geopoint.longitude;
+    
+    // Handle different location formats (GeoPoint vs lat/long fields)
+    double lat = 0.0;
+    double lng = 0.0;
+    
+    if (data['location'] is firestore.GeoPoint) {
+      lat = (data['location'] as firestore.GeoPoint).latitude;
+      lng = (data['location'] as firestore.GeoPoint).longitude;
+    } else {
+      lat = (data['latitude'] as num?)?.toDouble() ?? 0.0;
+      lng = (data['longitude'] as num?)?.toDouble() ?? 0.0;
+    }
 
     return DataPoint(
       point: LatLng(lat, lng),
-      timestamp: (data['timestamp'] as firestore.Timestamp).toDate(),
-      uploadSpeed: (data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
-      downloadSpeed: (data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
+      timestamp: (data['timestamp'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
+      uploadSpeed: (data['upload_speed'] as num? ?? data['uploadSpeed'] as num?)?.toDouble() ?? 0.0,
+      downloadSpeed: (data['download_speed'] as num? ?? data['downloadSpeed'] as num?)?.toDouble() ?? 0.0,
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
-      gamePlayed: data['gamePlayed'] as String? ?? 'Unknown',
-      isVPN: data['isVPN'] as bool? ?? false,
+      gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
+      isVPN: data['vpn_used'] as bool? ?? false,
       isFakeLocation: data['isFakeLocation'] as bool? ?? false,
+      session_id: data['session_id'] as String? ?? 'Unknown',
     );
   }
 }
@@ -99,6 +124,8 @@ class UserDataProvider extends ChangeNotifier {
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
   Map<String, bool>? _seenMessages;
+  List<DataPoint> _collectedMeasurements = [];
+  List<SessionData> _collectedSessions = [];
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
@@ -109,9 +136,17 @@ class UserDataProvider extends ChangeNotifier {
   bool get getDemographicStatus => (_userData?['demographics_taken'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
-  int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
+  
+  // FIXED: Using .toDouble() to handle 'int' vs 'double' from Firestore
+  double get totalDistanceTraveled => (_userData?['distanceTraveled'] as num?)?.toDouble() ?? 0.0;
+  
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
+  List<DataPoint> get collectedMeasurements => _collectedMeasurements;
+  List<SessionData> get collectedSessions => _collectedSessions;
+
+  // Inside UserDataProvider class in user_data_manager.dart
+  bool get vpnStatus => (_userData?['isVPN'] as bool?) ?? false;
 
   List<GameData> get favoriteGames {
     if (_userData == null) {
@@ -185,6 +220,38 @@ class UserDataProvider extends ChangeNotifier {
     return snapshot_collected_points.docs.map((doc) => DataPoint.fromFirestore(doc)).toList();
   }
 
+  Future<List<SessionData>> fetchSessionData() async {
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (email == null) return [];
+
+    final sessionSnapshot = await FirebaseFirestore.instance
+        .collection('measurements')
+        .doc(email)
+        .collection('sessions')
+        .get();
+
+    return sessionSnapshot.docs.map((doc) => SessionData.fromFirestore(doc)).toList();
+  }
+
+  void updateDistanceTraveled(double addedDistance) {
+    if (_userData == null) return;
+
+    double currentDist = totalDistanceTraveled;
+    double updatedDist = currentDist + addedDistance;
+
+    // Correctly update the internal map using bracket notation
+    _userData!['distanceTraveled'] = updatedDist;
+
+    // Tell the UI to rebuild
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userData')
+          .doc(user.uid)
+          .update({'distanceTraveled': updatedDist});
   Future<void> setDemographicStatus() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -222,13 +289,16 @@ class UserDataProvider extends ChangeNotifier {
       if (doc.exists) {
         _userData = doc.data() as Map<String, dynamic>;
 
+        // 2. Now that we know it exists, update the measurement count
+        _collectedMeasurements = await fetchCollectedMeasurements();
+        _collectedSessions = await fetchSessionData();
         List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
         await FirebaseFirestore.instance
             .collection('userData')
             .doc(user.uid)
-            .update({'measurementsTaken': collectedMeasurements.length});
-        
-        _userData?['measurementsTaken'] = collectedMeasurements.length;
+            .update({'measurementsTaken': _collectedMeasurements.length});
+
+        _userData?['measurementsTaken'] = _collectedMeasurements.length;
 
         bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
@@ -257,7 +327,7 @@ class UserDataProvider extends ChangeNotifier {
           await createOnboardingDocument(user);
         }
 
-        debugPrint("Data loaded for: ${user.email}");
+        debugPrint("Data loaded for: ${user.email}. Measurements found: ${_collectedMeasurements.length}");
       } else {
         debugPrint("No document found for UID: ${user.uid}, creating one...");
         await createUserDocument(user);

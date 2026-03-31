@@ -1,5 +1,4 @@
 import 'dart:convert';
-//import 'package:firebase_auth/firebase_auth.dart';
 import 'mapping.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_measurement_games_app/location_service.dart';
@@ -7,22 +6,38 @@ import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'session_manager.dart';
-import 'location_logger.dart';
 import 'vibration_controller.dart';
-import 'likert_form.dart';
 import 'dart:async';
 import 'ndt7_service.dart';
-import 'package:latlong2/latlong.dart';
 import 'poi_generator.dart';
-import 'speed_test_page.dart';
-import 'profile.dart';
-import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 
+// data type for tracking location
+class LocationPoint {
+  final double longitude;
+  final double latitude;
+
+  LocationPoint({required this.longitude, required this.latitude});
+}
+
+// data type for measurements
+class InternetMeasurement {
+  final double uploadSpeed;
+  final double downloadSpeed;
+  final double jitters;
+  final double latency;
+
+  InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
+  required this.jitters, required this.latency});
+}
+
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
+
+// unique session ID for game
+var gameSessionID = Uuid().v4();
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
@@ -31,6 +46,7 @@ class WebViewPage extends StatefulWidget {
   //TODO: It may make more sense for this to be the GameData object, then call the html file from it later
   // that would help with easily grabbing the game name
   final String gameFile; // holds the html file to be loaded into webview
+
 
   const WebViewPage({Key? key, required this.title, required this.gameFile})
       : super(key: key);
@@ -42,10 +58,62 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
+  final DateTime startTime = DateTime.now();
+  List<LocationPoint> locationPoints = [];
+  List<InternetMeasurement> measurements = [];
+
+  Future<void> endGameSession() async {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    bool vpn_status = userData.vpnStatus;
+    // calculate total distance traveled
+    double distanceTraveled = calculateDistance(locationPoints);
+    // update user data on record
+    userData.updateDistanceTraveled(distanceTraveled);
+    DateTime endTime = DateTime.now();
+    debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
+
+    debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
+
+    // format data to send to firebase for this session
+    final checkData = {
+      'game': SessionManager.currentGame,
+      'start_time': startTime,
+      'end_time': endTime,
+      'session_id': gameSessionID,
+      'vpn_used' : vpn_status,
+      'session_distance': distanceTraveled,
+      'collected_measurements': measurements.map((p) => {
+        'upload_speed': p.uploadSpeed,
+        'download_speed': p.downloadSpeed,
+        'latency': p.latency,
+        'jitters': p.jitters
+      }).toList(),
+      'location_points': locationPoints.map((p) => {
+        'latitude': p.latitude,
+        'longitude': p.longitude,
+      }).toList(),
+    };
+    debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
+
+    // send to firebase
+    try {
+      debugPrint("Attempting to write to Firestore...");
+      await FirebaseFirestore.instance
+          .collection('measurements')
+          .doc(userData.email)
+          .collection('sessions')
+          .add(checkData);
+      debugPrint("Write successful!");
+    } catch (e) {
+      debugPrint("Firestore Error: $e");
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+
+    SessionManager.onWebViewClose = endGameSession;
 
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
@@ -74,8 +142,20 @@ class _WebViewPageState extends State<WebViewPage> {
         },
       );
 
+    // set POIs for game session
+    debugPrint("[FLUTTER_BRIDGE]: Calling setSessionPOIs...");
+    setSessionPOIs();
+
     // Load gameFile associated with tile that created the webview
+    debugPrint("[FLUTTER_BRIDGE]: Loading game file...");
     controller.loadFlutterAsset('assets/${widget.gameFile}');
+  }
+
+  @override
+  void dispose() {
+    // Unplug the bridge to prevent memory leaks or crashes
+    SessionManager.onWebViewClose = null;
+    super.dispose();
   }
 
   /// parses the incoming message from the JavaScript channel.
@@ -83,15 +163,9 @@ class _WebViewPageState extends State<WebViewPage> {
   /// I'm making this async to try and get it to work with NDT7 how it is currently set up..
   /// that may be a mistake. Making a note here in case things aren't working right.
   void handleNativeMessage(String message) async {
-    // unique session ID for game
-    /*
-    Shelby's note to self: I was originally declaring this in the WebViewState, but
-    it was not recognized within this function. I am wondering if the WebViewState is
-    still the ideal place to declare this? If so, I can pass it in through the function
-    parameters.
-     */
-    var gameSessionID = Uuid();
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+    bool vpn_status = userData.vpnStatus;
+
     try {
       final Map<String, dynamic> data = json.decode(message);
       final String command = data['command'];
@@ -144,8 +218,13 @@ class _WebViewPageState extends State<WebViewPage> {
           final jsonPayload = data['payload'];
           final mapPayload = Map<String, dynamic>.from(jsonPayload);
 
-          // write teh likert data to firestore
+          // write the likert data to firestore
           writeLikertData(mapPayload, sessionId);
+          break;
+
+        // case for when game is complete
+        case 'endGameSession':
+          endGameSession();
           break;
 
         /*case 'publishPlayerName':
@@ -156,12 +235,17 @@ class _WebViewPageState extends State<WebViewPage> {
 
         case 'setPOIs':
           PoiListGenerator poiGenerator = PoiListGenerator();
-          final poiList = poiGenerator.generatePOIList(5);
+          final poiList = await poiGenerator.generatePOIList(5);
+          List<Map<String, double>> poiListFormatted = poiList.map((p) => {
+            'latitude': p.latitude,
+            'longitude': p.longitude,
+          }).toList();
 
-          debugPrint("[HANDLENATIVEMESSAGE] POI list set: $poiList");
+          debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
+          // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
 
           // store the POIs in the Sessionmanager
-          SessionManager.setPOIs(poiList as List<Map<String, double>>);
+          SessionManager.setPOIs(poiListFormatted);
           break;
 
         case 'POICheck':
@@ -195,17 +279,30 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // collects internet measurements, sends back to game
         case 'getInternetMeasurement':
+          debugPrint("[FLUTTER_BRIDGE]: Calling getInternetMeasurement");
           // call NDT7-client
           final service = NDT7Service();
           final download = await service.runDownloadTest((status) {});
           final upload = await service.runUploadTest((status) {});
 
+          InternetMeasurement measurement = InternetMeasurement(
+            uploadSpeed:  upload['speedMbps'],
+            downloadSpeed: download['speedMbps'],
+            latency: download['latency'],
+            jitters: 0.0,
+          );
+          debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
+          measurements.add(measurement);
+
+
           // get user location
           final loc = await determineLocationData();
+          LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+          locationPoints.add(point);
 
           // upload data to firebase
           final checkData = {
-            'game': 'Speedtest',
+            'game': SessionManager.currentGame,
             'latitude': loc.position.latitude,
             'longitude': loc.position.longitude,
             'download_speed': download['speedMbps'],
@@ -213,6 +310,7 @@ class _WebViewPageState extends State<WebViewPage> {
             'latency': download['latency'],
             'timestamp': FieldValue.serverTimestamp(),
             'session_id': gameSessionID,
+            'vpn_used' : vpn_status,
           };
 
           try {
@@ -247,6 +345,9 @@ class _WebViewPageState extends State<WebViewPage> {
   void sendLocationJSON(context) async {
     // get location
     final loc = await determineLocationData();
+    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+    locationPoints.add(point);
+
     // build return JSON
     final json = jsonEncode({
       'latitude': loc.position.latitude,
@@ -258,15 +359,51 @@ class _WebViewPageState extends State<WebViewPage> {
         "window.onLocationJSON(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   }
 
+  // take all location points, calculate distance traveled
+  double calculateDistance(List<LocationPoint> pointsVisited) {
+    double totalDistance = 0.0;
+    for(int point = 0; point < pointsVisited.length - 1; point++) {
+      double distanceBetween = Geolocator.distanceBetween(
+          pointsVisited[point].latitude,
+          pointsVisited[point].longitude,
+          pointsVisited[point + 1].latitude,
+          pointsVisited[point + 1].longitude);
+      totalDistance += distanceBetween;
+    }
+    debugPrint("[FLUTTER_BRIDGE] Session distance traveled: $totalDistance");
+    return totalDistance;
+  }
+
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
     final results = await NDT7Service().runFullTest();
     final json = jsonEncode(results);
 
+
     // return the placeholder json
     controller.runJavaScript(
         "window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
+  }
+
+  void setSessionPOIs() async {
+    try {
+      debugPrint("[FLUTTER_BRIDGE]: Starting POI generation...");
+      PoiListGenerator poiGenerator = PoiListGenerator();
+      final poiList = await poiGenerator.generatePOIList(5);
+      debugPrint("[FLUTTER_BRIDGE]: POI list generated in setSessionPOIs: $poiList");
+      // Safely convert the objects to the Map format the SessionManager expects
+      final List<Map<String, double>> formattedPoiList = poiList.map((poi) {
+        return {
+          'latitude': poi.latitude,
+          'longitude': poi.longitude,
+        };
+      }).toList();
+      SessionManager.setPOIs(formattedPoiList);
+    } catch (e) {
+      debugPrint("[FLUTTER_BRIDGE]: Critical error in setSessionPOIs: $e");
+    }
+
   }
 
   // when the player makes an action that results in a measurement, this function writes the context to firestore
@@ -279,6 +416,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // get location
     final loc = await determineLocationData();
+    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+    locationPoints.add(point);
 
     // write additional data to payload before publishing to firestore
     payload['latitude'] = loc.position.latitude;
@@ -313,9 +452,14 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<void> checkPOI() async {
     // grab players current position
     final loc = await determineLocationData();
+    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+    locationPoints.add(point);
 
     // grab the current poi list in the session manager
     final poiList = SessionManager.poiList;
+    debugPrint("[FLUTTER_BRIDGE]: Printing off POI list in checkPOI...");
+    debugPrint("[FLUTTER_BRIDGE]: POI List: $poiList");
+
     // create a variable to store the index of the poi to be removed if it exists
     int indexToRemove = -1;
 
@@ -326,7 +470,8 @@ class _WebViewPageState extends State<WebViewPage> {
           loc.position.longitude, poi['latitude']!, poi['longitude']!);
 
       // a poi can be collected within 7 meters of the player
-      if (distance <= 7) {
+      // TODO: changing to 1 for testing
+      if (distance <= 1) {
         indexToRemove = i;
         break;
       }
@@ -353,6 +498,9 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<void> provideHint() async {
     // get user current position and heading
     final loc = await determineLocationData();
+    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+    locationPoints.add(point);
+
     final userPos = loc.position;
     final heading = loc.heading;
 
