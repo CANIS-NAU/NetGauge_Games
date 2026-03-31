@@ -36,7 +36,7 @@ class SessionData {
   final DateTime date;
   final String game;
   final int? pointsCollected;
-  final int? distanceTraveled;
+  final double? distanceTraveled;
   final double? averageUploadSpeed;
   final double? averageDownloadSpeed;
   final double? radiusGyration;
@@ -109,7 +109,7 @@ class UserDataProvider extends ChangeNotifier {
   bool get getDemographicStatus => (_userData?['demographics_taken'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
-  int get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
+  double get distanceTraveled => _userData?['distanceTraveled'] ?? 0;
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
 
@@ -322,7 +322,7 @@ class UserDataProvider extends ChangeNotifier {
       'email': user.email,
       'demographics_taken' : false,
       'measurementsTaken': 0,
-      'distanceTraveled': 0,
+      'distanceTraveled': 0.0,
       'dataPoints': [],
       'radGyration': [0],
       'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
