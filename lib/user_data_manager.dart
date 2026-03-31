@@ -252,6 +252,9 @@ class UserDataProvider extends ChangeNotifier {
           .collection('userData')
           .doc(user.uid)
           .update({'distanceTraveled': updatedDist});
+    }
+  }
+
   Future<void> setDemographicStatus() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -292,7 +295,6 @@ class UserDataProvider extends ChangeNotifier {
         // 2. Now that we know it exists, update the measurement count
         _collectedMeasurements = await fetchCollectedMeasurements();
         _collectedSessions = await fetchSessionData();
-        List<DataPoint> collectedMeasurements = await fetchCollectedMeasurements();
         await FirebaseFirestore.instance
             .collection('userData')
             .doc(user.uid)
