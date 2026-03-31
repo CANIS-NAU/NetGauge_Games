@@ -146,16 +146,17 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       final sessionId = SessionManager.sessionId;
 
       var gameSessionID = Uuid();
+      String sessionStringID = gameSessionID.toString();
 
       final checkData = {
         'game': 'Speedtest',
+        'session_id': sessionStringID,
         'latitude': loc.position.latitude,
         'longitude': loc.position.longitude,
         'download_speed': download['speedMbps'],
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
         'timestamp': FieldValue.serverTimestamp(),
-        'session_id': gameSessionID,
       };
 
       await FirebaseFirestore.instance
