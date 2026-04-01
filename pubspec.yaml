@@ -89,6 +89,7 @@ dependencies:
   http: any
   firebase_remote_config: ^5.5.0
   firebase_messaging: ^15.2.10
+  flutter_native_splash: ^2.4.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

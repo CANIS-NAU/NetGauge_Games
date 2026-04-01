@@ -43,27 +43,29 @@ end
 
 post_install do |installer|
     installer.pods_project.targets.each do |target|
-        # Handle the BoringSSL-GRPC -G flag error that has plagued the whole deployment
-        if target.name=='BoringSSL-GRPC'
+        # Handle the BoringSSL-GRPC -G flag error
+        if target.name == 'BoringSSL-GRPC'
             target.source_build_phase.files.each do |file|
                 if file.settings && file.settings['COMPILER_FLAGS']
-                    flags=file.settings['COMPILER_FLAGS'].split
+                    flags = file.settings['COMPILER_FLAGS'].split
                     flags.reject! { |flag| flag == '-GCC_WARN_INHIBIT_ALL_WARNINGS' }
-                    file.settings['COMPILER_FLAGS']=flags.join(' ')
+                    file.settings['COMPILER_FLAGS'] = flags.join(' ')
                 end
             end
         end
-        # Set build target
+
+        # Single build_configurations block with ALL settings merged together
         target.build_configurations.each do |config|
             config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '18.5'
             config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
             config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-       target.build_configurations.each do |config|
-         config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-           '$(inherited)',
-         # dart: [PermissionGroup.location, PermissionGroup.locationAlways, PermissionGroup.locationWhenInUse]
-           'PERMISSION_LOCATION=1'
+            config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+                '$(inherited)',
+                'PERMISSION_LOCATION=1'
+            ]
         end
+
+        # Outside build_configurations, inside targets
         flutter_additional_ios_build_settings(target)
     end
 end
