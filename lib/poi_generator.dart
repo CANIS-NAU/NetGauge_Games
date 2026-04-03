@@ -29,6 +29,7 @@ class OverpassService {
   /// [radius]: Search radius in meters
   /// [amenityType]: Optional - Type of amenity (e.g., 'cafe', 'restaurant')
   /// [tags]: Optional - Additional tag filters (e.g., {'shop': 'supermarket'})
+  /// [limit]: Optional - Limit the number of results from the server
   ///
   /// If neither amenityType nor tags are provided, fetches ALL POIs with names
   Future<List<PointOfInterest>> fetchPOIs({
@@ -37,6 +38,7 @@ class OverpassService {
     required double radius,
     String? amenityType,
     Map<String, String>? tags,
+    int? limit,
   }) async {
     // Build the Overpass QL query
     final query = _buildQuery(
@@ -45,6 +47,7 @@ class OverpassService {
       radius: radius,
       amenityType: amenityType,
       tags: tags,
+      limit: limit,
     );
 
     try {
@@ -85,16 +88,19 @@ class OverpassService {
     int limit = 10,
   }) async {
     debugPrint("[POI_GENERATION]: Fetching nearest POIs.");
-    // First, get all POIs within the radius
+    // First, get all POIs within the radius. We pass the limit to the query to speed it up.
+    // Note: Overpass doesn't guarantee the returned X items are the absolute closest,
+    // so we fetch a few more than needed and sort them locally.
     final pois = await fetchPOIs(
       latitude: latitude,
       longitude: longitude,
       radius: radius,
       amenityType: amenityType,
       tags: tags,
+      limit: limit * 2, // Fetch double the limit to ensure we get good local candidates
     );
 
-    debugPrint("[POI_GENERATION]: Nearest POIs-- $pois");
+    debugPrint("[POI_GENERATION]: Found ${pois.length} candidates.");
 
     // Calculate distance for each POI
     for (var poi in pois) {
@@ -146,6 +152,7 @@ class OverpassService {
     required double radius,
     String? amenityType,
     Map<String, String>? tags,
+    int? limit,
   }) {
     // Build the tag filters
     String tagFilters = '';
@@ -161,19 +168,17 @@ class OverpassService {
     }
 
     // If no filters specified, search for anything with a name
-    // This gives you all POIs (shops, amenities, tourism spots, etc.)
     if (tagFilters.isEmpty) {
       tagFilters = '["name"]';
     }
 
+    // Using 'nwr' (node, way, relation) is more efficient.
+    // Adding a 'limit' to the output prevents the server from timing out on large result sets.
     return '''
       [out:json][timeout:25];
-      (
-        node$tagFilters(around:$radius,$latitude,$longitude);
-        way$tagFilters(around:$radius,$latitude,$longitude);
-      );
-      out center;
-    ''';
+      nwr$tagFilters(around:$radius,$latitude,$longitude);
+      out center ${limit ?? ''};
+    '''.trim();
   }
 
   /// Parses the Overpass API response into POI objects
@@ -181,8 +186,7 @@ class OverpassService {
     final elements = jsonData['elements'] as List<dynamic>;
 
     return elements.map((element) {
-      debugPrint("[POI_GENERATION]: Returning elements...");
-      // Extract coordinates (different for nodes vs ways)
+      // Extract coordinates (different for nodes vs ways/relations)
       final lat = element['lat'] ?? element['center']?['lat'];
       final lon = element['lon'] ?? element['center']?['lon'];
 
@@ -244,8 +248,8 @@ class PoiListGenerator {
   double user_longitude = 0.0;
   double user_latitude = 0.0;
 
-  // this needs to get reset when the class is called, but default can be 5K
-  double max_distance = 5.0; // kilometers
+  // Default to 1000 meters (1km) for better performance than 5km.
+  double max_distance = 1000; 
   int num_pois = 0; // reset when class is initialized
 
   Future<List<PointOfInterest>> generatePOIList(int listSize) async{
@@ -277,18 +281,19 @@ class PoiListGenerator {
   Description: Calls the Overpass API to access POIs from Open Street Map
    */
   Future<List<PointOfInterest>> callOverpassAPI(int num_pois) async{
-    // start service, call instance of class
     debugPrint("[POI_GENERATOR] Calling overpass API service");
     final service = OverpassService();
     final allPois = await service.fetchNearestPOIs(
       latitude: user_latitude,
       longitude: user_longitude,
-      radius: max_distance, //kilometers
+      radius: max_distance,
       limit: num_pois,
     );
-    debugPrint("[POI_GENERATOR] Printing allPOIs");
-    debugPrint("[POI_GENERATOR] Lat: $allPois[latitude]");
-    debugPrint("[POI_GENERATOR] Lon: $allPois[longitude]");
+    
+    debugPrint("[POI_GENERATOR] Printing found POIs:");
+    for (var poi in allPois) {
+      debugPrint(" - ${poi.name} (${poi.latitude}, ${poi.longitude})");
+    }
     return allPois;
   }
 }

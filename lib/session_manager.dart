@@ -77,6 +77,7 @@ class SessionManager {
       );
 
       debugPrint("[SESSION_MANAGER] Nearest POI: $closest");
+      debugPrint("[SESSION_MANAGER] Player's distance from closest: $distToClosest");
 
       return distToCurrent < distToClosest ? current : closest;
     });
