@@ -5,20 +5,22 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'flutter_bridge.dart';
+import 'poi_generator.dart';
+
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
   static String? _sessionId;
   //static String? _playerName;
   static String? _currentGame;
-  static List<Map<String, double>> _poiList = [];
+  static List<PointOfInterest> _poiList = [];
   // keeps track of when the game screen closes
   static Future<void> Function()? onWebViewClose;
 
   static String? get sessionId => _sessionId;
  // static String? get playerName => _playerName;
   static String? get currentGame => _currentGame;
-  static List<Map<String, double>> get poiList => _poiList;
+  static List<PointOfInterest> get poiList => _poiList;
 
   // sets the session ID
   static void setSessionId(String id) {
@@ -49,13 +51,13 @@ class SessionManager {
   }
 
   // sets the poi list for games that use them
-  static void setPOIs(List<Map<String, double>> pois){
+  static void setPOIs(List<PointOfInterest> pois){
     _poiList = pois;
     debugPrint("[SESSION_MANAGER]: Setting POIs. POIs are: $_poiList");
   }
 
   // function to identify which POI in the list is closest to the user
-  static Map<String, double>? getNearestPOI(Position userPos)
+  static PointOfInterest? getNearestPOI(Position userPos)
   {
     if (_poiList.isEmpty)
     {
@@ -66,14 +68,14 @@ class SessionManager {
       final distToCurrent = Geolocator.distanceBetween(
         userPos.latitude,
         userPos.longitude,
-        current['latitude']!,
-        current['longitude']!,
+        current.latitude!,
+        current.longitude!,
       );
       final distToClosest = Geolocator.distanceBetween(
         userPos.latitude,
         userPos.longitude,
-        closest['latitude']!,
-        closest['longitude']!,
+        closest.latitude!,
+        closest.longitude!,
       );
 
       debugPrint("[SESSION_MANAGER] Nearest POI: $closest");

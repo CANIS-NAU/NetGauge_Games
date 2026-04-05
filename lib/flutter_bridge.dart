@@ -182,6 +182,15 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // JS is requesting metrics
 
+        // specific case for games that need extra POI info
+        // i.e. scavenger hunt requires names of POIs
+        case 'requestAdditionalPOIInfo':
+          // gets passed payload with specific POI info is being requested for
+          final poiRequested = data['payload'];
+          // look to poi list
+          //PointOfInterest poiListItem = SessionManager.poiList.where('id' == poiRequested.id);
+          return;
+
         case 'requestMetricsAndWriteData':
           // get the session ID
           final sessionId = SessionManager.sessionId;
@@ -236,16 +245,12 @@ class _WebViewPageState extends State<WebViewPage> {
         case 'setPOIs':
           PoiListGenerator poiGenerator = PoiListGenerator();
           final poiList = await poiGenerator.generatePOIList(5);
-          List<Map<String, double>> poiListFormatted = poiList.map((p) => {
-            'latitude': p.latitude,
-            'longitude': p.longitude,
-          }).toList();
 
           debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
           // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
 
           // store the POIs in the Sessionmanager
-          SessionManager.setPOIs(poiListFormatted);
+          SessionManager.setPOIs(poiList);
           break;
 
         case 'POICheck':
@@ -256,9 +261,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
         case "clearPOIList":
           // clears the current list of POIs in the SessionManager
-          for (int i = 0; i < SessionManager.poiList.length; i++) {
-            SessionManager.poiList.removeAt(i);
-          }
+          SessionManager.poiList.clear();
 
           break;
 
@@ -392,14 +395,7 @@ class _WebViewPageState extends State<WebViewPage> {
       PoiListGenerator poiGenerator = PoiListGenerator();
       final poiList = await poiGenerator.generatePOIList(5);
       debugPrint("[FLUTTER_BRIDGE]: POI list generated in setSessionPOIs: $poiList");
-      // Safely convert the objects to the Map format the SessionManager expects
-      final List<Map<String, double>> formattedPoiList = poiList.map((poi) {
-        return {
-          'latitude': poi.latitude,
-          'longitude': poi.longitude,
-        };
-      }).toList();
-      SessionManager.setPOIs(formattedPoiList);
+      SessionManager.setPOIs(poiList);
     } catch (e) {
       debugPrint("[FLUTTER_BRIDGE]: Critical error in setSessionPOIs: $e");
     }
@@ -467,7 +463,7 @@ class _WebViewPageState extends State<WebViewPage> {
     for (int i = 0; i < poiList.length; i++) {
       final poi = poiList[i];
       final distance = Geolocator.distanceBetween(loc.position.latitude,
-          loc.position.longitude, poi['latitude']!, poi['longitude']!);
+          loc.position.longitude, poi.latitude!, poi.longitude!);
 
       // a poi can be collected within 10 meters of the player
       if (distance <= 7) {
@@ -521,7 +517,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
     // calculate bearing from user to POI
     final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
-        userPos.longitude, nearestPOI['latitude']!, nearestPOI['longitude']!);
+        userPos.longitude, nearestPOI.latitude!, nearestPOI.longitude!);
 
     // Normalize and compare to user heading
     double relativeBearing = (bearingToPOI - heading) % 360;

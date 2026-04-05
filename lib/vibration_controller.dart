@@ -41,8 +41,8 @@ import 'package:flutter/material.dart';
         final distance = Geolocator.distanceBetween(
           position.latitude,
           position.longitude,
-          nearest['latitude']!,
-          nearest['longitude']!
+          nearest.latitude!,
+          nearest.longitude!
         );
 
         // determine delay between vibration pulses based on distance to nearest poi
