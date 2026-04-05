@@ -469,9 +469,8 @@ class _WebViewPageState extends State<WebViewPage> {
       final distance = Geolocator.distanceBetween(loc.position.latitude,
           loc.position.longitude, poi['latitude']!, poi['longitude']!);
 
-      // a poi can be collected within 7 meters of the player
-      // TODO: changing to 1 for testing
-      if (distance <= 1) {
+      // a poi can be collected within 10 meters of the player
+      if (distance <= 7) {
         indexToRemove = i;
         break;
       }
