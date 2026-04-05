@@ -184,12 +184,16 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // specific case for games that need extra POI info
         // i.e. scavenger hunt requires names of POIs
-        case 'requestAdditionalPOIInfo':
+        case 'requestPOIName':
           // gets passed payload with specific POI info is being requested for
           final poiRequested = data['payload'];
           // look to poi list
-          //PointOfInterest poiListItem = SessionManager.poiList.where('id' == poiRequested.id);
-          return;
+          PointOfInterest poi = (SessionManager.poiList).firstWhere((pointOfInterest) =>
+            pointOfInterest.longitude == poiRequested.longitude && pointOfInterest.latitude == poiRequested.latitude);
+          String name = poi.name;
+          // call handler function
+          sendPOIName(name);
+          break;
 
         case 'requestMetricsAndWriteData':
           // get the session ID
@@ -400,6 +404,11 @@ class _WebViewPageState extends State<WebViewPage> {
       debugPrint("[FLUTTER_BRIDGE]: Critical error in setSessionPOIs: $e");
     }
 
+  }
+
+  // helper function, sends name of POI
+  void sendPOIName(String poiName) {
+    controller.runJavaScript("window.onRequestPOIName($poiName)");
   }
 
   // when the player makes an action that results in a measurement, this function writes the context to firestore

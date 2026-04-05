@@ -275,6 +275,17 @@ window.requestLocation = function(context)
   }));
 };
 
+// Function to request the name of a specific POI
+window.requestLocation = function(context)
+{
+  // post a message to the flutter bridge requesting location data
+  // and the context in which to use the location data
+  FlutterBridge.postMessage(JSON.stringify({
+    command: "getLocation", // runs getLocation in Flutter
+    context: context // what to do with returned location data
+  }));
+};
+
 // Callback function that receives location JSON from
 // flutter and uses context to decide what to do with that
 // data
