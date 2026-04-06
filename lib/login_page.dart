@@ -207,19 +207,37 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email')),
             TextField(controller: passwordController, decoration: const InputDecoration(labelText: 'Password'), obscureText: true),
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
             _loading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(15),
+              ),
               onPressed: _login,
-              child: const Text('Log In'),
+              child: const Text('Log In',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 25,)),
             ),
             const SizedBox(height: 20),
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
               ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.all(15),
+              ),
               onPressed: _showRegistrationDialog,
-              child: const Text('Register'),
+              child: const Text('Register',
+              style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 25,)),
             ),
           ],
         ),
