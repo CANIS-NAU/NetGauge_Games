@@ -5,77 +5,64 @@ import 'package:http/http.dart' as http;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
-// This file will contain all functions for generating POIs
+// This file contains functions for generating POIs using the OpenStreetMap Overpass API
 
-// I may move other POI related functions, like POICheck, here for clean code
-
-
-// Reference for OSM API: https://wiki.openstreetmap.org/wiki/Overpass_API
-
-
-// currently this is how it works
-// Games have predefined lists of POIs that get sent to the flutter side
-// So instead, what if we just send over the player's current location, and then generate POIs here?
-// or even go that on the flutter side
-
-// This class was written with the help of Claude
 class OverpassService {
   // The main Overpass API endpoint
   static const String _baseUrl = 'https://overpass-api.de/api/interpreter';
-
-  /// Fetches POIs around a location
-  ///
-  /// [latitude] and [longitude]: Center point for the search
-  /// [radius]: Search radius in meters
-  /// [amenityType]: Optional - Type of amenity (e.g., 'cafe', 'restaurant')
-  /// [tags]: Optional - Additional tag filters (e.g., {'shop': 'supermarket'})
-  ///
-  /// If neither amenityType nor tags are provided, fetches ALL POIs with names
+  // Main and mirror endpoints for better reliability
+  static const List<String> _endpoints = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.nchc.org.tw/api/interpreter',
+  ];
+  /// Fetches POIs around a location with retry and fallback logic
   Future<List<PointOfInterest>> fetchPOIs({
     required double latitude,
     required double longitude,
     required double radius,
     String? amenityType,
     Map<String, String>? tags,
+    int? limit,
   }) async {
-    // Build the Overpass QL query
     final query = _buildQuery(
       latitude: latitude,
       longitude: longitude,
       radius: radius,
       amenityType: amenityType,
       tags: tags,
+      limit: limit,
     );
 
-    try {
-      // Make the HTTP POST request
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'data': query},
-      );
+    Exception? lastException;
 
-      if (response.statusCode == 200) {
-        // Parse the JSON response
-        final jsonData = json.decode(response.body);
-        return _parseResponse(jsonData);
-      } else {
-        throw Exception('Failed to load POIs: ${response.statusCode}');
+    for (final url in _endpoints) {
+      try {
+        debugPrint("[POI_GENERATION]: Requesting from $url");
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: {'data': query},
+        ).timeout(const Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          final jsonData = json.decode(response.body);
+          return _parseResponse(jsonData);
+        } else if (response.statusCode == 429) {
+          debugPrint("[POI_GENERATION]: Rate limited on $url");
+        } else {
+          lastException = Exception('Server returned ${response.statusCode}');
+        }
+      } catch (e) {
+        debugPrint("[POI_GENERATION]: Error with $url: $e");
+        lastException = e is Exception ? e : Exception(e.toString());
       }
-    } catch (e) {
-      throw Exception('Error fetching POIs: $e');
     }
+
+    throw lastException ?? Exception('Failed to load POIs from all available servers');
   }
 
   /// Fetches the nearest POIs to a location, sorted by distance
-  ///
-  /// [latitude] and [longitude]: Your current location
-  /// [radius]: Maximum search radius in meters
-  /// [amenityType]: Optional - Type of amenity to search for
-  /// [tags]: Optional - Additional tag filters
-  /// [limit]: Maximum number of results to return (default: 10)
-  ///
-  /// If neither amenityType nor tags are provided, fetches ALL POIs with names
   Future<List<PointOfInterest>> fetchNearestPOIs({
     required double latitude,
     required double longitude,
@@ -85,16 +72,16 @@ class OverpassService {
     int limit = 10,
   }) async {
     debugPrint("[POI_GENERATION]: Fetching nearest POIs.");
-    // First, get all POIs within the radius
+
+    // Fetch a pool of candidates (double the limit)
     final pois = await fetchPOIs(
       latitude: latitude,
       longitude: longitude,
       radius: radius,
       amenityType: amenityType,
       tags: tags,
+      limit: limit * 2,
     );
-
-    debugPrint("[POI_GENERATION]: Nearest POIs-- $pois");
 
     // Calculate distance for each POI
     for (var poi in pois) {
@@ -109,15 +96,11 @@ class OverpassService {
     // Sort by distance (nearest first)
     pois.sort((a, b) => a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!));
 
-    // Return only the requested number of results
     return pois.take(limit).toList();
   }
 
-  /// Calculates distance between two points using Haversine formula
-  /// Returns distance in meters
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000; // meters
-
     final dLat = _degreesToRadians(lat2 - lat1);
     final dLon = _degreesToRadians(lon2 - lon1);
 
@@ -127,168 +110,102 @@ class OverpassService {
             math.sin(dLon / 2) *
             math.sin(dLon / 2);
 
-    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-
-    return earthRadius * c;
+    return earthRadius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
   }
 
-  double _degreesToRadians(double degrees) {
-    return degrees * math.pi / 180;
-  }
+  double _degreesToRadians(double degrees) => degrees * math.pi / 180;
 
-  /// Builds an Overpass QL query string
-  ///
-  /// This query searches for nodes and ways with specified tags
-  /// within a radius of a given point
   String _buildQuery({
     required double latitude,
     required double longitude,
     required double radius,
     String? amenityType,
     Map<String, String>? tags,
+    int? limit,
   }) {
-    // Build the tag filters
     String tagFilters = '';
-    debugPrint("[POI_GENERATION]: Building query for Overpass API");
-    if (amenityType != null) {
-      tagFilters += '["amenity"="$amenityType"]';
-    }
-
+    if (amenityType != null) tagFilters += '["amenity"="$amenityType"]';
     if (tags != null) {
       for (var entry in tags.entries) {
         tagFilters += '["${entry.key}"="${entry.value}"]';
       }
     }
-
-    // If no filters specified, search for anything with a name
-    // This gives you all POIs (shops, amenities, tourism spots, etc.)
-    if (tagFilters.isEmpty) {
-      tagFilters = '["name"]';
-    }
+    if (tagFilters.isEmpty) tagFilters = '["name"]';
 
     return '''
-      [out:json][timeout:25];
-      (
-        node$tagFilters(around:$radius,$latitude,$longitude);
-        way$tagFilters(around:$radius,$latitude,$longitude);
-      );
-      out center;
-    ''';
+      [out:json][timeout:30];
+      nwr$tagFilters(around:$radius,$latitude,$longitude);
+      out center ${limit ?? ''};
+    '''.trim();
   }
 
-  /// Parses the Overpass API response into POI objects
   List<PointOfInterest> _parseResponse(Map<String, dynamic> jsonData) {
-    final elements = jsonData['elements'] as List<dynamic>;
+    final elements = jsonData['elements'] as List<dynamic>? ?? [];
 
     return elements.map((element) {
-      debugPrint("[POI_GENERATION]: Returning elements...");
-      // Extract coordinates (different for nodes vs ways)
       final lat = element['lat'] ?? element['center']?['lat'];
       final lon = element['lon'] ?? element['center']?['lon'];
-
-      // Extract tags (all the descriptive information)
       final tags = element['tags'] as Map<String, dynamic>? ?? {};
-
-      // Try to determine the type of POI
-      final amenityType = tags['amenity'] ??
-          tags['shop'] ??
-          tags['tourism'] ??
-          tags['leisure'] ??
-          'unknown';
 
       return PointOfInterest(
         id: element['id'].toString(),
         latitude: lat?.toDouble() ?? 0.0,
         longitude: lon?.toDouble() ?? 0.0,
         name: tags['name'] ?? 'Unnamed',
-        amenityType: amenityType,
+        amenityType: tags['amenity'] ?? tags['shop'] ?? tags['tourism'] ?? 'poi',
         tags: Map<String, String>.from(tags),
       );
     }).toList();
   }
 }
 
-/// Represents a Point of Interest from OpenStreetMap
 class PointOfInterest {
-  final String id;
-  final double latitude;
-  final double longitude;
-  final String name;
-  final String amenityType;
-  final Map<String, String> tags; // All OSM tags for this POI
-
-  // Distance from the search origin (calculated after fetching)
+  final String id, name, amenityType;
+  final double latitude, longitude;
+  final Map<String, String> tags;
   double? distanceFromOrigin;
 
   PointOfInterest({
-    required this.id,
-    required this.latitude,
-    required this.longitude,
-    required this.name,
-    required this.amenityType,
-    required this.tags,
-    this.distanceFromOrigin,
+    required this.id, required this.latitude, required this.longitude,
+    required this.name, required this.amenityType, required this.tags,
   });
-
-  @override
-  String toString() {
-    final distanceStr = distanceFromOrigin != null
-        ? ' - ${distanceFromOrigin!.toStringAsFixed(0)}m away'
-        : '';
-    return 'POI: $name ($amenityType) at ($latitude, $longitude)$distanceStr';
-  }
 }
 
 class PoiListGenerator {
-  // each of these get reset as subsequent functions are called
   double user_longitude = 0.0;
   double user_latitude = 0.0;
+  double max_distance = 500; // Increased default slightly to 1.5km
 
-  // this needs to get reset when the class is called, but default can be 5K
-  double max_distance = 5.0; // kilometers
-  int num_pois = 0; // reset when class is initialized
-
-  Future<List<PointOfInterest>> generatePOIList(int listSize) async{
-    num_pois = listSize;
-    await getCurrentLocation();
-    List<PointOfInterest> poiList = await callOverpassAPI(num_pois);
-    return poiList;
+  Future<List<PointOfInterest>> generatePOIList(int listSize) async {
+    try {
+      await _getCurrentLocation();
+      return await _callOverpassAPI(listSize);
+    } catch (e) {
+      debugPrint("[POI_GENERATOR] Final error: $e");
+      return [];
+    }
   }
 
-
-  /*
-  Function Name: getCurrentLocation
-  Input:
-  Output: None, this is a get and set function
-  Dependencies:
-  Description: Sets the coordinate points for user
-   */
-  Future<void> getCurrentLocation() async {
-    final loc = await determineLocationData();
+  Future<void> _getCurrentLocation() async {
+    // Add a timeout to location fetching to prevent hanging
+    final loc = await determineLocationData().timeout(const Duration(seconds: 10));
     user_longitude = loc.position.longitude;
     user_latitude = loc.position.latitude;
   }
 
-  /*
-  Function Name: callOverpassAPI
-  Input:
-  Output:
-  Dependencies:
-  Description: Calls the Overpass API to access POIs from Open Street Map
-   */
-  Future<List<PointOfInterest>> callOverpassAPI(int num_pois) async{
-    // start service, call instance of class
-    debugPrint("[POI_GENERATOR] Calling overpass API service");
+  Future<List<PointOfInterest>> _callOverpassAPI(int numPois) async {
     final service = OverpassService();
-    final allPois = await service.fetchNearestPOIs(
+    final results = await service.fetchNearestPOIs(
       latitude: user_latitude,
       longitude: user_longitude,
-      radius: max_distance, //kilometers
-      limit: num_pois,
+      radius: max_distance,
+      limit: numPois,
     );
-    debugPrint("[POI_GENERATOR] Printing allPOIs");
-    debugPrint("[POI_GENERATOR] Lat: $allPois[latitude]");
-    debugPrint("[POI_GENERATOR] Lon: $allPois[longitude]");
-    return allPois;
+
+    if (results.isEmpty) {
+      debugPrint("[POI_GENERATOR] No POIs found. Radius might be too small.");
+    }
+    debugPrint("[POI_GENERATOR] Returning results: $results.");
+    return results;
   }
 }
