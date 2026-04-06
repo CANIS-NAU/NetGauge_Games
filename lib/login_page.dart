@@ -140,10 +140,10 @@ class _LoginPageState extends State<LoginPage> {
     User user = credential.user!;
     print('Created user with UID: ${user.uid}');
 
-    // Create Firestore document with SAME UID
+    // TODO: Check if this is handled already in user data manager.
     await FirebaseFirestore.instance
         .collection('userData')
-        .doc(user.uid)  // ← This is the key!
+        .doc(user.uid)
         .set({
       'uid': user.uid,
       'email': email,
@@ -166,11 +166,11 @@ class _LoginPageState extends State<LoginPage> {
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      print('No user logged in');
+      debugPrint('[LOGIN] No user logged in');
       return null;
     }
 
-    print('Getting data for UID: ${user.uid}');
+    debugPrint('[LOGIN] Getting data for UID: ${user.uid}');
 
     // Get their document directly
     DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -185,25 +185,21 @@ class _LoginPageState extends State<LoginPage> {
     return null;
   }
 
-  // This may not be necessary in this file, look into later
-  Future<void> updateMeasurements(int newValue) async {
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) return;
-
-    // Update their document directly
-    await FirebaseFirestore.instance
-        .collection('userData')
-        .doc(user.uid)  // Direct access using UID
-        .update({
-      'measurementsTaken': newValue,
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      appBar: AppBar(
+        centerTitle: true,
+        title: const Text(
+            'Login',
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 50)
+        ),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -221,9 +217,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 20),
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-            _loading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
+              ElevatedButton(
               onPressed: _showRegistrationDialog,
               child: const Text('Register'),
             ),
