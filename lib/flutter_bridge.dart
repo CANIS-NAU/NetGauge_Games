@@ -191,6 +191,7 @@ class _WebViewPageState extends State<WebViewPage> {
           PointOfInterest poi = (SessionManager.poiList).firstWhere((pointOfInterest) =>
             pointOfInterest.longitude == poiRequested.longitude && pointOfInterest.latitude == poiRequested.latitude);
           String name = poi.name;
+          debugPrint("[FLUTTER_BRIDGE]: Requesting POI info for $poi");
           // call handler function
           sendPOIName(name);
           break;

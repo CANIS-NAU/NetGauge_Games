@@ -11,11 +11,11 @@ class OverpassService {
   // The main Overpass API endpoint
   static const String _baseUrl = 'https://overpass-api.de/api/interpreter';
   // Main and mirror endpoints for better reliability
-  /*static const List<String> _endpoints = [
+  static const List<String> _endpoints = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.nchc.org.tw/api/interpreter',
-  ];*/
+  ];
   /// Fetches POIs around a location with retry and fallback logic
   Future<List<PointOfInterest>> fetchPOIs({
     required double latitude,
@@ -36,27 +36,28 @@ class OverpassService {
 
     Exception? lastException;
 
-    try {
-      debugPrint("[POI_GENERATION]: Requesting from $_baseUrl");
-      final response = await http.post(
-        Uri.parse(_baseUrl),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {'data': query},
-      ).timeout(const Duration(seconds: 30));
+    for (final url in _endpoints) {
+      try {
+        debugPrint("[POI_GENERATION]: Requesting from $url");
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: {'data': query},
+        ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return _parseResponse(jsonData);
-      } else if (response.statusCode == 429) {
-        debugPrint("[POI_GENERATION]: Rate limited on $_baseUrl");
-      } else {
-        lastException = Exception('Server returned ${response.statusCode}');
+        if (response.statusCode == 200) {
+          final jsonData = json.decode(response.body);
+          return _parseResponse(jsonData);
+        } else if (response.statusCode == 429) {
+          debugPrint("[POI_GENERATION]: Rate limited on $url");
+        } else {
+          lastException = Exception('Server returned ${response.statusCode}');
+        }
+      } catch (e) {
+        debugPrint("[POI_GENERATION]: Error with $url: $e");
+        lastException = e is Exception ? e : Exception(e.toString());
       }
-    } catch (e) {
-      debugPrint("[POI_GENERATION]: Error with $_baseUrl: $e");
-      lastException = e is Exception ? e : Exception(e.toString());
     }
-
 
     throw lastException ?? Exception('Failed to load POIs from all available servers');
   }
@@ -71,7 +72,7 @@ class OverpassService {
     int limit = 10,
   }) async {
     debugPrint("[POI_GENERATION]: Fetching nearest POIs.");
-    
+
     // Fetch a pool of candidates (double the limit)
     final pois = await fetchPOIs(
       latitude: latitude,
@@ -79,7 +80,7 @@ class OverpassService {
       radius: radius,
       amenityType: amenityType,
       tags: tags,
-      limit: limit * 2, 
+      limit: limit * 2,
     );
 
     // Calculate distance for each POI
@@ -173,7 +174,7 @@ class PointOfInterest {
 class PoiListGenerator {
   double user_longitude = 0.0;
   double user_latitude = 0.0;
-  double max_distance = 1500; // Increased default slightly to 1.5km
+  double max_distance = 500; // Increased default slightly to 1.5km
 
   Future<List<PointOfInterest>> generatePOIList(int listSize) async {
     try {
@@ -200,10 +201,11 @@ class PoiListGenerator {
       radius: max_distance,
       limit: numPois,
     );
-    
+
     if (results.isEmpty) {
       debugPrint("[POI_GENERATOR] No POIs found. Radius might be too small.");
     }
+    debugPrint("[POI_GENERATOR] Returning results: $results.");
     return results;
   }
 }
