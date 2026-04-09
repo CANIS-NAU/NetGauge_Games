@@ -14,18 +14,25 @@ class Settings extends StatelessWidget {
   Future<void> logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
-      // Optional: Navigate to the login screen or a different screen after logout
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginPage()));
+      
+      // Use pushAndRemoveUntil to clear the entire navigation stack
+      // This prevents the user from using the back button to return to the app
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false, // Remove all previous routes
+        );
+      }
     } on FirebaseAuthException catch (e) {
       // Handle potential errors during sign out
-      print('Error signing out: $e');
+      debugPrint('Error signing out: $e');
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<UserDataProvider>(context);
+    // final userData = Provider.of<UserDataProvider>(context); // Not currently used in build
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -43,14 +50,14 @@ class Settings extends StatelessWidget {
           children:[
             const SizedBox(height: 8),
             TextButton(
-              onPressed: () => {
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SurveyState(
                     surveyDocId: 'METUX',
                     responseCollection: 'survey_responses',
                   )),
-                )
+                );
               },
               style: TextButton.styleFrom(
                   shape: RoundedRectangleBorder(
