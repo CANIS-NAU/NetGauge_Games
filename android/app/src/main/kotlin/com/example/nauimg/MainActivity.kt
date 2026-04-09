@@ -1,4 +1,4 @@
-package com.example.nauimg
+package NetGague.Games
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -209,7 +209,7 @@ class _MapPageState extends State<MapPage> {
           TileLayer(
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             subdomains: const ['a', 'b', 'c'],
-            userAgentPackageName: 'com.example.internet_measurement_games_app',
+            userAgentPackageName: 'NetGague.Games',
             additionalOptions: const {
               'User-Agent': 'NetGauge Games Testing App',
             },
