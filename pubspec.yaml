@@ -118,6 +118,7 @@ flutter:
     - assets/ZombieApocalypse.html
     - assets/ScavengerHunt.html
     - assets/DragonSlayer.html
+    - assets/space_explorers_short.html
     - assets/icons/ability-icon.png
     - assets/icons/antidote-icon.png
     - assets/icons/attack-icon.png
@@ -165,6 +166,10 @@ flutter:
     - assets/icons/dragon_outline.png
     - assets/icons/soul_icon.png
     - assets/icons/zombie_outline.png
+    - assets/images/commander_mochi.png
+    - assets/images/cute_stars.gif
+    - assets/images/space_fuel.png
+    - assets/icons/alien_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
