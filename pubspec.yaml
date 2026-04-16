@@ -40,6 +40,8 @@ dependencies:
   # A/B/C testing dependencies
   flutter_riverpod: ^2.6.1
 
+  # beacon
+  flutter_beacon: ^0.5.1
 
   provider: ^6.0.0
 

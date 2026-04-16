@@ -10,6 +10,8 @@ import 'activity_logs.dart';
 // for Hive.initFlutter()
 import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_beacon/flutter_beacon.dart';
+import 'package:flutter/services.dart';
 
 // app initialization
 void main() async {
@@ -23,6 +25,17 @@ void main() async {
 
   final notificationSettings = await FirebaseMessaging.instance.requestPermission(provisional: true);
   final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+  // trying to initialize iBeacon when app is opened
+  try {
+    // if you want to manage manual checking about the required permissions
+    await flutterBeacon.initializeScanning;
+
+    // or if you want to include automatic checking permission
+    await flutterBeacon.initializeAndCheckScanning;
+  } on PlatformException catch(e) {
+    // library failed to initialize, check code and message
+  }
 
   runApp(
     ChangeNotifierProvider(
@@ -55,6 +68,7 @@ class MyApp extends StatelessWidget {
               Provider.of<UserDataProvider>(context, listen: false)
                   .fetchUserData();
             });
+
             return const HomePage();
           }
 
