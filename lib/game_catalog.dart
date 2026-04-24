@@ -123,6 +123,13 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     imagePath = game.imagePath;
   }
 
+  if (game.text == "Space Explorers") {
+    title = "Space Explorers";
+    content = "Testing this plz work!";
+    imagePath = game.imagePath;
+    gameURL = 'space_explorers_short.html';
+  }
+
 
   return showDialog(
     context: context,
