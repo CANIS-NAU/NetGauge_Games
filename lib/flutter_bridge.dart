@@ -13,6 +13,8 @@ import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
+import 'package:dart_geohash/dart_geohash.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 // data type for tracking location
 class LocationPoint {
@@ -74,6 +76,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
     debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
 
+
     // format data to send to firebase for this session
     final checkData = {
       'game': SessionManager.currentGame,
@@ -91,6 +94,7 @@ class _WebViewPageState extends State<WebViewPage> {
       'location_points': locationPoints.map((p) => {
         'latitude': p.latitude,
         'longitude': p.longitude,
+        'geohash': GeoFirePoint(GeoPoint(p.longitude, p.latitude)),
       }).toList(),
     };
     debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
@@ -300,7 +304,7 @@ class _WebViewPageState extends State<WebViewPage> {
             jitters: 0.0,
           );
           debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
-          measurements.add(measurement);
+          SessionManager.addMeasurement(measurement);
 
 
           // get user location
@@ -308,11 +312,16 @@ class _WebViewPageState extends State<WebViewPage> {
           LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
           locationPoints.add(point);
 
+          // convert point to geohash, this is for mapping points later
+          final GeoFirePoint geoFirePoint = GeoFirePoint(GeoPoint(point.longitude, point.latitude));
+          String hash = geoFirePoint.geohash;
+
           // upload data to firebase
           final checkData = {
             'game': SessionManager.currentGame,
             'latitude': loc.position.latitude,
             'longitude': loc.position.longitude,
+            'geohash': hash,
             'download_speed': download['speedMbps'],
             'upload_speed': upload['speedMbps'],
             'latency': download['latency'],
