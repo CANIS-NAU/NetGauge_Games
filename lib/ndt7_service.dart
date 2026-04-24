@@ -21,8 +21,8 @@ class NDT7Service {
         }
 
         final data = jsonDecode(response.body);
-        final urls = data['results'][0]['urls'];
-
+        //final urls = data['results'][0]['urls'];
+        final Map<String, dynamic> urls = data['results'][0]['urls'];
         String downloadUrl = urls['ws:///ndt/v7/download'];
         String uploadUrl = urls['ws:///ndt/v7/upload'];
 
@@ -30,7 +30,7 @@ class NDT7Service {
         downloadUrl = downloadUrl.replaceFirst('ws://', 'wss://');
         uploadUrl = uploadUrl.replaceFirst('ws://', 'wss://');
 
-        debugPrint('[NDT7] Download URL (secure): $downloadUrl');
+        debugPrint('[NDT71] Download URL (secure): $downloadUrl');
         debugPrint('[NDT7] Upload URL (secure): $uploadUrl');
 
         return {
@@ -46,12 +46,12 @@ class NDT7Service {
         // Run download test without callback
         final download = await runDownloadTest((status) {
             // Just print to console, no UI updates
-            print('[NDT7] $status');
+            print('[NDT71] $status');
         });
 
         // Run upload test without callback
         final upload = await runUploadTest((status) {
-            print('[NDT7] $status');
+            print('[NDT72] $status');
         });
 
         return {
