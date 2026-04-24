@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
     static void start() {
       // If no POIS are set, don't do anything
       if (SessionManager.poiList.isEmpty) {
+        //TODO: I'd like to figure out how to still use the vibration controller without POIs...
         debugPrint("[VIBRATION_CONTROLLER] No POIs detected. VibrationController not started");
         return;
       }else{

@@ -16,14 +16,6 @@ import 'package:uuid/uuid.dart';
 import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
-// data type for tracking location
-class LocationPoint {
-  final double longitude;
-  final double latitude;
-
-  LocationPoint({required this.longitude, required this.latitude});
-}
-
 // data type for measurements
 class InternetMeasurement {
   final double uploadSpeed;
@@ -37,9 +29,6 @@ class InternetMeasurement {
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
-
-// unique session ID for game
-var gameSessionID = Uuid().v4();
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
@@ -60,6 +49,7 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
+  bool poiListStatus = false;
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
   List<InternetMeasurement> measurements = [];
@@ -82,7 +72,7 @@ class _WebViewPageState extends State<WebViewPage> {
       'game': SessionManager.currentGame,
       'start_time': startTime,
       'end_time': endTime,
-      'session_id': gameSessionID,
+      'session_id': SessionManager.sessionId,
       'vpn_used' : vpn_status,
       'session_distance': distanceTraveled,
       'collected_measurements': measurements.map((p) => {
@@ -116,7 +106,7 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   void initState() {
     super.initState();
-
+    SessionManager.startGame(widget.title);
     SessionManager.onWebViewClose = endGameSession;
 
     // create parameters for the platform-specific WebView controller
@@ -255,6 +245,12 @@ class _WebViewPageState extends State<WebViewPage> {
           PoiListGenerator poiGenerator = PoiListGenerator();
           final poiList = await poiGenerator.generatePOIList(5);
 
+          // checks to see if there are POIs around
+          if(poiList.isNotEmpty) {
+            // if POIs were found, update the global status
+            poiListStatus = true;
+          }
+
           debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
           // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
 
@@ -326,7 +322,7 @@ class _WebViewPageState extends State<WebViewPage> {
             'upload_speed': upload['speedMbps'],
             'latency': download['latency'],
             'timestamp': FieldValue.serverTimestamp(),
-            'session_id': gameSessionID,
+            'session_id': SessionManager.sessionId,
             'vpn_used' : vpn_status,
           };
 
@@ -463,6 +459,25 @@ class _WebViewPageState extends State<WebViewPage> {
         .add(payload);
   }
 
+  // replaces the checkPOI function in the event that there are no POIs near the player
+  Future<void> noPOICheck() async {
+    bool collected = false;
+    // get the current distance traveled by the player in the game
+    LocationPoint firstTracked = SessionManager.sessionLocationPoints[0];
+    LocationPoint mostRecentTracked = SessionManager.sessionLocationPoints.last;
+    double currentDist = Geolocator.distanceBetween(firstTracked.latitude, firstTracked.longitude,
+        mostRecentTracked.latitude, mostRecentTracked.longitude);
+
+    // goal is to get player to move around enough to "get a POI"
+    // if the distance is larger than X, return true.
+    // TODO: Check what the best distance for this would be
+    if(currentDist > 5) {
+      collected = true;
+    }
+    final resultJson = jsonEncode({'collected': collected});
+    controller.runJavaScript("window.onPOICheck($resultJson)");
+  }
+
   // Check if the player can collect a POI and return true/false to JS
   Future<void> checkPOI() async {
     // grab players current position
@@ -470,42 +485,50 @@ class _WebViewPageState extends State<WebViewPage> {
     LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
     locationPoints.add(point);
 
-    // grab the current poi list in the session manager
-    final poiList = SessionManager.poiList;
-    debugPrint("[FLUTTER_BRIDGE]: Printing off POI list in checkPOI...");
-    debugPrint("[FLUTTER_BRIDGE]: POI List: $poiList");
+    // if no POIs were previously found
+    if(poiListStatus == false) {
+      // break out of this function, check other function
+      debugPrint("[FLUTTER_BRIDGE] No POIs found in area...moving on...");
+      noPOICheck();
+    }
+    else {
+      // grab the current poi list in the session manager
+      final poiList = SessionManager.poiList;
+      debugPrint("[FLUTTER_BRIDGE]: Printing off POI list in checkPOI...");
+      debugPrint("[FLUTTER_BRIDGE]: POI List: $poiList");
 
-    // create a variable to store the index of the poi to be removed if it exists
-    int indexToRemove = -1;
+      // create a variable to store the index of the poi to be removed if it exists
+      int indexToRemove = -1;
 
-    // iterate over PoIs and determine if one is within collection vicinity
-    for (int i = 0; i < poiList.length; i++) {
-      final poi = poiList[i];
-      final distance = Geolocator.distanceBetween(loc.position.latitude,
-          loc.position.longitude, poi.latitude!, poi.longitude!);
+      // iterate over PoIs and determine if one is within collection vicinity
+      for (int i = 0; i < poiList.length; i++) {
+        final poi = poiList[i];
+        final distance = Geolocator.distanceBetween(loc.position.latitude,
+            loc.position.longitude, poi.latitude!, poi.longitude!);
 
-      // a poi can be collected within 10 meters of the player
-      if (distance <= 7) {
-        indexToRemove = i;
-        break;
+        // a poi can be collected within 10 meters of the player
+        if (distance <= 7) {
+          indexToRemove = i;
+          break;
+        }
       }
+
+      // use a boolean to track if a poi has been found or not
+      final bool collected = indexToRemove != -1;
+
+      // if a poi was collected, remove it from the list
+      if (collected) {
+        SessionManager.poiList.removeAt(indexToRemove);
+        debugPrint("[CHECKPOI] POI collected at index $indexToRemove");
+        debugPrint("[CHECKPOI] Updated POI list: ${SessionManager.poiList}");
+      } else {
+        debugPrint("[CHECKPOI] No POI within range.");
+      }
+
+      // send results back to JS
+      final resultJson = jsonEncode({'collected': collected});
+      controller.runJavaScript("window.onPOICheck($resultJson)");
     }
-
-    // use a boolean to track if a poi has been found or not
-    final bool collected = indexToRemove != -1;
-
-    // if a poi was collected, remove it from the list
-    if (collected) {
-      SessionManager.poiList.removeAt(indexToRemove);
-      debugPrint("[CHECKPOI] POI collected at index $indexToRemove");
-      debugPrint("[CHECKPOI] Updated POI list: ${SessionManager.poiList}");
-    } else {
-      debugPrint("[CHECKPOI] No POI within range.");
-    }
-
-    // send results back to JS
-    final resultJson = jsonEncode({'collected': collected});
-    controller.runJavaScript("window.onPOICheck($resultJson)");
   }
 
   // Callback function to perform hint generation

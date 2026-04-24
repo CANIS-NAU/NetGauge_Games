@@ -6,7 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'flutter_bridge.dart';
 import 'poi_generator.dart';
-
+import 'user_data_manager.dart';
+import 'package:uuid/uuid.dart';
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
@@ -14,6 +15,8 @@ class SessionManager {
   //static String? _playerName;
   static String? _currentGame;
   static List<PointOfInterest> _poiList = [];
+  // TODO: Add a global list of location points
+  static List<LocationPoint> sessionLocationPoints = [];
   // keeps track of when the game screen closes
   static Future<void> Function()? onWebViewClose;
   static List<InternetMeasurement> _measurements = [];
@@ -26,8 +29,10 @@ class SessionManager {
   static List<PointOfInterest> get poiList => _poiList;
 
   // sets the session ID
-  static void setSessionId(String id) {
-    _sessionId = id;
+  static void setSessionId() {
+    // unique session ID for game
+    var gameSessionID = Uuid().v4();
+    _sessionId = gameSessionID;
   }
 
  /* // stores the nickname of the current player
@@ -35,10 +40,15 @@ class SessionManager {
     _playerName = name;
     debugPrint('[SESSION_MANAGER] Player name set to $_playerName');
   }*/
+  // TODO: Calculates distance traveled between collected locations
+  static Future<void> calculateLocationDistance() async {
+
+  }
 
   // updates current game when game is started
   static void startGame(String gameTitle){
     _currentGame = gameTitle;
+    setSessionId();
     debugPrint('[SESSION_MANAGER] Game started: $_currentGame');
   }
 
