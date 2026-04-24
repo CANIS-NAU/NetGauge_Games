@@ -42,7 +42,7 @@ class CommunityStatistics extends StatelessWidget {
               child:
               Text(
                   'Total Points Collected: ${userData.measurementsTaken} \n'
-                      'Total Distance Traveled: ${userData.totalDistanceTraveled} \n'
+                      'Total Distance Traveled: ${userData.totalDistanceTraveled}.toStringAsFixed(2) \n'
                       'Total Radius of Gyration: ${userData.totalRadiusGyration}',
                   textAlign: TextAlign.start,
                   style: const TextStyle(

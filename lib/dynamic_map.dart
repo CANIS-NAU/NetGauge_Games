@@ -10,6 +10,7 @@ import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
+import 'package:dart_geohash/dart_geohash.dart';
 
 // Data Point Class
 class DataPoint {
@@ -54,12 +55,9 @@ class DataPoint {
   }
 }
 
-// radius-based stream for gathering points from firestore
-final GeoCollectionReference<Map<String, dynamic>> geoCollection =
-GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('data_points'));
-
 // Filtered stream to only show current user's points
-Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm, String userEmail) {
+Stream<List<firestore.DocumentSnapshot>> getPointsStream(LatLng center, double radiusKm,
+    String userEmail, GeoCollectionReference geoCollection) {
   return geoCollection.subscribeWithin(
     center: GeoFirePoint(firestore.GeoPoint(center.latitude, center.longitude)),
     radiusInKm: radiusKm,
@@ -96,7 +94,11 @@ class _DynamicMapState extends State<DynamicMap> {
     const LatLng center = LatLng(35.1861, -111.6583);
     const double radiusKm = 5000.0; // Large radius for testing
 
-    _streamSubscription = getPointsStream(center, radiusKm, userData.email).listen((docs) async {
+    // radius-based stream for gathering points from firestore
+    final GeoCollectionReference<Map<String, dynamic>> geoCollection =
+    GeoCollectionReference(firestore.FirebaseFirestore.instance.collection('measurements').doc(userData.email).collection('collected_measurements'));
+    
+    _streamSubscription = getPointsStream(center, radiusKm, userData.email, geoCollection).listen((docs) async {
       debugPrint("[DYNAMIC_MAP]: Received ${docs.length} documents from Firestore.");
       
       final points = docs
@@ -149,7 +151,6 @@ class _DynamicMapState extends State<DynamicMap> {
 
   @override
   Widget build(BuildContext context) {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
     
     return Scaffold(
       appBar: AppBar(

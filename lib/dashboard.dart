@@ -45,8 +45,8 @@ class PlayerStatistics extends StatelessWidget {
               child:
               Text(
                   'Total Points Collected: ${userData.measurementsTaken} \n'
-                      'Total Distance Traveled: ${userData.totalDistanceTraveled} \n'
-                      'Total Radius of Gyration: ${userData.totalRadiusGyration}',
+                      'Total Distance Traveled: ${userData.totalDistanceTraveled}.toStringAsFixed(2) \n'
+                      'Total Radius of Gyration: ${userData.totalRadiusGyration}.toStringAsFixed(2)',
                   textAlign: TextAlign.start,
                   style: const TextStyle(
                       fontWeight: FontWeight.w600,
