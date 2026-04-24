@@ -119,6 +119,14 @@ class DataPoint {
   }
 }
 
+// data type for tracking location
+class LocationPoint {
+  final double longitude;
+  final double latitude;
+
+  LocationPoint({required this.longitude, required this.latitude});
+}
+
 class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? _userData;
@@ -136,8 +144,7 @@ class UserDataProvider extends ChangeNotifier {
   bool get getDemographicStatus => (_userData?['demographics_taken'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
-  
-  // FIXED: Using .toDouble() to handle 'int' vs 'double' from Firestore
+
   double get totalDistanceTraveled => (_userData?['distanceTraveled'] as num?)?.toDouble() ?? 0.0;
   
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;

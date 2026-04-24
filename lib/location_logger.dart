@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'user_data_manager.dart';
 
 // class that manages logging of persistent location data to firestore
 class LocationLogger {
@@ -14,14 +15,18 @@ class LocationLogger {
     LocationDispatcher.stream.listen((Position pos) async {
       _writeCount++;
 
-      /*debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
+      debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");
       debugPrint("[LOCATION_LOGGER] Current game: ${SessionManager.currentGame}");
       //debugPrint("[LOCATION_LOGGER] Player name: ${SessionManager.playerName}");
-      debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}"); */
+      debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
 
       // only writing every 5th location update and only if a game is being played and a player has been declared
       if (_writeCount % 5 == 0 && (SessionManager.currentGame != null)) {
-        debugPrint("[LOCATION_LOGGER] Writing location data to Firestore...");
+        LocationPoint currentPoint = LocationPoint(longitude: (pos.longitude), latitude: pos.latitude);
+        debugPrint("[LOCATION_LOGGER] Adding point to list: $currentPoint");
+        SessionManager.sessionLocationPoints.add(currentPoint);
+
+        /*debugPrint("[LOCATION_LOGGER] Writing location data to Firestore...");
 
         // get instance of user data
         
@@ -55,11 +60,10 @@ class LocationLogger {
             'geopoint': geoPoint.geopoint,
             'geohash': geoPoint.geohash
             //'player': SessionManager.playerName,
-          });
-        debugPrint("[LOCATION_LOGGER] Location Logged successfully to session: $sessionId");
+          });*/
       } else {
         debugPrint("[LOCATION_LOGGER] Skipped Location Logging");
-        debugPrint("[LOCATION_LOGGER] Game: ${SessionManager.currentGame}");
+        debugPrint("[LOCATION_LOGGER] Game where skipped: ${SessionManager.currentGame}");
         //debugPrint("[LOCATION_LOGGER] Name: ${SessionManager.playerName}");
         //debugPrint("[LOCATION_LOGGER] Session ID: ${SessionManager.sessionId}");
       }
