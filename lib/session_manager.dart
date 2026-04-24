@@ -16,6 +16,9 @@ class SessionManager {
   static List<PointOfInterest> _poiList = [];
   // keeps track of when the game screen closes
   static Future<void> Function()? onWebViewClose;
+  static List<InternetMeasurement> _measurements = [];
+  static List<InternetMeasurement> get measurements => _measurements;
+  static void addMeasurement(InternetMeasurement m) => _measurements.add(m);
 
   static String? get sessionId => _sessionId;
  // static String? get playerName => _playerName;
