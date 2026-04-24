@@ -31,6 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # app icon and splash screen
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.7
+
+
   # Enables NDT7 Client to open WebSockets and measure network throughput
   web_socket_channel: ^2.4.0
   collection: ^1.18.0 # For data smoothing
@@ -89,7 +94,6 @@ dependencies:
   http: any
   firebase_remote_config: ^5.5.0
   firebase_messaging: ^15.2.10
-  flutter_native_splash: ^2.4.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -103,6 +107,14 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/netgauge_logo1.png"
+  # Optional: For Android adaptive icons
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icons/netgauge_logo1.png"
 
 # The following section is specific to Flutter packages.
 flutter:
