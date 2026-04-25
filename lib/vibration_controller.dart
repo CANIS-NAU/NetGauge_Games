@@ -4,6 +4,7 @@ import 'package:vibration/vibration.dart';
 import 'location_service.dart';
 import 'session_manager.dart';
 import 'package:flutter/material.dart';
+import 'user_data_manager.dart';
 
 // controls incremental vibration in games that require searching for POIs
 
@@ -18,9 +19,8 @@ import 'package:flutter/material.dart';
     static void start() {
       // If no POIS are set, don't do anything
       if (SessionManager.poiList.isEmpty) {
-        //TODO: I'd like to figure out how to still use the vibration controller without POIs...
-        debugPrint("[VIBRATION_CONTROLLER] No POIs detected. VibrationController not started");
-        return;
+        debugPrint("[VIBRATION_CONTROLLER] No POIs detected. Using backup vibration controller.");
+        startNoPOIs();
       }else{
         debugPrint("[VIBRATION_CONTROLLER] Vibration manager started");
       }
@@ -28,7 +28,7 @@ import 'package:flutter/material.dart';
       // subscribe to location stream
       _locationSub = LocationDispatcher.stream.listen((Position position) async {
         // If no game is set or the poi list ends up empty, terminate vibration
-        if(SessionManager.currentGame == null || SessionManager.poiList.isEmpty) {
+        if(SessionManager.currentGame == null) {
           stop();
           return;
         }
@@ -65,6 +65,46 @@ import 'package:flutter/material.dart';
       });
 
       debugPrint("[VIBRATION_CONTROLLER] VibrationController started");
+    }
+
+    static void startNoPOIs() {
+      _locationSub = LocationDispatcher.stream.listen((Position position) async {
+        // If no game is set
+        // TODO: This is getting called when games are played because they for some reason are listed as null. Fix.
+        if(SessionManager.currentGame == null) {
+          stop();
+          return;
+        }
+
+        // get current distance traveled
+        LocationPoint firstTracked = SessionManager.sessionLocationPoints[0];
+        LocationPoint mostRecentTracked = SessionManager.sessionLocationPoints.last;
+        double currentDist = Geolocator.distanceBetween(firstTracked.latitude, firstTracked.longitude,
+            mostRecentTracked.latitude, mostRecentTracked.longitude);
+
+        // handle failure to grab the current distance traveled
+        if (currentDist == null) return;
+
+        // TODO: Increase this for actual deployment, keeping small for testing
+        const distance = 5.0;
+
+        // determine delay between vibration pulses based on distance to nearest poi
+        final delay = _getDelayForDistance(distance);
+
+        // terminate vibration if player is too far from any poi
+        if(delay == null) {
+          _vibrationTimer?.cancel();
+          return;
+        }
+
+        // reset vibration timer
+        _vibrationTimer?.cancel();
+        _vibrationTimer = Timer.periodic(delay, (_) async {
+          if(await Vibration.hasVibrator()) {
+            Vibration.vibrate(duration: 100);
+          }
+        });
+      });
     }
 
     // function to stop the vibration service

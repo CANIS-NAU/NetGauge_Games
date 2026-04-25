@@ -29,6 +29,7 @@ class InternetMeasurement {
 
 //vars for mapping
 final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
+LocationPoint lastPOILocation = SessionManager.sessionLocationPoints[0];
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
@@ -463,16 +464,18 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<void> noPOICheck() async {
     bool collected = false;
     // get the current distance traveled by the player in the game
-    LocationPoint firstTracked = SessionManager.sessionLocationPoints[0];
-    LocationPoint mostRecentTracked = SessionManager.sessionLocationPoints.last;
-    double currentDist = Geolocator.distanceBetween(firstTracked.latitude, firstTracked.longitude,
-        mostRecentTracked.latitude, mostRecentTracked.longitude);
+    LocationPoint lastTrackedLocation = SessionManager.sessionLocationPoints.last;
+    double currentDist = Geolocator.distanceBetween(lastPOILocation.latitude, lastPOILocation.longitude,
+        lastTrackedLocation.latitude, lastTrackedLocation.longitude);
 
     // goal is to get player to move around enough to "get a POI"
-    // if the distance is larger than X, return true.
+    // if the distance is greater than 5 (we can change this check later)
     // TODO: Check what the best distance for this would be
     if(currentDist > 5) {
       collected = true;
+      // set lastPOILocation to current user location
+      final loc = await determineLocationData();
+      lastPOILocation = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
     }
     final resultJson = jsonEncode({'collected': collected});
     controller.runJavaScript("window.onPOICheck($resultJson)");
@@ -537,44 +540,58 @@ class _WebViewPageState extends State<WebViewPage> {
     final loc = await determineLocationData();
     LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
     locationPoints.add(point);
-
     final userPos = loc.position;
-    final heading = loc.heading;
+    // default if hint cannot be calculated
+    String hint = "ERROR: Unable to give you a hint at this time. Try again.";
 
-    // verify that a heading was received
-    if (heading == null) {
-      controller.runJavaScript(
-          "window.onHint(JSON.stringify({hint: 'No compass available'}));");
-      return;
+    // if there are no POIs
+    if(poiListStatus == false) {
+      // get distance traveled between last tracked POI and user
+      double currentDist = Geolocator.distanceBetween(lastPOILocation.latitude, lastPOILocation.longitude,
+          userPos.latitude, userPos.longitude);
+      double distRemaining = 5 - currentDist;
+      // re-assign hint
+      hint = "Keep going! You need to travel ${distRemaining.round()} meters further!";
     }
 
-    // get the nearest POI
-    final nearestPOI = SessionManager.getNearestPOI(userPos);
-    // verify POI exists
-    if (nearestPOI == null) {
-      controller.runJavaScript(
-          "window.onHint(JSON.stringify({hint: 'No POIs available'}));");
-      return;
-    }
+    else {
+      final heading = loc.heading;
+      // verify that a heading was received
+      if (heading == null) {
+        controller.runJavaScript(
+            "window.onHint(JSON.stringify({hint: 'No compass available'}));");
+        return;
+      }
 
-    // calculate bearing from user to POI
-    final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
-        userPos.longitude, nearestPOI.latitude!, nearestPOI.longitude!);
+      // get the nearest POI
+      final nearestPOI = SessionManager.getNearestPOI(userPos);
+      // verify POI exists
+      if (nearestPOI == null) {
+        controller.runJavaScript(
+            "window.onHint(JSON.stringify({hint: 'No POIs available'}));");
+        return;
+      }
 
-    // Normalize and compare to user heading
-    double relativeBearing = (bearingToPOI - heading) % 360;
-    if (relativeBearing < 0) relativeBearing += 360;
+      // calculate bearing from user to POI
+      final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
+          userPos.longitude, nearestPOI.latitude!, nearestPOI.longitude!);
 
-    // produce a hint based on the relative bearing
-    String hint;
-    if (relativeBearing >= 330 || relativeBearing < 30) {
-      hint = "in front of you";
-    } else if (relativeBearing >= 30 && relativeBearing < 150) {
-      hint = "to your right";
-    } else if (relativeBearing >= 150 && relativeBearing < 210) {
-      hint = "behind you";
-    } else {
-      hint = "to your left";
+      // Normalize and compare to user heading
+      double relativeBearing = (bearingToPOI - heading) % 360;
+      if (relativeBearing < 0) relativeBearing += 360;
+
+      // produce a hint based on the relative bearing
+      String hint;
+      if (relativeBearing >= 330 || relativeBearing < 30) {
+        hint = "in front of you";
+      } else if (relativeBearing >= 30 && relativeBearing < 150) {
+        hint = "to your right";
+      } else if (relativeBearing >= 150 && relativeBearing < 210) {
+        hint = "behind you";
+      } else {
+        hint = "to your left";
+      }
+
     }
 
     // send the hint back to the game
