@@ -8,6 +8,7 @@ import 'flutter_bridge.dart';
 import 'poi_generator.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
+import 'vibration_controller.dart';
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
@@ -58,6 +59,7 @@ class SessionManager {
 
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();
+    VibrationController.stop();
 
     _currentGame = null;
     debugPrint('[SESSION_MANAGER] Session cleared.');

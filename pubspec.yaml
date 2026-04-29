@@ -115,6 +115,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/constellation_quest.html
     - assets/SoulSeeker.html
     - assets/ZombieApocalypse.html
     - assets/ScavengerHunt.html
@@ -159,11 +160,16 @@ flutter:
     - assets/images/underwater_cave_mouth.png
     - assets/images/underwater_skeletal_pirate.png
     - assets/images/wasteland.png
+    - assets/images/talking_star.gif
+    - assets/images/callico_star.png
+    - assets/images/formed_constellation1.png
+    - assets/images/mustache_star.png
     - assets/sounds/zombieSound1.mp3
     - assets/sounds/zombieSound2.mp3
     - assets/sounds/zombieSound3.mp3
     - assets/sounds/zombieSound4.mp3
     - assets/icons/game_controller.png
+    - assets/icons/constellation_quest_icon.png
     - assets/icons/dragon_outline.png
     - assets/icons/soul_icon.png
     - assets/icons/zombie_outline.png

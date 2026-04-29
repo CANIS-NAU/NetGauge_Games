@@ -13,7 +13,7 @@ import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
-import 'package:dart_geohash/dart_geohash.dart';
+//import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 // data type for measurements
