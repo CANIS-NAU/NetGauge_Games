@@ -57,6 +57,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
   Future<void> endGameSession() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+    VibrationController.stop();
     bool vpn_status = userData.vpnStatus;
     // calculate total distance traveled
     double distanceTraveled = calculateDistance(locationPoints);
@@ -148,6 +149,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
+    VibrationController.stop();
     // Unplug the bridge to prevent memory leaks or crashes
     SessionManager.onWebViewClose = null;
     super.dispose();

@@ -165,7 +165,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(10.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -202,11 +202,11 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   fixedSize: const Size(500, 25),
-                  //backgroundColor: Colors.deepPurple,
+                  backgroundColor: Colors.amberAccent,
                   foregroundColor: Colors.black,
                   textStyle: const TextStyle(
                       fontSize: 20,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: FontWeight.w800,
                   )
                 ),
                 child: const Text("Expand Player Statistics"),
@@ -248,8 +248,8 @@ class _HomePageState extends State<HomePage> {
                     userLocationMarker: UserLocationMaker(
                       personMarker: const MarkerIcon(
                         icon: Icon(
-                          Icons.location_history_rounded,
-                          color: Colors.red,
+                          Icons.location_pin,
+                          color: Colors.deepPurpleAccent,
                           size: 48,
                         ),
                       ),
@@ -283,17 +283,16 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     fixedSize: const Size(500, 25),
-                    //backgroundColor: Colors.deepPurple,
+                    backgroundColor: Colors.amberAccent,
                     foregroundColor: Colors.black,
                     textStyle: const TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.w400,
+                      fontWeight: FontWeight.w800,
                     )
                 ),
                 child: const Text("Expand Map"),
                 //TODO: Nice-to-have-->add a trailing expand icon here
               ),
-              const SizedBox(height: 10),
               // Utility buttons
               GridView.builder(
                 shrinkWrap: true,

@@ -17,54 +17,55 @@ import 'user_data_manager.dart';
     static Timer? _vibrationTimer;
 
     static void start() {
+      stop();
       // If no POIS are set, don't do anything
       if (SessionManager.poiList.isEmpty) {
         debugPrint("[VIBRATION_CONTROLLER] No POIs detected. Using backup vibration controller.");
         startNoPOIs();
       }else{
         debugPrint("[VIBRATION_CONTROLLER] Vibration manager started");
-      }
 
-      // subscribe to location stream
-      _locationSub = LocationDispatcher.stream.listen((Position position) async {
-        // If no game is set or the poi list ends up empty, terminate vibration
-        if(SessionManager.currentGame == null) {
-          stop();
-          return;
-        }
-
-        // get POI nearest the player current position
-        final nearest = SessionManager.getNearestPOI(position);
-        // handle failure to grab the location
-        if (nearest == null) return;
-
-        // compute the distance between the the player pos and the nearest poi
-        final distance = Geolocator.distanceBetween(
-          position.latitude,
-          position.longitude,
-          nearest.latitude!,
-          nearest.longitude!
-        );
-
-        // determine delay between vibration pulses based on distance to nearest poi
-        final delay = _getDelayForDistance(distance);
-
-        // terminate vibration if player is too far from any poi
-        if(delay == null) {
-          _vibrationTimer?.cancel();
-          return;
-        }
-
-        // reset vibration timer
-        _vibrationTimer?.cancel();
-        _vibrationTimer = Timer.periodic(delay, (_) async {
-          if(await Vibration.hasVibrator()) {
-            Vibration.vibrate(duration: 100);
+        // subscribe to location stream
+        _locationSub = LocationDispatcher.stream.listen((Position position) async {
+          // If no game is set or the poi list ends up empty, terminate vibration
+          if(SessionManager.currentGame == null) {
+            stop();
+            return;
           }
-        });
-      });
 
-      debugPrint("[VIBRATION_CONTROLLER] VibrationController started");
+          // get POI nearest the player current position
+          final nearest = SessionManager.getNearestPOI(position);
+          // handle failure to grab the location
+          if (nearest == null) return;
+
+          // compute the distance between the the player pos and the nearest poi
+          final distance = Geolocator.distanceBetween(
+              position.latitude,
+              position.longitude,
+              nearest.latitude!,
+              nearest.longitude!
+          );
+
+          // determine delay between vibration pulses based on distance to nearest poi
+          final delay = _getDelayForDistance(distance);
+
+          // terminate vibration if player is too far from any poi
+          if(delay == null) {
+            _vibrationTimer?.cancel();
+            return;
+          }
+
+          // reset vibration timer
+          _vibrationTimer?.cancel();
+          _vibrationTimer = Timer.periodic(delay, (_) async {
+            if(await Vibration.hasVibrator()) {
+              Vibration.vibrate(duration: 100);
+            }
+          });
+        });
+
+        debugPrint("[VIBRATION_CONTROLLER] VibrationController started");
+      }
     }
 
     static void startNoPOIs() {
