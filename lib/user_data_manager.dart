@@ -31,6 +31,7 @@ final List<GameData> games = [
   GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
   GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
   GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
+  GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
 ];
 
 class SessionData {

@@ -53,14 +53,14 @@ class AppButtons extends StatelessWidget {
               if (imagePath != null)
                 Image.asset(
                   imagePath!,
-                  width: iconSize ?? 24,
-                  height: iconSize ?? 24,
+                  width: iconSize ?? 0.25,
+                  height: iconSize ?? 0.25,
                 )
               else if (icon != null)
                 Icon(
                   icon,
                   color: textColor,
-                  size: iconSize ?? 24,
+                  size: iconSize ?? 0.25,
                 ),
               const SizedBox(height: 8),
               Text(

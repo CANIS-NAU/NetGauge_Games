@@ -130,6 +130,13 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     gameURL = 'space_explorers_short.html';
   }
 
+  if (game.text == "Constellation Quest") {
+    title = "Constellation Quest";
+    content = "Testing this plz work!";
+    imagePath = game.imagePath;
+    gameURL = 'constellation_quest.html';
+  }
+
 
   return showDialog(
     context: context,
