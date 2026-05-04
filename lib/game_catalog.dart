@@ -113,8 +113,8 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
   }
   if (game.text == "Scavenger Hunt") {
     title = "Scavenger Hunt";
-    content = "Look for points of interest in your area!";
-    gameURL = 'ScavengerHunt.html';
+    content = "Search for pictures and fun facts!";
+    gameURL = 'hozhoni_scavenger_hunt.html';
     imagePath = game.imagePath;
   }
   if (game.text == "Measure Internet") {
