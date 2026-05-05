@@ -88,13 +88,9 @@ class _DynamicMapState extends State<DynamicMap> {
 
   void _initDataStream() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    const LatLng center = LatLng(35.1861, -111.6583);
-    const double radiusKm = 5000.0; // Large radius for finding points
 
-    debugPrint("MAPS: Querying email: '${userData.email}'");
-    
     if (userData.email.isEmpty) {
-      debugPrint("MAPS ERROR: User email is empty. Cannot load markers.");
+      debugPrint("MAPS ERROR: User email is empty.");
       return;
     }
 
@@ -103,13 +99,11 @@ class _DynamicMapState extends State<DynamicMap> {
         .doc(userData.email)
         .collection('collected_measurements');
 
-    final geoCollection = GeoCollectionReference(collectionRef);
+    _streamSubscription = collectionRef.snapshots().listen(
+          (snapshot) async {
+        debugPrint("[DYNAMIC_MAP]: Received ${snapshot.docs.length} documents.");
 
-    _streamSubscription = getPointsStream(center, radiusKm, geoCollection).listen(
-      (docs) async {
-        debugPrint("[DYNAMIC_MAP]: Received ${docs.length} documents from Firestore.");
-        
-        final points = docs
+        final points = snapshot.docs
             .map((doc) => DataPoint.fromFirestore(doc))
             .toList();
 
@@ -120,9 +114,7 @@ class _DynamicMapState extends State<DynamicMap> {
         }
         await _updateMapMarkers(points);
       },
-      onError: (e) {
-        debugPrint("STREAM ERROR IN MAP: $e");
-      }
+      onError: (e) => debugPrint("STREAM ERROR IN MAP: $e"),
     );
   }
 
@@ -191,8 +183,11 @@ class _DynamicMapState extends State<DynamicMap> {
         ),
         onGeoPointClicked: (point) {
           try {
+            bool _approxEqual(double a, double b) => (a - b).abs() < 0.00001;
+
             final clickedDp = _displayedPoints.firstWhere(
-              (dp) => dp.point.latitude == point.latitude && dp.point.longitude == point.longitude,
+                  (dp) => _approxEqual(dp.point.latitude, point.latitude) &&
+                  _approxEqual(dp.point.longitude, point.longitude),
             );
 
             showDialog(
