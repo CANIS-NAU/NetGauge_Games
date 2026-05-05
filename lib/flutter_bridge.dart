@@ -15,21 +15,13 @@ import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 //import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'session_manager.dart';
 
-// data type for measurements
-class InternetMeasurement {
-  final double uploadSpeed;
-  final double downloadSpeed;
-  final double jitters;
-  final double latency;
 
-  InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
-  required this.jitters, required this.latency});
-}
 
 //vars for mapping
-final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 LocationPoint lastPOILocation = SessionManager.sessionLocationPoints[0];
+
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
@@ -54,63 +46,17 @@ class _WebViewPageState extends State<WebViewPage> {
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
   List<InternetMeasurement> measurements = [];
-
-  Future<void> endGameSession() async {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
-    VibrationController.stop();
-    bool vpn_status = userData.vpnStatus;
-    // calculate total distance traveled
-    double distanceTraveled = calculateDistance(locationPoints);
-    // update user data on record
-    userData.updateDistanceTraveled(distanceTraveled);
-    DateTime endTime = DateTime.now();
-    debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
-
-    debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
-
-
-    // format data to send to firebase for this session
-    final checkData = {
-      'game': SessionManager.currentGame,
-      'start_time': startTime,
-      'end_time': endTime,
-      'session_id': SessionManager.sessionId,
-      'vpn_used' : vpn_status,
-      'session_distance': distanceTraveled,
-      'collected_measurements': measurements.map((p) => {
-        'upload_speed': p.uploadSpeed,
-        'download_speed': p.downloadSpeed,
-        'latency': p.latency,
-        'jitters': p.jitters
-      }).toList(),
-      'location_points': locationPoints.map((p) => {
-        'latitude': p.latitude,
-        'longitude': p.longitude,
-        'geohash': GeoFirePoint(GeoPoint(p.longitude, p.latitude)),
-      }).toList(),
-    };
-    debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
-
-    // send to firebase
-    try {
-      debugPrint("Attempting to write to Firestore...");
-      await FirebaseFirestore.instance
-          .collection('measurements')
-          .doc(userData.email)
-          .collection('sessions')
-          .add(checkData);
-      debugPrint("Write successful!");
-    } catch (e) {
-      debugPrint("Firestore Error: $e");
-    }
-  }
+  final NDT7Service _ndt7Service = NDT7Service();
+  DateTime? _lastMeasurementTime;
 
   @override
   void initState() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    String userEmail = userData.email;
+
     super.initState();
     SessionManager.startGame(widget.title);
-    SessionManager.onWebViewClose = endGameSession;
-
+    SessionManager.onWebViewClose = () async => await SessionManager.saveCurrentSession(userData.email, userData);
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
         PlatformWebViewControllerCreationParams();
@@ -149,8 +95,10 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
-    VibrationController.stop();
-    // Unplug the bridge to prevent memory leaks or crashes
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    SessionManager.saveCurrentSession(userData.email, userData).then((_) {
+      userData.fetchUserData();
+    });
     SessionManager.onWebViewClose = null;
     super.dispose();
   }
@@ -235,7 +183,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // case for when game is complete
         case 'endGameSession':
-          endGameSession();
+          await SessionManager.saveCurrentSession(userData.email, userData);
+          await userData.fetchUserData();
           break;
 
         /*case 'publishPlayerName':
@@ -290,62 +239,69 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // collects internet measurements, sends back to game
         case 'getInternetMeasurement':
-          debugPrint("[FLUTTER_BRIDGE]: Calling getInternetMeasurement");
-          // call NDT7-client
-          final service = NDT7Service();
-          final download = await service.runDownloadTest((status) {});
-          final upload = await service.runUploadTest((status) {});
-
-          InternetMeasurement measurement = InternetMeasurement(
-            uploadSpeed:  upload['speedMbps'],
-            downloadSpeed: download['speedMbps'],
-            latency: download['latency'],
-            jitters: 0.0,
-          );
-          debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
-          SessionManager.addMeasurement(measurement);
-
-
-          // get user location
-          final loc = await determineLocationData();
-          LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
-          locationPoints.add(point);
-
-          // convert point to geohash, this is for mapping points later
-          final GeoFirePoint geoFirePoint = GeoFirePoint(GeoPoint(point.longitude, point.latitude));
-          String hash = geoFirePoint.geohash;
-
-          // upload data to firebase
-          final checkData = {
-            'game': SessionManager.currentGame,
-            'latitude': loc.position.latitude,
-            'longitude': loc.position.longitude,
-            'geohash': hash,
-            'download_speed': download['speedMbps'],
-            'upload_speed': upload['speedMbps'],
-            'latency': download['latency'],
-            'timestamp': FieldValue.serverTimestamp(),
-            'session_id': SessionManager.sessionId,
-            'vpn_used' : vpn_status,
-          };
-
-          try {
-            debugPrint("Attempting to write to Firestore...");
-            await FirebaseFirestore.instance
-                .collection('measurements')
-                .doc(userData.email)
-                .collection('collected_measurements')
-                .add(checkData);
-            debugPrint("Write successful!");
-          } catch (e) {
-            debugPrint("Firestore Error: $e");
+          final now = DateTime.now();
+          if (_lastMeasurementTime != null &&
+              now.difference(_lastMeasurementTime!).inSeconds < 30) {
+            debugPrint("[FLUTTER_BRIDGE] Measurement skipped — cooldown active.");
+            break;
           }
-          // TODO: Send data back to game (or should that be it's own case?)
-          /*
-          Currently, none of the games have logic based on internet measurement results. I am aware
-          that that is a long-term goal. I am wondering if it makes sense to have two separate cases:
-          one for just recording and one for retrieving?
-           */
+          _lastMeasurementTime = now;
+          try {
+            debugPrint("[FLUTTER_BRIDGE]: Calling getInternetMeasurement, recording speed.");
+            // call NDT7-client
+            final download = await _ndt7Service.runDownloadTest((status) {});
+            final upload = await _ndt7Service.runUploadTest((status) {});
+
+            InternetMeasurement measurement = InternetMeasurement(
+              uploadSpeed:  upload['speedMbps'],
+              downloadSpeed: download['speedMbps'],
+              latency: download['latency'],
+              jitters: 0.0,
+            );
+            debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
+            SessionManager.addMeasurement(measurement);
+
+
+
+            // get user location
+            final loc = await determineLocationData();
+            LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+            locationPoints.add(point);
+            SessionManager.sessionLocationPoints.add(point);
+
+            // convert point to geohash, this is for mapping points later
+            final GeoFirePoint geoFirePoint = GeoFirePoint(GeoPoint(point.longitude, point.latitude));
+            String hash = geoFirePoint.geohash;
+
+            // upload data to firebase
+            final checkData = {
+              'game': SessionManager.currentGame,
+              'latitude': loc.position.latitude,
+              'longitude': loc.position.longitude,
+              'geohash': hash,
+              'download_speed': download['speedMbps'],
+              'upload_speed': upload['speedMbps'],
+              'latency': download['latency'],
+              'timestamp': FieldValue.serverTimestamp(),
+              'session_id': SessionManager.sessionId,
+              'vpn_used' : vpn_status,
+            };
+
+            try {
+              debugPrint("Attempting to write to Firestore...");
+              await FirebaseFirestore.instance
+                  .collection('measurements')
+                  .doc(userData.email)
+                  .collection('collected_measurements')
+                  .add(checkData);
+              debugPrint("Write successful!");
+            } catch (e) {
+              debugPrint("Firestore Error: $e");
+            }
+
+          } catch (e) {
+          debugPrint("[FLUTTER_BRIDGE] Error in getInternetMeasurement: $e"); // ✅ visible errors
+        }
 
           break;
 
@@ -375,25 +331,10 @@ class _WebViewPageState extends State<WebViewPage> {
         "window.onLocationJSON(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   }
 
-  // take all location points, calculate distance traveled
-  double calculateDistance(List<LocationPoint> pointsVisited) {
-    double totalDistance = 0.0;
-    for(int point = 0; point < pointsVisited.length - 1; point++) {
-      double distanceBetween = Geolocator.distanceBetween(
-          pointsVisited[point].latitude,
-          pointsVisited[point].longitude,
-          pointsVisited[point + 1].latitude,
-          pointsVisited[point + 1].longitude);
-      totalDistance += distanceBetween;
-    }
-    debugPrint("[FLUTTER_BRIDGE] Session distance traveled: $totalDistance");
-    return totalDistance;
-  }
-
   // uses measureInternet() function to measure internet and send data to JS
   void grabMetrics() async{
     // use the NDT7 service to get the metrics
-    final results = await NDT7Service().runFullTest();
+    final results = await _ndt7Service.runFullTest();
     final json = jsonEncode(results);
 
 

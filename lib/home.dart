@@ -174,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                 color: Colors.white,
                 child:
                   Text(
-                      'Total Points Collected: ${userData.measurementsTaken} \n'
+                      'Total Points Collected: ${userData.totalPointsCollected} \n'
                           'Total Distance Traveled: ${userData.totalDistanceTraveled.toStringAsFixed(2)} \n'
                           'Total Radius of Gyration: ${userData.totalRadiusGyration}',
                       textAlign: TextAlign.start,

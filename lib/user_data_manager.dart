@@ -143,11 +143,12 @@ class UserDataProvider extends ChangeNotifier {
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
 
-  bool get getDemographicStatus => (_userData?['demographics_taken'] as bool?) ?? false;
+  bool get getDemographicStatus => (_userData?['demographicsSurveyTaken'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
 
-  double get totalDistanceTraveled => (_userData?['distanceTraveled'] as num?)?.toDouble() ?? 0.0;
+  double get totalDistanceTraveled => (_userData?['totalDistanceTraveled'] as num?)?.toDouble() ?? 0.0;
+  int get totalPointsCollected => (_userData?['totalPointsCollected'] as num?)?.toInt() ?? 0;
   
   int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
@@ -162,7 +163,7 @@ class UserDataProvider extends ChangeNotifier {
       return [];
     }
 
-    final rawFavorites = _userData!['favorite_games'];
+    final rawFavorites = _userData!['favoriteGames'];
     List<dynamic> favoriteNames;
     
     if (rawFavorites is List) {
@@ -188,7 +189,7 @@ class UserDataProvider extends ChangeNotifier {
       return;
     }
 
-    final rawFavorites = _userData!['favorite_games'];
+    final rawFavorites = _userData!['favoriteGames'];
     List<dynamic> currentFavorites = (rawFavorites is List) 
         ? List.from(rawFavorites) 
         : ['Zombie Apocalypse', 'Soul Seeker'];
@@ -199,16 +200,16 @@ class UserDataProvider extends ChangeNotifier {
       currentFavorites.add(gameName);
     }
 
-    _userData!['favorite_games'] = currentFavorites;
+    _userData!['favoriteGames'] = currentFavorites;
     notifyListeners();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
-            .collection('userData')
-            .doc(user.uid)
-            .update({'favorite_games': currentFavorites});
+            .collection('userAccountData')
+            .doc(user.email)
+            .update({'favoriteGames': currentFavorites});
         debugPrint('Favorites updated in Firestore');
       }
     } catch (e) {
@@ -242,14 +243,14 @@ class UserDataProvider extends ChangeNotifier {
     return sessionSnapshot.docs.map((doc) => SessionData.fromFirestore(doc)).toList();
   }
 
-  void updateDistanceTraveled(double addedDistance) {
+  void updateTotalPointsCollected(int numPoints, String userEmail) {
     if (_userData == null) return;
 
-    double currentDist = totalDistanceTraveled;
-    double updatedDist = currentDist + addedDistance;
+    int currentPointsCount = totalPointsCollected;
+    int newPointsCount = currentPointsCount + numPoints;
 
     // Correctly update the internal map using bracket notation
-    _userData!['distanceTraveled'] = updatedDist;
+    _userData!['totalPointsCollected'] = newPointsCount;
 
     // Tell the UI to rebuild
     notifyListeners();
@@ -258,9 +259,31 @@ class UserDataProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       FirebaseFirestore.instance
-          .collection('userData')
-          .doc(user.uid)
-          .update({'distanceTraveled': updatedDist});
+          .collection('userAccountData')
+          .doc(userEmail)
+          .update({'totalPointsCollected': newPointsCount});
+    }
+  }
+
+  void updateDistanceTraveled(double addedDistance, String userEmail) {
+    if (_userData == null) return;
+
+    double currentDist = totalDistanceTraveled;
+    double updatedDist = currentDist + addedDistance;
+
+    // Correctly update the internal map using bracket notation
+    _userData!['totalDistanceTraveled'] = updatedDist;
+
+    // Tell the UI to rebuild
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(userEmail)
+          .update({'totalDistanceTraveled': updatedDist});
     }
   }
 
@@ -269,12 +292,12 @@ class UserDataProvider extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
-            .collection('userData')
-            .doc(user.uid)
-            .update({'demographics_taken': true});
+            .collection('userAccountData')
+            .doc(user.email)
+            .update({'demographicsSurveyTaken': true});
 
         if (_userData != null) {
-          _userData!['demographics_taken'] = true;
+          _userData!['demographicsSurveyTaken'] = true;
         }
 
         notifyListeners();
@@ -294,8 +317,8 @@ class UserDataProvider extends ChangeNotifier {
 
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('userData')
-          .doc(user.uid)
+          .collection('userAccountData')
+          .doc(user.email)
           .get();
 
       if (doc.exists) {
@@ -305,13 +328,13 @@ class UserDataProvider extends ChangeNotifier {
         _collectedMeasurements = await fetchCollectedMeasurements();
         _collectedSessions = await fetchSessionData();
         await FirebaseFirestore.instance
-            .collection('userData')
-            .doc(user.uid)
-            .update({'measurementsTaken': _collectedMeasurements.length});
+            .collection('userAccountData')
+            .doc(user.email)
+            .update({'totalPointsCollected': _collectedMeasurements.length});
 
-        _userData?['measurementsTaken'] = _collectedMeasurements.length;
+        _userData?['totalPointsCollected'] = _collectedMeasurements.length;
 
-        bool vpn = await checkVPN();
+        /*bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
         await FirebaseFirestore.instance.collection('userData').doc(user.uid).update({
           'isVPN': vpn,
@@ -319,7 +342,7 @@ class UserDataProvider extends ChangeNotifier {
         });
 
         _userData?['isVPN'] = vpn;
-        _userData?['isFakeLocation'] = fake;
+        _userData?['isFakeLocation'] = fake;*/
 
         final onboardingQuery = await FirebaseFirestore.instance
             .collection('ABC_Onboarding')
@@ -340,7 +363,7 @@ class UserDataProvider extends ChangeNotifier {
 
         debugPrint("Data loaded for: ${user.email}. Measurements found: ${_collectedMeasurements.length}");
       } else {
-        debugPrint("No document found for UID: ${user.uid}, creating one...");
+        debugPrint("No document found for UID: ${user.email}, creating one...");
         await createUserDocument(user);
         await fetchUserData();
       }
@@ -396,20 +419,20 @@ class UserDataProvider extends ChangeNotifier {
     bool fake = await checkFakeLocation();
 
     await FirebaseFirestore.instance
-        .collection('userData')
-        .doc(user.uid)
+        .collection('userAccountData')
+        .doc(user.email)
         .set({
       'uid': user.uid,
       'email': user.email,
-      'demographics_taken' : false,
-      'measurementsTaken': 0,
-      'distanceTraveled': 0.0,
+      'demographicsSurveyTaken' : false,
+      'totalPointsCollected': 0,
+      'totalDistanceTraveled': 0.0,
       'dataPoints': [],
       'radGyration': [0],
-      'favorite_games': ['Zombie Apocalypse', 'Soul Seeker'],
+      'favoriteGames': ['Zombie Apocalypse', 'Soul Seeker'],
       'createdAt': FieldValue.serverTimestamp(),
-      'isVPN' : vpn,
-      'isFakeLocation' : fake,
+      //'isVPN' : vpn,
+      //'isFakeLocation' : fake,
     }, SetOptions(merge: true));
   }
 
