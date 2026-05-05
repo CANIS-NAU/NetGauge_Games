@@ -242,7 +242,7 @@ class UserDataProvider extends ChangeNotifier {
     return sessionSnapshot.docs.map((doc) => SessionData.fromFirestore(doc)).toList();
   }
 
-  void updateDistanceTraveled(double addedDistance) {
+  void updateDistanceTraveled(double addedDistance, String userEmail) {
     if (_userData == null) return;
 
     double currentDist = totalDistanceTraveled;
@@ -258,8 +258,8 @@ class UserDataProvider extends ChangeNotifier {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       FirebaseFirestore.instance
-          .collection('userData')
-          .doc(user.uid)
+          .collection('userAccountData')
+          .doc(userEmail)
           .update({'distanceTraveled': updatedDist});
     }
   }

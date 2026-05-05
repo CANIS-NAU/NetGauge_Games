@@ -15,21 +15,13 @@ import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 //import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'session_manager.dart';
 
-// data type for measurements
-class InternetMeasurement {
-  final double uploadSpeed;
-  final double downloadSpeed;
-  final double jitters;
-  final double latency;
 
-  InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
-  required this.jitters, required this.latency});
-}
 
 //vars for mapping
-final List<TimedWeightedLatLng> allHeatmapData = heatmapData;
 LocationPoint lastPOILocation = SessionManager.sessionLocationPoints[0];
+
 
 /// A stateful widget that displays a WebView
 class WebViewPage extends StatefulWidget {
@@ -55,61 +47,16 @@ class _WebViewPageState extends State<WebViewPage> {
   List<LocationPoint> locationPoints = [];
   List<InternetMeasurement> measurements = [];
 
-  Future<void> endGameSession() async {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
-    VibrationController.stop();
-    bool vpn_status = userData.vpnStatus;
-    // calculate total distance traveled
-    double distanceTraveled = calculateDistance(locationPoints);
-    // update user data on record
-    userData.updateDistanceTraveled(distanceTraveled);
-    DateTime endTime = DateTime.now();
-    debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
-    debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
-
-
-    // format data to send to firebase for this session
-    final checkData = {
-      'game': SessionManager.currentGame,
-      'start_time': startTime,
-      'end_time': endTime,
-      'session_id': SessionManager.sessionId,
-      'vpn_used' : vpn_status,
-      'session_distance': distanceTraveled,
-      'collected_measurements': measurements.map((p) => {
-        'upload_speed': p.uploadSpeed,
-        'download_speed': p.downloadSpeed,
-        'latency': p.latency,
-        'jitters': p.jitters
-      }).toList(),
-      'location_points': locationPoints.map((p) => {
-        'latitude': p.latitude,
-        'longitude': p.longitude,
-        'geohash': GeoFirePoint(GeoPoint(p.longitude, p.latitude)),
-      }).toList(),
-    };
-    debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
-
-    // send to firebase
-    try {
-      debugPrint("Attempting to write to Firestore...");
-      await FirebaseFirestore.instance
-          .collection('measurements')
-          .doc(userData.email)
-          .collection('sessions')
-          .add(checkData);
-      debugPrint("Write successful!");
-    } catch (e) {
-      debugPrint("Firestore Error: $e");
-    }
-  }
 
   @override
   void initState() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    String userEmail = userData.email;
+
     super.initState();
     SessionManager.startGame(widget.title);
-    SessionManager.onWebViewClose = endGameSession;
+    SessionManager.onWebViewClose = () => SessionManager.saveCurrentSession(userEmail);
 
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
@@ -149,9 +96,11 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     VibrationController.stop();
     // Unplug the bridge to prevent memory leaks or crashes
     SessionManager.onWebViewClose = null;
+    SessionManager.saveCurrentSession(userData.email);
     super.dispose();
   }
 
@@ -235,7 +184,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // case for when game is complete
         case 'endGameSession':
-          endGameSession();
+          SessionManager.saveCurrentSession(userData.email);
           break;
 
         /*case 'publishPlayerName':
@@ -373,21 +322,6 @@ class _WebViewPageState extends State<WebViewPage> {
     // return the location json to JS
     controller.runJavaScript(
         "window.onLocationJSON(${jsonEncode(json)})"); // need to encode the json twice for JS reception
-  }
-
-  // take all location points, calculate distance traveled
-  double calculateDistance(List<LocationPoint> pointsVisited) {
-    double totalDistance = 0.0;
-    for(int point = 0; point < pointsVisited.length - 1; point++) {
-      double distanceBetween = Geolocator.distanceBetween(
-          pointsVisited[point].latitude,
-          pointsVisited[point].longitude,
-          pointsVisited[point + 1].latitude,
-          pointsVisited[point + 1].longitude);
-      totalDistance += distanceBetween;
-    }
-    debugPrint("[FLUTTER_BRIDGE] Session distance traveled: $totalDistance");
-    return totalDistance;
   }
 
   // uses measureInternet() function to measure internet and send data to JS
