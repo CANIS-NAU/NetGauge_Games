@@ -8,35 +8,34 @@ import 'package:flutter/foundation.dart';
 class NDT7Service {
     // time of last request
     DateTime? _lastRequestTime;
+    Map<String, String>? _cachedUrls;
 
 
     // get URLs for speed test
     Future<Map<String, String>> getNDT7Urls() async {
-        final response = await http.get(
-            Uri.parse('https://locate.measurementlab.net/v2/nearest/ndt/ndt7'),
-        );
+      if (_cachedUrls != null) {
+        debugPrint('[NDT7] Using cached URLs');
+        return _cachedUrls!;
+      }
 
-        if (response.statusCode != 200) {
-            throw Exception('Locate API failed with status ${response.statusCode}');
-        }
+      final response = await http.get(
+        Uri.parse('https://locate.measurementlab.net/v2/nearest/ndt/ndt7'),
+      );
 
-        final data = jsonDecode(response.body);
-        //final urls = data['results'][0]['urls'];
-        final Map<String, dynamic> urls = data['results'][0]['urls'];
-        String downloadUrl = urls['ws:///ndt/v7/download'];
-        String uploadUrl = urls['ws:///ndt/v7/upload'];
+      if (response.statusCode != 200) {
+        throw Exception('Locate API failed with status ${response.statusCode}');
+      }
 
-        // Force secure WebSocket for iOS production
-        downloadUrl = downloadUrl.replaceFirst('ws://', 'wss://');
-        uploadUrl = uploadUrl.replaceFirst('ws://', 'wss://');
+      final data = jsonDecode(response.body);
+      final Map<String, dynamic> urls = data['results'][0]['urls'];
+      String downloadUrl = urls['ws:///ndt/v7/download'];
+      String uploadUrl = urls['ws:///ndt/v7/upload'];
 
-        debugPrint('[NDT71] Download URL (secure): $downloadUrl');
-        debugPrint('[NDT7] Upload URL (secure): $uploadUrl');
+      downloadUrl = downloadUrl.replaceFirst('ws://', 'wss://');
+      uploadUrl = uploadUrl.replaceFirst('ws://', 'wss://');
 
-        return {
-            'download': downloadUrl,
-            'upload': uploadUrl,
-        };
+      _cachedUrls = {'download': downloadUrl, 'upload': uploadUrl};
+      return _cachedUrls!;
     }
 
     // Function to run a full network test (dl speed, ul speed, round trip time)

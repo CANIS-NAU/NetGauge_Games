@@ -69,7 +69,7 @@ class SessionManager {
 
   // sets the session ID
   static void setSessionId() {
-    // unique session ID for game
+    // unique session ID for games
     var gameSessionID = Uuid().v4();
     _sessionId = gameSessionID;
   }
@@ -144,16 +144,13 @@ class SessionManager {
   }
 
 
-  static Future<void> saveCurrentSession(String userEmail) async {
+  static Future<void> saveCurrentSession(String userEmail, UserDataProvider provider) async {
     VibrationController.stop();
     vpnStatus = await SessionManager().checkVPN();
     fakeLocationStatus = await SessionManager().checkFakeLocation();
-    UserDataProvider provider = UserDataProvider();
-    // calculate total distance traveled
     double distanceTraveled = calculateDistance(sessionLocationPoints);
-    // update user data on record
-    // TODO: This may need to be updated differently?
     provider.updateDistanceTraveled(distanceTraveled, userEmail);
+    //provider.updateTotalPointsCollected(measurements.length, userEmail);
     DateTime endTime = DateTime.now();
     debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
@@ -177,7 +174,7 @@ class SessionManager {
       'location_points': sessionLocationPoints.map((p) => {
         'latitude': p.latitude,
         'longitude': p.longitude,
-        'geohash': GeoFirePoint(GeoPoint(p.latitude, p.longitude)),
+        'geohash': GeoFirePoint(GeoPoint(p.latitude, p.longitude)).geohash,
       }).toList(),
     };
     debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
