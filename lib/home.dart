@@ -134,6 +134,7 @@ class _HomePageState extends State<HomePage> {
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in home page', email: userData.email);
+    final scaffoldContext = context;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -165,9 +166,9 @@ class _HomePageState extends State<HomePage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            //mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 width: double.infinity,
@@ -315,17 +316,18 @@ class _HomePageState extends State<HomePage> {
                     isIcon: true,
                     iconSize: 25,
                     textSize: 13,
-                    buttonHeight: 40,
+                    buttonHeight: 60,
                     buttonLength: 65,
                     onTap: () async {
+                      // Capture messenger immediately, before any awaits
+                      final messenger = ScaffoldMessenger.of(scaffoldContext);
+
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
                         loggingService.logEvent('Clicked on settings', email: userData.email);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const Settings(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const Settings()),
                         );
                       } else if (buttonText == 'Game Catalog') {
                         loggingService.logEvent('Clicked game catalog', email: userData.email);
@@ -333,23 +335,26 @@ class _HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
                         );
-                        // After returning, rebuild the UI to show the new favorites
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
-                        loggingService.logEvent('Clicked community statistics', email: userData.email);
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const CommunityStatistics())
+                        debugPrint("[HOME] Community Statistics tapped, showing snackbar");
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Coming soon!'),
+                            duration: Duration(seconds: 5),
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     },
                   );
                 },
               ),
-              const SizedBox(height: 5),
+              //const SizedBox(height: 5),
               // Game buttons
               GridView.builder(
                 shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,

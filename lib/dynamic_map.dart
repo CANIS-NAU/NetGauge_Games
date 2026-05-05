@@ -137,7 +137,7 @@ class _DynamicMapState extends State<DynamicMap> {
       await _mapController.addMarker(
         GeoPoint(latitude: dp.point.latitude, longitude: dp.point.longitude),
         markerIcon: const MarkerIcon(
-          icon: Icon(Icons.location_on, color: Colors.red, size: 48),
+          icon: Icon(Icons.location_on, color: Colors.red, size: 80),
         ),
       );
     }
@@ -194,10 +194,14 @@ class _DynamicMapState extends State<DynamicMap> {
               context: context,
               builder: (context) => PointerInterceptor(
                 child: AlertDialog(
-                  title: Text('Measurement at ${clickedDp.gamePlayed}'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 40.0,
+                  title: const Text('Measurement'),
+                  backgroundColor: Colors.white,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Text('Game Played: ${clickedDp.gamePlayed}'),
                       Text('Download: ${clickedDp.downloadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Upload: ${clickedDp.uploadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Latency: ${clickedDp.latency.toStringAsFixed(0)} ms'),

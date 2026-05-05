@@ -325,13 +325,13 @@ class UserDataProvider extends ChangeNotifier {
         _userData = doc.data() as Map<String, dynamic>;
 
         // 2. Now that we know it exists, update the measurement count
-        _collectedMeasurements = await fetchCollectedMeasurements();
         _collectedSessions = await fetchSessionData();
+        final totalPoints = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
         await FirebaseFirestore.instance
             .collection('userAccountData')
             .doc(user.email)
-            .update({'totalPointsCollected': _collectedMeasurements.length});
-
+            .update({'totalPointsCollected': totalPoints});
+        _userData?['totalPointsCollected'] = totalPoints;
         _userData?['totalPointsCollected'] = _collectedMeasurements.length;
 
         /*bool vpn = await checkVPN();

@@ -95,6 +95,7 @@ class _SurveyState extends State<SurveyState> {
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 20)),
+
                 onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
                   if(widget.surveyDocId == 'demographic') {
@@ -112,7 +113,7 @@ class _SurveyState extends State<SurveyState> {
                 }
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 30),
         ],
       ),
     );

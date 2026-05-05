@@ -6,6 +6,17 @@ import 'package:flutter/material.dart';
 //to dashboard
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'game_catalog.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'package:latlong2/latlong.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:vpn_connection_detector/vpn_connection_detector.dart';
+import 'package:detect_fake_location/detect_fake_location.dart';
+import 'user_data_manager.dart';
 
 // Declare class
 class CommunityStatistics extends StatelessWidget {
@@ -28,7 +39,7 @@ class CommunityStatistics extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         body: Column(
-          children:[
+          children: [
             const Text('All-Time Statistics',
               style:
               TextStyle(
@@ -42,8 +53,10 @@ class CommunityStatistics extends StatelessWidget {
               child:
               Text(
                   'Total Points Collected: ${userData.measurementsTaken} \n'
-                      'Total Distance Traveled: ${userData.totalDistanceTraveled}.toStringAsFixed(2) \n'
-                      'Total Radius of Gyration: ${userData.totalRadiusGyration}',
+                      'Total Distance Traveled: ${userData.totalDistanceTraveled
+                      .toStringAsFixed(2)} \n'
+                      'Total Radius of Gyration: ${userData
+                      .totalRadiusGyration}',
                   textAlign: TextAlign.start,
                   style: const TextStyle(
                       fontWeight: FontWeight.w600,

@@ -44,7 +44,7 @@ class PlayerStatistics extends StatelessWidget {
               color: Colors.white,
               child:
               Text(
-                  'Total Points Collected: ${userData.measurementsTaken} \n'
+                  'Total Points Collected: ${userData.totalPointsCollected} \n'
                       'Total Distance Traveled: ${userData.totalDistanceTraveled.toStringAsFixed(2)} \n'
                       'Total Radius of Gyration: ${userData.totalRadiusGyration.toStringAsFixed(2)}',
                   textAlign: TextAlign.start,
@@ -102,52 +102,28 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final measurements = Provider.of<UserDataProvider>(context).collectedMeasurements;
-    debugPrint("[DASHBOARD]: Checking for collected measurements");
-    debugPrint("[DASHBOARD]: Total collected measurements is ${measurements.length}");
 
-    // 1. Group measurements by session_id
-    Map<String, List<DataPoint>> sessionBuckets = {};
-    for (var dp in measurements) {
-      sessionBuckets.putIfAbsent(dp.session_id, () => []).add(dp);
-    }
+    // Use the already-fetched session list — no need to re-group measurements
+    final sessions = Provider.of<UserDataProvider>(context).collectedSessions;
 
-    // 2. Only update if the number of SESSIONS has changed
-    if (_data.length != sessionBuckets.length) {
+    debugPrint("[DASHBOARD]: Total sessions found: ${sessions.length}");
+
+    if (_data.length != sessions.length) {
       setState(() {
-        _data = sessionBuckets.entries.map((entry) {
-          final sessionId = entry.key;
-          final sessionPoints = entry.value;
-          
-          // Calculate averages for this specific session
-          double avgDownload = 0;
-          double avgUpload = 0;
-          for (var p in sessionPoints) {
-            avgDownload += p.downloadSpeed;
-            avgUpload += p.uploadSpeed;
-          }
-          if (sessionPoints.isNotEmpty) {
-            avgDownload /= sessionPoints.length;
-            avgUpload /= sessionPoints.length;
-          }
-
-          final firstPoint = sessionPoints.first;
-
+        _data = sessions.map((session) {
           return ExpandableSessionData(
-            sessionId: sessionId,
-            startTime: firstPoint.timestamp,
-            endTime: firstPoint.timestamp,
-            game: firstPoint.gamePlayed,
-            averageDownloadSpeed: avgDownload,
-            averageUploadSpeed: avgUpload,
-            distanceTraveled: 0.0,
-            pointsCollected: sessionPoints.length,
-            radiusGyration: 0.0,
-            sessionDataPoints: sessionPoints.map((p) => p.point).toList(),
+            sessionId: session.game + session.startTime.toIso8601String(), // or a real ID if you add one
+            startTime: session.startTime,
+            endTime: session.endTime,
+            game: session.game,
+            averageDownloadSpeed: session.averageDownloadSpeed,
+            averageUploadSpeed: session.averageUploadSpeed,
+            distanceTraveled: session.distanceTraveled,
+            pointsCollected: session.pointsCollected,
+            radiusGyration: session.radiusGyration,
           );
         }).toList();
-        
-        // Sort sessions by date (newest first)
+
         _data.sort((a, b) => b.endTime.compareTo(a.endTime));
       });
     }
@@ -176,7 +152,8 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
           headerBuilder: (BuildContext context, bool isExpanded) {
             return ListTile(
               title: Text('Game: ${item.game}'),
-              subtitle: Text('Date: ${item.endTime.toIso8601String().substring(0, 10)} (${item.pointsCollected} points)'),
+              subtitle: Text('Date: ${item.endTime.toIso8601String().substring(0, 10)}\n'
+                  'Measurements collected: ${item.pointsCollected} '),
             );
           },
           body: Padding(
@@ -186,8 +163,6 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
               children: [
                 Text('Average Download: ${item.averageDownloadSpeed?.toStringAsFixed(2)} Mbps'),
                 Text('Average Upload: ${item.averageUploadSpeed?.toStringAsFixed(2)} Mbps'),
-                const SizedBox(height: 8),
-                Text('Session ID: ${item.sessionId}'),
               ],
             ),
           ),
