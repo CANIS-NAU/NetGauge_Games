@@ -66,7 +66,7 @@ class _SurveyState extends State<SurveyState> {
                 color: Colors.white,
                 fontSize: 25)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body:

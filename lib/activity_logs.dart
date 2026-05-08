@@ -21,16 +21,16 @@ class LogEvent {
   // Convert to a plain map for both Hive and Firestore
   Map<String, dynamic> toMap() => {
     'id': id,
-    'name': name,
+    'log': name,
     'params': params,
-    'occurredAt': occurredAt.toIso8601String(),
+    'recordedTime': occurredAt.toIso8601String(),
   };
 
   factory LogEvent.fromMap(Map<dynamic, dynamic> map) => LogEvent(
     id: map['id'],
-    name: map['name'],
+    name: map['log'],
     params: Map<String, dynamic>.from(map['params']),
-    occurredAt: DateTime.parse(map['occurredAt']),
+    occurredAt: DateTime.parse(map['recordedTime']),
   );
 }
 
@@ -86,6 +86,7 @@ class LoggingService {
 
     // Write to Hive immediately — this never fails due to connectivity
     await _box.put(event.id, event.toMap());
+    syncToFirestore();
   }
 
   // Called automatically on connectivity change, or you can call it manually
@@ -95,8 +96,8 @@ class LoggingService {
 
     try {
       final keys = _box.keys.toList();
+      debugPrint("ACTIVITY_LOGS: Attempting to sync ${keys.length} events");
 
-      // Process in batches
       for (int i = 0; i < keys.length; i += _batchSize) {
         final batchKeys = keys.skip(i).take(_batchSize).toList();
         final batch = _firestore.batch();
@@ -107,22 +108,36 @@ class LoggingService {
 
           final event = LogEvent.fromMap(rawMap);
 
-          // Using the event's UUID as the Firestore document ID
-          // makes this write idempotent — safe to retry
-          final docRef = _firestore.collection('events').doc(event.id);
+          final email = event.params['email'] as String?;
+
+          // Guard against both null and empty string
+          if (email == null || email.isEmpty) {
+            debugPrint("ACTIVITY_LOGS: Skipping event ${event.id} — email is missing");
+            continue;
+          }
+
+          debugPrint("ACTIVITY_LOGS: Queuing event '${event.name}' for $email");
+
+          final docRef = _firestore
+              .collection('userActivity')
+              .doc(email)
+              .collection('loggedActivity')
+              .doc(event.id);
+
           batch.set(docRef, {
             ...event.toMap(),
             'syncedAt': FieldValue.serverTimestamp(),
           });
         }
 
-        // Only delete from local queue after confirming a successful write
         await batch.commit();
         await _box.deleteAll(batchKeys);
+        debugPrint("ACTIVITY_LOGS: Batch committed successfully");
       }
-    } catch (e) {
-      // Sync failed — events stay in the local queue and will retry next time
-      print('Sync failed: $e');
+    } catch (e, stackTrace) {
+      // Print full stack trace so you can see exactly where it fails
+      debugPrint('ACTIVITY_LOGS: Sync failed: $e');
+      debugPrint('$stackTrace');
     } finally {
       _isSyncing = false;
     }

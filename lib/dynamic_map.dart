@@ -153,7 +153,7 @@ class _DynamicMapState extends State<DynamicMap> {
 
   @override
   Widget build(BuildContext context) {
-
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -162,7 +162,7 @@ class _DynamicMapState extends State<DynamicMap> {
         ),
         centerTitle: true,
         title: const Text('Map', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 25)),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: OSMFlutter(
@@ -189,6 +189,8 @@ class _DynamicMapState extends State<DynamicMap> {
                   (dp) => _approxEqual(dp.point.latitude, point.latitude) &&
                   _approxEqual(dp.point.longitude, point.longitude),
             );
+
+            loggingService.logEvent('User clicked on geo-point: $clickedDp', email: userData.email);
 
             showDialog(
               context: context,

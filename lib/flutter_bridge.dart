@@ -55,7 +55,7 @@ class _WebViewPageState extends State<WebViewPage> {
     String userEmail = userData.email;
 
     super.initState();
-    SessionManager.startGame(widget.title);
+    SessionManager.startGame(widget.title, userEmail);
     SessionManager.onWebViewClose = () async => await SessionManager.saveCurrentSession(userData.email, userData);
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
@@ -119,6 +119,7 @@ class _WebViewPageState extends State<WebViewPage> {
         // JS is requesting location
         case 'getLocation':
           // store request context (what to do with the returned location)
+          loggingService.logEvent('Game is recording player location.', email: userData.email);
           final context = data['context'];
 
           // call async function to send the location data
@@ -139,6 +140,7 @@ class _WebViewPageState extends State<WebViewPage> {
           debugPrint("[FLUTTER_BRIDGE]: Requesting POI info for $poi");
           // call handler function
           sendPOIName(name);
+          loggingService.logEvent('Game is checking for POI name.', email: userData.email);
           break;
 
         case 'requestMetricsAndWriteData':
@@ -201,6 +203,10 @@ class _WebViewPageState extends State<WebViewPage> {
           if(poiList.isNotEmpty) {
             // if POIs were found, update the global status
             poiListStatus = true;
+            loggingService.logEvent('Game is setting POIs. Nearby POIs found.', email: userData.email);
+          }
+          else {
+            loggingService.logEvent('Game checked for POIs and did not find any. Simulating POIs with distance traveled.', email: userData.email);
           }
 
           debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
@@ -214,6 +220,7 @@ class _WebViewPageState extends State<WebViewPage> {
           // checks if the player is in collection vicinity of a POI
           // collects the PoI if so.
           checkPOI();
+          loggingService.logEvent('Game is checking for proximity to POIs/distance traveled.', email: userData.email);
           break;
 
         case "clearPOIList":
@@ -225,6 +232,7 @@ class _WebViewPageState extends State<WebViewPage> {
         case 'hintRequest':
           // provides player with a hint directing them towards the nearest POI
           provideHint();
+          loggingService.logEvent('Player requested a hint.', email: userData.email);
           break;
 
         case 'startVibrationService':
@@ -243,6 +251,7 @@ class _WebViewPageState extends State<WebViewPage> {
           if (_lastMeasurementTime != null &&
               now.difference(_lastMeasurementTime!).inSeconds < 30) {
             debugPrint("[FLUTTER_BRIDGE] Measurement skipped — cooldown active.");
+            loggingService.logEvent('Player requested to measure internet, but API is in cooldown.', email: userData.email);
             break;
           }
           _lastMeasurementTime = now;
@@ -258,6 +267,7 @@ class _WebViewPageState extends State<WebViewPage> {
               latency: download['latency'],
               jitters: 0.0,
             );
+            loggingService.logEvent('Player measured their internet.', email: userData.email);
             debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
             SessionManager.addMeasurement(measurement);
 

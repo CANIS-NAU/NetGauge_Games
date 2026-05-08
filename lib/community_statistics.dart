@@ -35,7 +35,7 @@ class CommunityStatistics extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 25)
           ),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
         body: Column(
@@ -52,7 +52,7 @@ class CommunityStatistics extends StatelessWidget {
               color: Colors.white,
               child:
               Text(
-                  'Total Points Collected: ${userData.measurementsTaken} \n'
+                  'Total Points Collected: ${userData.totalPointsCollected} \n'
                       'Total Distance Traveled: ${userData.totalDistanceTraveled
                       .toStringAsFixed(2)} \n'
                       'Total Radius of Gyration: ${userData

@@ -4,33 +4,27 @@
 // importing libraries and packages
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
-import 'flutter_bridge.dart';
 import 'poi_generator.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 import 'vibration_controller.dart';
-import 'user_data_manager.dart';
-import 'package:dart_geohash/dart_geohash.dart';
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
-import 'dart:convert';
-import 'mapping.dart';
-import 'package:flutter/material.dart';
-import 'package:internet_measurement_games_app/location_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'session_manager.dart';
-import 'vibration_controller.dart';
 import 'dart:async';
-import 'ndt7_service.dart';
-import 'poi_generator.dart';
-import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
-import 'package:uuid/uuid.dart';
-//import 'package:dart_geohash/dart_geohash.dart';
-import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widget_previews.dart';
+import 'package:internet_measurement_games_app/speed_test_page.dart';
+import 'widgets/buttons.dart';
+import 'flutter_bridge.dart';
 import 'session_manager.dart';
+import 'location_logger.dart';
+import 'vibration_controller.dart';
+import 'user_data_manager.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
+import 'package:provider/provider.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 
 // data type for measurements
 class InternetMeasurement {
@@ -42,6 +36,8 @@ class InternetMeasurement {
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
     required this.jitters, required this.latency});
 }
+
+final loggingService = GetIt.instance<LoggingService>();
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
@@ -86,9 +82,10 @@ class SessionManager {
   }
 
   // updates current game when game is started
-  static void startGame(String gameTitle){
+  static void startGame(String gameTitle, String userEmail){
     // make sure there is not a session unintentionally going, clear lists
     _startTime = DateTime.now();
+    loggingService.logEvent('Starting $gameTitle at $startTime', email: userEmail);
     _measurements.clear();
     sessionLocationPoints.clear();
     _currentGame = gameTitle;
@@ -97,8 +94,10 @@ class SessionManager {
   }
 
   // updates current game to null when game is closed
-  static Future<void> endGame() async {
+  static Future<void> endGame(String userEmail) async {
     debugPrint('[SESSION_MANAGER] Game ending: $_currentGame');
+    DateTime endTime = DateTime.now();
+    loggingService.logEvent('Ending $_currentGame at $endTime', email: userEmail);
 
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();
@@ -188,6 +187,7 @@ class SessionManager {
           .collection('sessions')
           .add(checkData);
       debugPrint("Write successful!");
+      loggingService.logEvent('Game session is saved to Firebase.', email: userEmail);
     } catch (e) {
       debugPrint("Firestore Error: $e");
     }

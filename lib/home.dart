@@ -43,7 +43,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // TODO: Change this to match whatever is reflected in user data manager
   bool _onboardingShown = false;
   VoidCallback? _loadingListener;
@@ -77,13 +77,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final email = Provider.of<UserDataProvider>(context, listen: false).email;
+
+    if (state == AppLifecycleState.resumed) {
+      loggingService.logEvent('App is opened.', email: email);
+    } else if (state == AppLifecycleState.paused) {
+      loggingService.logEvent('App running in background.', email: email);
+    } else if (state == AppLifecycleState.detached) {
+      loggingService.logEvent('App session terminated.', email: email);
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     setupInteractedMessage();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
 
-      final userData = Provider.of<UserDataProvider>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
 
       if (userData.isLoading) {
         _loadingListener = () {
@@ -115,6 +129,12 @@ class _HomePageState extends State<HomePage> {
       showCustomOnBoardingPopup(context);
       if (mounted) setState(() => _onboardingShown = true);
     }*/
+
+    loggingService.logEvent('User is in homescreen.',
+      email: userData.email,
+      params: {'screen': 'HomeScreen'},
+    );
+
   }
 
   @override
@@ -123,10 +143,13 @@ class _HomePageState extends State<HomePage> {
     if (_loadingListener != null) {
       userData.removeListener(_loadingListener!);
     }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     /*String surveyType = listenRemoteConfig();
     if (surveyType != 'none') {
       showSurveyPopup(context, surveyType);
@@ -159,9 +182,9 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-                fontSize: 25)
+              fontSize: 25)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -203,7 +226,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   fixedSize: const Size(500, 25),
-                  backgroundColor: Colors.amberAccent,
+                  backgroundColor: const Color(0xFFfde725),
                   foregroundColor: Colors.black,
                   textStyle: const TextStyle(
                       fontSize: 20,
@@ -250,7 +273,7 @@ class _HomePageState extends State<HomePage> {
                       personMarker: const MarkerIcon(
                         icon: Icon(
                           Icons.location_pin,
-                          color: Colors.deepPurpleAccent,
+                          color: Color(0xFF21918c),
                           size: 48,
                         ),
                       ),
@@ -284,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     fixedSize: const Size(500, 25),
-                    backgroundColor: Colors.amberAccent,
+                    backgroundColor: const Color(0xFFfde725),
                     foregroundColor: Colors.black,
                     textStyle: const TextStyle(
                       fontSize: 20,
@@ -307,9 +330,9 @@ class _HomePageState extends State<HomePage> {
                 itemCount: utilityButtons.length,
                 itemBuilder: (context, index) {
                   return AppButtons(
-                    textColor: Colors.deepPurple,
+                    textColor: const Color(0xFF21918c),
                     backgroundColor: Colors.white,
-                    borderColor: Colors.deepPurple,
+                    borderColor: const Color(0xFF21918c),
                     text: utilityButtons[index].text,
                     icon: utilityButtons[index].icon,
                     imagePath: utilityButtons[index].imagePath,
@@ -337,6 +360,9 @@ class _HomePageState extends State<HomePage> {
                         );
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
+                        loggingService.logEvent('Clicked on community statistics',
+                          email: userData.email,
+                        );
                         debugPrint("[HOME] Community Statistics tapped, showing snackbar");
                         messenger.showSnackBar(
                           const SnackBar(

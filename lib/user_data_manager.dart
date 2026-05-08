@@ -28,10 +28,10 @@ final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
-  GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
-  GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
+  //GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  //GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
+  //GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
+  //GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
 ];
 
 class SessionData {
@@ -139,7 +139,7 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
-  int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
+  int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
 
@@ -332,7 +332,6 @@ class UserDataProvider extends ChangeNotifier {
             .doc(user.email)
             .update({'totalPointsCollected': totalPoints});
         _userData?['totalPointsCollected'] = totalPoints;
-        _userData?['totalPointsCollected'] = _collectedMeasurements.length;
 
         /*bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
