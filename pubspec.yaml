@@ -154,6 +154,9 @@ flutter:
     - assets/images/open_treasure_chest_with_cutlass.png
     - assets/images/pirate_ship_wreck.png
     - assets/images/sea_of_shadows.png
+    - assets/images/pinon.jpg
+    - assets/images/scavenger_hunt_star.png
+    - assets/images/scavenger_hunt_spider.jpg
     - assets/images/sunken_ship_graveyard.png
     - assets/images/top_of_defunct_lighthouse.png
     - assets/images/treasure_chest_in_pirate_ship.png

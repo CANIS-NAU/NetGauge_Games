@@ -104,8 +104,70 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="Zombie Apocalypse" startnode="5" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="5AC4D7FD-2D34-4800-BECA-06870B5F605B" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">#ui-bar {
-	display: none;
+	<tw-storydata name="Zombie Apocalypse" startnode="5" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="5AC4D7FD-2D34-4800-BECA-06870B5F605B" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  margin: 0 !important;
+  padding: 0 !important; /* make sure no padding-top remains */
+  font-size: 22px;
+  color: #333333;
+  background-color: #f0f0f0;
+}
+
+#story {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#passages {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.passage {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#passages {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+html {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  margin: 0;
+  padding-top: 50px;
+  font-size: 22px;        /* Adjust the font size globally */
+  color: #333333;         /* Text color */
+  background-color: #f0f0f0;  
+}
+
+#ui-bar {
+  display: none !important;
+}
+
+#ui-bar-history,
+#ui-bar-body {
+  display: none !important;
+}
+
+body.ui-bar-hidden #passages {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* GLOBAL STYLING */
@@ -136,12 +198,6 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 input[type="text"] {
   transform: scale(0.65);  /* Scale down the textbox to 80% of its original size */
   transform-origin: left; /* Make sure the scaling starts from the left side */
-}
-
-body {
-  font-size: 22px;        /* Adjust the font size globally */
-  color: #333333;         /* Text color */
-  background-color: #f0f0f0;  /* Background color */
 }
 /* END GLOBAL STYLING */
 
@@ -219,7 +275,7 @@ body {
 /* END CUSTOM ALERT BOX STYLING */
 
 .scientistHeader {
-  max-width: 100%;
+  width: 100%;
   background-color: #b35a17;
   color: white;
   text-align: center;
@@ -241,7 +297,7 @@ body.scientist-theme {
 }
 
 body.zombie-theme {
-  max-width: 100%;
+  width: 100%;
   background-color: #e1f7f4;
   color: black;
   text-align: left;
@@ -250,7 +306,8 @@ body.zombie-theme {
 
 
 
-</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
+</style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.passages.nobr = true;
+// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
 function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
     // Calculate side length using the area of a regular hexagon
@@ -921,20 +978,24 @@ window.publishLikertResponses = function()
   }
 }; // no callback needed, this function only sends
 
-// END OF LIKERT FORM FUNCTIONS //</script><tw-passagedata pid="1" name="ScientistStart" tags="scientist-theme" position="900,450" size="100,100">&lt;div class=&quot;scientist&quot;&gt;
+// END OF LIKERT FORM FUNCTIONS //</script><tw-passagedata pid="1" name="ScientistStart" tags="scientist-theme" position="900,450" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientist&quot;&gt;
 &lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
-
+&lt;br&gt;
 Welcome to the war against the zombie plague, Doctor $playerName. 
-
+&lt;br&gt;
 We have recently identified new plant life that contains antibodies with a natural resistance to the Zombie disease. As a new recruit, you are tasked with locating samples of this substance so that we may synthesize a vaccine. 
-
+&lt;br&gt;
 Speak with your dispatcher, they will be able to provide you with information regarding the supposed location of the plant materials we are looking for. Be warned, though, as the zombies bite!
-
+&lt;br&gt;
 Are you prepared to put your life on the line to save human civilization?
-
+&lt;br&gt;
 [[How to play to play as the Scientist.|ScientistInstructions]]
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="ZombieStart" tags="zombie-theme" position="1500,450" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="2" name="ZombieStart" tags="zombie-theme" position="1500,450" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 You awaken from the blackness of death with a start. You are weak, but manage to stand on wobbly legs, finding your sense of direction and ability to move severly hindered. Only one thought pounds against your rotting brain:
@@ -945,27 +1006,32 @@ MUST. EAT. BRAINS.
 
 &lt;/div&gt;
 
-</tw-passagedata><tw-passagedata pid="3" name="RoleSelect" tags="" position="1200,450" size="100,100">To begin, you and your fellow players need to coordinate about who will play what role in the game. There should be more Zombies than Scientists for proper balance- three Zombies for every one Scientist is a good goal to aim for. 
+</tw-passagedata><tw-passagedata pid="3" name="RoleSelect" tags="" position="1200,450" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+To begin, you and your fellow players need to coordinate about who will play what role in the game. There should be more Zombies than Scientists for proper balance- three Zombies for every one Scientist is a good goal to aim for. 
+&lt;br&gt;
 &lt;&lt;link &quot;Scientist&quot;&gt;&gt;
 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set State.variables.role to &quot;Scientist&quot;&gt;&gt;
 	&lt;&lt;goto &quot;ScientistStart&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-
+&lt;br&gt;
 &lt;&lt;link &quot;Zombie&quot;&gt;&gt;
 	&lt;&lt;run requestMetricsAndWriteData()&gt;&gt;
 	&lt;&lt;set State.variables.role to &quot;Zombie&quot;&gt;&gt;
 	&lt;&lt;goto &quot;ZombieStart&quot;&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="ScientistInstructions" tags="show-stats" position="900,650" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="ScientistInstructions" tags="show-stats" position="900,650" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;br&gt;
 Before we get into the game, let&#39;s walk you through the User Interface so you have a better understanding of how to play! Or, if you&#39;re all ready to go, you can skip it.
-
+&lt;br&gt;
 [[Start Tutorial|S-UI-1]]
-
+&lt;br&gt;
 [[Skip Tutorial|S-skip-tutorial]]
 
 </tw-passagedata><tw-passagedata pid="5" name="StoryInit" tags="" position="1200,0" size="100,100">&lt;!-- Global Variables --&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 &lt;&lt;set State.variables.previousPassage to &quot;Null&quot;&gt;&gt;
 
 &lt;!-- Scientist Variables --&gt;
@@ -982,7 +1048,9 @@ Before we get into the game, let&#39;s walk you through the User Interface so yo
 &lt;&lt;set $abilityUsed to false&gt;&gt;
 &lt;&lt;set $attackRoll to &quot;You have not rolled for attack yet.&quot;&gt;&gt;
 
-&lt;&lt;goto &quot;Setup&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="ScientistGameplay" tags="show-stats scientist-theme" position="900,1550" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;&lt;goto &quot;Setup&quot;&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="ScientistGameplay" tags="show-stats scientist-theme" position="900,1550" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 ACTIONS &lt;&lt;if State.variables.sampleCount == 4&gt;&gt;&lt;&lt;goto &quot;ScientistSuccess&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
@@ -1001,7 +1069,9 @@ ACTIONS &lt;&lt;if State.variables.sampleCount == 4&gt;&gt;&lt;&lt;goto &quot;Sc
     &lt;img src=&quot;icons/antidote-icon.png&quot; alt=&quot;Antidote&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
 &lt;/div&gt;
-</tw-passagedata><tw-passagedata pid="7" name="ScientistDeath" tags="scientist-theme" position="1000,1700" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="7" name="ScientistDeath" tags="scientist-theme" position="1000,1700" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 &lt;&lt;run stopVibrationService()&gt;&gt;Your vision blurs as you feel the zombie virus course through your veins. YYour thoughts fade and are replaced by a ravenous desire to consume brains.
 
@@ -1009,25 +1079,31 @@ If all scientists have been defeated, you can end the game now!
 
 [[If at least one Scientist remains, you now become a zombie!|ZombieStart]]
 
-</tw-passagedata><tw-passagedata pid="8" name="ScientistSuccess" tags="scientist-theme" position="800,1700" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="8" name="ScientistSuccess" tags="scientist-theme" position="800,1700" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 &lt;&lt;run stopVibrationService()&gt;&gt;You&#39;ve done it, Doctor $playerName! We have secured enough antibody samples to produce a vaccine and eradicate the zombie virus from Earth! Your name will go down in history as one of the key individuals in defending humanity from extinction.
 
 Thanks for playing! You can now return to the home page.
 
-</tw-passagedata><tw-passagedata pid="9" name="Setup" tags="" position="1200,150" size="100,100">Hello, and welcome to NetGauge&#39;s Zombie Apocalypse game!
-
+</tw-passagedata><tw-passagedata pid="9" name="Setup" tags="" position="1200,150" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+&lt;br&gt;
+Hello, and welcome to NetGauge&#39;s Zombie Apocalypse game!
+&lt;br&gt;
 What shall we call you?
 &lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
 &lt;&lt;button &quot;Submit&quot;&gt;&gt;
 	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
      &lt;&lt;replace &quot;#output&quot;&gt;&gt;Welcome $playerName! Ready to pick your role?&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/button&gt;&gt;
-
+&lt;br&gt;
 &lt;span id=&quot;output&quot;&gt;&lt;/span&gt;
+&lt;br&gt;
+[[Select Role|RoleSelect]]</tw-passagedata><tw-passagedata pid="10" name="Searching" tags="scientist-theme" position="725,1550" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
-[[Select Role|RoleSelect]]</tw-passagedata><tw-passagedata pid="10" name="Searching" tags="scientist-theme" position="725,1550" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 You are searching the area...
@@ -1064,7 +1140,9 @@ If the issue persists, please ensure that you have location services enabled on 
     &lt;&lt;else&gt;&gt;
     	&lt;&lt;goto &quot;NoLocation&quot;&gt;&gt;
     &lt;&lt;/if&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="HintProcessing" tags="" position="1050,1550" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="12" name="HintProcessing" tags="" position="1050,1550" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 Requesting information from dispatch...
@@ -1079,7 +1157,9 @@ Requesting information from dispatch...
 
 &lt;&lt;run requestHint()&gt;&gt;
 
-</tw-passagedata><tw-passagedata pid="13" name="TutorialS" tags="show-stats" position="1000,1250" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="13" name="TutorialS" tags="show-stats" position="1000,1250" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 &lt;&lt;if State.variables.tutorialComplete is true&gt;&gt;&lt;&lt;goto &quot;TutorialComplete&quot;&gt;&gt;&lt;&lt;/if&gt;&gt;
@@ -1097,7 +1177,9 @@ This is your chance to get familiar with the act of searching for samples! For t
   &lt;/button&gt;
 &lt;/div&gt;
 
-</tw-passagedata><tw-passagedata pid="14" name="WaitForPlayers" tags="zombie-theme" position="1500,1200" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+</tw-passagedata><tw-passagedata pid="14" name="WaitForPlayers" tags="zombie-theme" position="1500,1200" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Well done, you have completed the Tutorial! If you feel comfortable with the UI, then you can wait on this page for all other players to express they are ready to play. Please do not proceed without ensuring that everyone else is ready.
@@ -1130,19 +1212,23 @@ Alternatively, you can replay the previous tutorial again if you don&#39;t feel 
 
 &lt;&lt;link &quot;Return to game&quot;&gt;&gt;
 	&lt;&lt;goto $previousPassage&gt;&gt;
-&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="16" name="S-UI-1" tags="show-stats" position="800,850" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;&lt;/link&gt;&gt;</tw-passagedata><tw-passagedata pid="16" name="S-UI-1" tags="show-stats" position="800,850" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;br&gt;
 Your primary goal as the Scientist is to locate and collect vaccine samples, but you don&#39;t know where any are. However, you are able to determine how far you are from the //&#39;&#39;nearest&#39;&#39;// sample based off of how quickly your device is vibrating. The faster the vibration, the closer you are! 
-
+&lt;br&gt;
 If you ever find yourself hunting for a Sample but your device is not vibrating, don&#39;t worry! It just means you are too far from a sample for vibrations to trigger. In this case, you should use your orientation tool (explained next) to help navigate towards the sample until you are close enough for vibration to begin.
-
+&lt;br&gt;
 You can see your current count of Samples in the stats bar above. You also have no restrictions to your movement, so wander around as you see fit!
-
+&lt;br&gt;
 [[Next|S-UI-2]]
 
-</tw-passagedata><tw-passagedata pid="17" name="S-UI-4" tags="show-stats scientist-theme" position="1000,1050" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="17" name="S-UI-4" tags="show-stats scientist-theme" position="1000,1050" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
+&lt;br&gt;
 Next up is the Antidote Button (below). 
 &lt;div class=&quot;button-container&quot;&gt;
   &lt;!-- Antidote Button --&gt;
@@ -1150,9 +1236,9 @@ Next up is the Antidote Button (below).
     &lt;img src=&quot;icons/antidote-icon.png&quot; alt=&quot;Antidote&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
 &lt;/div&gt;
-
+&lt;br&gt;
 When a Zombie attacks and hits you, they will first tell you that you&#39;ve been hit, and you will need to respond by pressing the Antidote Button to stave off the damage. Be wary, though, as you only have two Antidotes, so three hits means game over. You can see your remaining Antidotes in the stats bar above. You can think of Antidotes as your &quot;lives&quot; and you lose one whenever you get hit.
-
+&lt;br&gt;
 When you have used up all your Antidotes and the next hit will defeat you, the Antidote Button will change to show a death icon as seen below.
 &lt;div class=&quot;button-container&quot;&gt;
   &lt;!-- Antidote Button --&gt;
@@ -1160,75 +1246,91 @@ When you have used up all your Antidotes and the next hit will defeat you, the A
     &lt;img src=&quot;icons/no-antidote-icon.png&quot; alt=&quot;Antidote&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
 &lt;/div&gt;
-
+&lt;br&gt;
 [[Next|S-UI-5]]
 
-</tw-passagedata><tw-passagedata pid="18" name="S-UI-3" tags="show-stats scientist-theme" position="800,1050" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="18" name="S-UI-3" tags="show-stats scientist-theme" position="800,1050" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;br&gt;
 
 Now you know how to navigate to Sample locations, but how do you collect Samples when you think you are close enough? That is what you use the Search Button (below) for. 
+&lt;br&gt;
 &lt;div class=&quot;button-container&quot;&gt;
   &lt;!-- Search Button --&gt;
   &lt;button class=&quot;button-link&quot; style=&quot;background-color: #FF6347;&quot; onclick=&quot;&quot;&gt;
     &lt;img src=&quot;icons/search-icon.png&quot; alt=&quot;Search&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
 &lt;/div&gt;
-
+&lt;br&gt;
 When you believe you are in the range to collect a Sample, press this button. If you are close enough the Sample will be collected and you will be notified. Otherwise, you will be informed you need to keep searching.
 
 [[Next|S-UI-4]]
 
-</tw-passagedata><tw-passagedata pid="19" name="S-UI-2" tags="show-stats" position="1000,850" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="19" name="S-UI-2" tags="show-stats" position="1000,850" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+
+&lt;br&gt;
+Now you know how to figure out how far you are from the closest sample, but what about how you are oriented to the Sample? That is where the Orientation Tool (below) comes in.
 
 
-Now you know how to figure out how far you are from the closest sample, but what about how you are oriented to the Sample? That is where the Orientation Tool (below) comes in. 
+&lt;br&gt;
 &lt;div class=&quot;button-container&quot;&gt;
   &lt;!-- Orientation Button --&gt;
   &lt;button class=&quot;button-link&quot;  style=&quot;background-color: #1E90FF;&quot; onclick=&quot;&quot;&gt;
     &lt;img src=&quot;icons/orientation-icon.png&quot; alt=&quot;Orient&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
 &lt;/div&gt;
-
+&lt;br&gt;
 When you press this button, it will tell you how the Sample is oriented to you; Either &quot;To your left&quot;, &quot;To your right&quot;, &quot;In front of you&quot;, or &quot;Behind you&quot;. So, vibrations tell you how far away you are, and the orientation tool tells you where to face!
-
+&lt;br&gt;
 [[Next|S-UI-3]]
 
-</tw-passagedata><tw-passagedata pid="20" name="S-UI-5" tags="show-stats scientist-theme" position="800,1250" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="20" name="S-UI-5" tags="show-stats scientist-theme" position="800,1250" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
 
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
+&lt;br&gt;
 This is what the UI will look like in full:
+&lt;br&gt;
 &lt;div class=&quot;button-container&quot;&gt;
   &lt;!-- Orientation Button --&gt;
   &lt;button class=&quot;button-link&quot; style=&quot;background-color: #1E90FF;&quot; onclick=&quot;&quot;&gt;
     &lt;img src=&quot;icons/orientation-icon.png&quot; alt=&quot;Orient&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
+  &lt;br&gt;
   &lt;!-- Search Button --&gt;
   &lt;button class=&quot;button-link&quot; style=&quot;background-color: #FF6347;&quot; onclick=&quot;&quot;&gt;
     &lt;img src=&quot;icons/search-icon.png&quot; alt=&quot;Search&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt; 
+  &lt;br&gt;
   &lt;!-- Antidote Button --&gt;
   &lt;button id=&quot;antidote-button&quot; class=&quot;button-link&quot; onclick=&quot;&quot;&gt;
     &lt;img src=&quot;icons/antidote-icon.png&quot; alt=&quot;Antidote&quot; class=&quot;icon-image&quot;&gt;
   &lt;/button&gt;
+  &lt;br&gt;
 &lt;/div&gt;
 
 While you are off searching for samples to save the world, the zombie players will be hunting you to try and stop you! The zombies have restrictions to their movement that makes it hard for them to catch you, but that doesn&#39;t mean they aren&#39;t dangerous! Avoid them at all costs.
-
+&lt;br&gt;
 Now that you have been introduced to the UI, we can do a full tutorial of the Sample Search system if you feel you need it!
-
+&lt;br&gt;
 &lt;&lt;link &quot;Give me the tutorial!&quot;&gt;&gt;
 	&lt;&lt;set State.variables.tutorialComplete to false&gt;&gt;
 	&lt;&lt;run sendPOIData()&gt;&gt;
     &lt;&lt;run startVibrationService()&gt;&gt;
 	&lt;&lt;goto &quot;TutorialS&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
-
+&lt;br&gt;
 &lt;&lt;link &quot;Skip the tutorial!&quot;&gt;&gt;
 	&lt;&lt;set State.variables.tutorialComplete to true&gt;&gt;
 	&lt;&lt;goto &quot;TutorialComplete&quot;&gt;&gt;
 &lt;&lt;/link&gt;&gt;
 
-</tw-passagedata><tw-passagedata pid="21" name="TutorialComplete" tags="" position="900,1400" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+</tw-passagedata><tw-passagedata pid="21" name="TutorialComplete" tags="" position="900,1400" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 
 &lt;&lt;run stopVibrationService&gt;&gt;Well done, you have completed the Tutorial! If you feel comfortable with the Sample Searching system, then you can wait on this page for all other players to express they are ready to play. Please do not proceed without ensuring that everyone else is ready.
@@ -1245,14 +1347,18 @@ Alternatively, you can replay the previous tutorial again if you don&#39;t feel 
 
 [[Replay Tutorial|ScientistInstructions]]
 
-</tw-passagedata><tw-passagedata pid="22" name="ZombieInstructions" tags="zombie-theme" position="1500,650" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+</tw-passagedata><tw-passagedata pid="22" name="ZombieInstructions" tags="zombie-theme" position="1500,650" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Before we get into the game lets walk you through the User Interface and familiarize you with how to play the Zombie.
 
 [[Start Tutorial|Z-UI-1]]
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="23" name="Z-UI-1" tags="zombie-theme" position="1400,850" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="23" name="Z-UI-1" tags="zombie-theme" position="1400,850" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Because you are a Zombie with a rotted brain, moving around is a little tougher for you than it is for the Scientist players. In order to figure out how many steps you are allowed to take you need to press the Movement Button (shown below). 
@@ -1280,7 +1386,9 @@ Zombie movement works as follows: When you press the movement button, a six-side
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="24" name="Z-UI-2" tags="zombie-theme" position="1600,850" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="24" name="Z-UI-2" tags="zombie-theme" position="1600,850" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Now that you know how to move, we need to teach you how to attack the Scientist. First, you should know that you can only attack the scientist if you are within 5 feet of them. Since there is no good way for you to measure 5ft, we will operate on the Honor System and allow you to estimate that distance as best you can. Once you feel close enough to the Scientist, you can press the Attack Button shown below to attack.
@@ -1308,7 +1416,9 @@ Zombie attacking works as follows: When you press the attack button, a six sided
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="25" name="Z-UI-3" tags="zombie-theme" position="1400,1050" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="25" name="Z-UI-3" tags="zombie-theme" position="1400,1050" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Lastly, we need to introduce you to the Zombie special ability: Adaptation. You are a very special type of Zombie, one that can force itself to Adapt in order to better fight the Scientists, you just need to press the button below!
@@ -1338,7 +1448,9 @@ Strength Adaptation - When you are in this state your attacks are very strong, b
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="26" name="Z-UI-5" tags="" position="1800,1100" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="26" name="Z-UI-5" tags="" position="1800,1100" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 Last up is a very important button. Every good Zombie has a terrifying Zombie roar, and pressing the button below will allow you to make a your own horrific sound to scare the Scientists! (This serves no gameplay function, it is just for fun. You can test this button here.)
@@ -1349,7 +1461,9 @@ Last up is a very important button. Every good Zombie has a terrifying Zombie ro
   &lt;/button&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="27" name="ZombieStrength" tags="zombie-theme" position="1625,1400" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="27" name="ZombieStrength" tags="zombie-theme" position="1625,1400" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 ACTIONS
@@ -1380,7 +1494,9 @@ When you have completed the game, feel free to return to the home page!
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="28" name="ZombieSpeed" tags="zombie-theme" position="1400,1400" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="28" name="ZombieSpeed" tags="zombie-theme" position="1400,1400" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 ACTIONS
@@ -1412,14 +1528,18 @@ When you have completed the game, feel free to return to the home page!
   &lt;/div&gt;
 &lt;/div&gt;
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="29" name="AfterForm" tags="" position="1300,2075" size="100,100">Thanks for playing and submitting your form! You can now press the Main Menu button in the top left to return to the main menu.</tw-passagedata><tw-passagedata pid="30" name="Z-UI-4" tags="zombie-theme" position="1600,1050" size="100,100">&lt;div class=&quot;zombie&quot;&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="29" name="AfterForm" tags="" position="1300,2075" size="100,100">Thanks for playing and submitting your form! You can now press the Main Menu button in the top left to return to the main menu.</tw-passagedata><tw-passagedata pid="30" name="Z-UI-4" tags="zombie-theme" position="1600,1050" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
 While you are hunting the scientist, they will be scouring the area to try and find vaccine samples to cure the plague, and it is your job to stop them! It will be challenging for you to catch them as they don&#39;t have the movement restrictions you have (they can walk around freely), but if you work together with your zombie comrades and are thoughtful about how you adapt to situations you will be able to stop the scientist before they can defeat you!
 
 [[Finish Tutorial|WaitForPlayers]]
 
-&lt;/div&gt;</tw-passagedata><tw-passagedata pid="31" name="S-skip-tutorial" tags="scientist-theme" position="1025,1400" size="100,100">&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
+&lt;/div&gt;</tw-passagedata><tw-passagedata pid="31" name="S-skip-tutorial" tags="scientist-theme" position="1025,1400" size="100,100">&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+
+&lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 
 Skipping the tutorial? Check in with the other players around you. If everyone&#39;s ready, you can go ahead and get started!
 

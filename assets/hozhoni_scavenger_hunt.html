@@ -143,6 +143,17 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 	transition-duration: 0.4s;
 	float: center;
 	border: 2px solid white;
+}
+
+.responsive-img {
+  /* 1. Center the image */
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+
+  /* 2. Responsive sizing */
+  max-width: 50%;  /* Image scales down to fit screen but never scales up beyond original size */
+  height: 50%;     /* Maintains original aspect ratio while scaling */
 }</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
@@ -510,7 +521,7 @@ window.displayLocation = function() {
 };
 */</script><tw-passagedata pid="1" name="landingPage" tags="" position="825,225" size="100,100">&lt;&lt;set State.variables.itemsFound to 0&gt;&gt;
 
-Welcome to Gameorama&#39;s Scavenger Hunt!
+Welcome to Gameorama&#39;s Scavenger Hunt! We have scatted papers around the conference center. Each paper has a picture and a fun fact. Can you find them all?
 
 &lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[TUTORIAL-&gt;tutorial1]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;
 
@@ -522,7 +533,7 @@ When you find an image for the scavenger hunt, click the &quot;measure internet&
 
 Are you ready?
 
-&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem1]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="3" name="foundItem" tags="" position="625,300" size="100,100">You found an item, great work!
+&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem1]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="3" name="foundItem" tags="" position="625,300" size="100,100">You found an item!
 
 What is the fun fact you found?
 
@@ -534,8 +545,11 @@ What is the fun fact you found?
 
  </tw-passagedata><tw-passagedata pid="4" name="searchItem1" tags="" position="925,550" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
 
-Find the pink sticky note! When you have found it, click the &quot;record metrics&quot; button.
+Find the spider! When you have found it, click the button below.
 
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/scavenger_hunt_spider.jpg&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
 
 &lt;/div&gt;
 
@@ -549,7 +563,12 @@ Find the pink sticky note! When you have found it, click the &quot;record metric
 &lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="5" name="searchItem2" tags="" position="975,750" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
 
-I need you to find the yellow sticky note! When you have found it, click the &quot;record metrics&quot; button.
+Find the star! When you have found it, click the button below.
+
+
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/scavenger_hunt_star.png&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
 
 &lt;/div&gt;
 
@@ -566,8 +585,11 @@ I need you to find the yellow sticky note! When you have found it, click the &qu
 &lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="6" name="searchItem3" tags="" position="1200,350" size="100,100">&lt;div style=&quot;max-width: 100%; overflow: hidden;&quot;&gt;
 
-I need you to find the green sticky note! When you have found it, click the &quot;record metrics&quot; button.
+Please find the pinon! When you have found it, click the button below.
 
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/pinon.jpg&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
 
 &lt;/div&gt;
 
@@ -580,11 +602,27 @@ I need you to find the green sticky note! When you have found it, click the &quo
 &lt;/div&gt;
 </tw-passagedata><tw-passagedata pid="7" name="finishGame" tags="" position="1750,650" size="100,100">You did it! You found all of the items! Good job!
 
-You can now press return to go to the main menu.</tw-passagedata><tw-passagedata pid="8" name="searchItem1Found" tags="" position="1075,600" size="100,100">You found the pink sticky note, nice job! What is the fun fact?
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/cute_stars.gif&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
 
-&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem2]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="9" name="searchItem2Found" tags="" position="1275,650" size="100,100">You found the yellow sticky note, nice job! What is the fun fact?
+You can now press return to go to the main menu.</tw-passagedata><tw-passagedata pid="8" name="searchItem1Found" tags="" position="1075,600" size="100,100">You found the star, nice job! What is the fun fact?
 
-&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem3]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="10" name="searchItem3Found" tags="" position="1400,375" size="100,100">You the last item! Good job!
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/scavenger_hunt_spider.jpg&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
+
+&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem2]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="9" name="searchItem2Found" tags="" position="1275,650" size="100,100">You found the star, nice job! What is the fun fact?
+
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/scavenger_hunt_star.png&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
+
+&lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;searchItem3]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata><tw-passagedata pid="10" name="searchItem3Found" tags="" position="1400,375" size="100,100">You found the last item, the pinon! Good job!
+
+&lt;div style=&quot;display: flex; justify-content: center;&quot;&gt;
+  &lt;img src=&quot;images/pinon.jpg&quot; style=&quot;max-width: 100%; height: auto;&quot;&gt;
+&lt;/div&gt;
 
 
 &lt;span class=&quot;button1&quot;&gt;&lt;&lt;button [[Continue-&gt;finishGame]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;</tw-passagedata></tw-storydata>
