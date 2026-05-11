@@ -12,19 +12,10 @@ import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:flutter/widget_previews.dart';
-import 'package:internet_measurement_games_app/speed_test_page.dart';
-import 'widgets/buttons.dart';
-import 'flutter_bridge.dart';
-import 'session_manager.dart';
-import 'location_logger.dart';
-import 'vibration_controller.dart';
-import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
-import 'package:provider/provider.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
+import 'dart:math';
 
 // data type for measurements
 class InternetMeasurement {
@@ -154,7 +145,10 @@ class SessionManager {
     debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
     debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
-
+    int numLocationPoints = sessionLocationPoints.length;
+    double radiusGyration = calculateRadiusOfGyration(sessionLocationPoints);
+    provider.updateRadiusGyration(radiusGyration, numLocationPoints, userEmail);
+    provider.updateTotalLocationPoints(numLocationPoints, userEmail);
 
     // format data to send to firebase for this session
     final checkData = {
@@ -164,6 +158,7 @@ class SessionManager {
       'session_id': SessionManager.sessionId,
       'vpn_used' : vpnStatus,
       'session_distance': distanceTraveled,
+      'radius_gyration': radiusGyration,
       'collected_measurements': measurements.map((p) => {
         'upload_speed': p.uploadSpeed,
         'download_speed': p.downloadSpeed,
@@ -211,6 +206,27 @@ class SessionManager {
     }
     debugPrint("[FLUTTER_BRIDGE] Session distance traveled: $totalDistance");
     return totalDistance;
+  }
+
+  static double calculateRadiusOfGyration(List<LocationPoint> points) {
+    if (points.isEmpty || points.length == 1) return 0.0;
+
+    // Step 1: Find center of mass
+    final double centerLat = points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length;
+    final double centerLon = points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length;
+
+    // Step 2: Calculate RMS distance from center using Geolocator
+    final double sumSquaredDistances = points.map((p) {
+      final double d = Geolocator.distanceBetween(
+        p.latitude, p.longitude,
+        centerLat, centerLon,
+      );
+      return d * d;
+    }).reduce((a, b) => a + b);
+
+    final double rg = sqrt(sumSquaredDistances / points.length);
+    debugPrint("[SESSION_MANAGER] Radius of gyration: $rg meters");
+    return rg;
   }
 
 

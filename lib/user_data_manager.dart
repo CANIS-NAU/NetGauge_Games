@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
+import 'dart:math';
 
 // security things
 Future<bool> checkVPN() async {
@@ -149,8 +150,9 @@ class UserDataProvider extends ChangeNotifier {
 
   double get totalDistanceTraveled => (_userData?['totalDistanceTraveled'] as num?)?.toDouble() ?? 0.0;
   int get totalPointsCollected => (_userData?['totalPointsCollected'] as num?)?.toInt() ?? 0;
-  
-  int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
+  int get totalLocationPointsMeasured => (_userData?['totalLocationPointsMeasured'] as num?)?.toInt() ?? 0;
+  double get totalRadiusGyration => (_userData?['totalRadiusGyration'] as num?)?.toDouble() ?? 0.0;
+
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
   List<DataPoint> get collectedMeasurements => _collectedMeasurements;
   List<SessionData> get collectedSessions => _collectedSessions;
@@ -284,6 +286,53 @@ class UserDataProvider extends ChangeNotifier {
           .collection('userAccountData')
           .doc(userEmail)
           .update({'totalDistanceTraveled': updatedDist});
+    }
+  }
+
+  Future<void> updateTotalLocationPoints(int pointCount, String email) async {
+    // Pull existing totals
+    int currentNum = totalLocationPointsMeasured;
+
+    if (currentNum + pointCount == 0) return;
+
+    int newNum = currentNum + pointCount;
+
+    _userData!['totalLocationPointsMeasured'] = newNum;
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({'totalLocationPointsMeasured': newNum});
+    }
+  }
+
+  Future<void> updateRadiusGyration(double sessionRg, int pointCount, String email) async {
+    // Pull existing totals
+    double currentRg = totalRadiusGyration;         // existing stored Rg
+    int currentCount = totalLocationPointsMeasured;      // total points across all sessions
+
+    if (currentCount + pointCount == 0) return;
+
+    // Weighted RMS combination
+    double newRg = sqrt(
+        ((currentCount * currentRg * currentRg) + (pointCount * sessionRg * sessionRg)) /
+            (currentCount + pointCount)
+    );
+
+    _userData!['totalRadiusGyration'] = newRg;
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({'totalRadiusGyration': totalRadiusGyration});
     }
   }
 

@@ -236,7 +236,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 child: const Text("Expand Player Statistics"),
                 //TODO: Nice-to-have-->add a trailing expand icon here
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               //TODO: Add map preview here, remove SizedBox placeholder
               Container(
                 decoration: BoxDecoration(
@@ -246,7 +246,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     width: 3.0, // Specify the border thickness
                   ),
                 ),
-                height: 250,
+                height: 220,
                 width: double.infinity,
                 child: OSMFlutter(
                   controller: MapController(
@@ -320,6 +320,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               // Utility buttons
               GridView.builder(
                 shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
@@ -376,7 +377,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   );
                 },
               ),
-              //const SizedBox(height: 5),
+              const SizedBox(height: 5),
               // Game buttons
               GridView.builder(
                 shrinkWrap: true,
