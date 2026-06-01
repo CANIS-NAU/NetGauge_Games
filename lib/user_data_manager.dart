@@ -13,6 +13,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
 import 'dart:math';
+import 'remote_config_service.dart';
 
 // security things
 Future<bool> checkVPN() async {
@@ -497,6 +498,62 @@ class UserDataProvider extends ChangeNotifier {
         "utility_message": false,
       }
     });
+  }
+
+  String get remoteSurveyDocId => RemoteConfigService().surveyDocId;
+
+  // Add these getters
+  DateTime? get lastSurveyShown {
+    final ts = _userData?['lastSurveyShown'];
+    if (ts is Timestamp) return ts.toDate();
+    return null;
+  }
+
+  int get surveyCooldownDays => RemoteConfigService().getInt('survey_cooldown_days');
+
+// Call this after a survey is submitted
+  Future<void> recordSurveyShown(String userEmail) async {
+    final now = DateTime.now();
+    _userData?['lastSurveyShown'] = Timestamp.fromDate(now);
+    notifyListeners();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(userEmail)
+          .update({'lastSurveyShown': FieldValue.serverTimestamp()});
+    }
+  }
+
+  String get lastSeenSurveyToken => _userData?['lastSeenSurveyToken'] ?? '';
+
+  bool get shouldShowSurvey {
+    final rc = RemoteConfigService();
+    final activeToken = rc.surveyTriggerToken;
+
+    // No active survey pushed
+    if (activeToken.isEmpty) return false;
+
+    // User has already responded to this wave
+    if (lastSeenSurveyToken == activeToken) return false;
+
+    return true;
+  }
+
+// Call this when the user submits or dismisses the survey
+  Future<void> recordSurveyToken(String userEmail) async {
+    final token = RemoteConfigService().surveyTriggerToken;
+    _userData?['lastSeenSurveyToken'] = token;
+    notifyListeners();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(userEmail)
+          .update({'lastSeenSurveyToken': token});
+    }
   }
 
   void clearData() {

@@ -55,7 +55,7 @@ class Settings extends StatelessWidget {
         body: Column(
           children:[
             const SizedBox(height: 8),
-            TextButton(
+           /* TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
@@ -83,7 +83,7 @@ class Settings extends StatelessWidget {
               ),
               child: const Text("Take METUX Survey"),
               //TODO: Nice-to-have-->add a trailing expand icon here
-            ),
+            ),*/
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
