@@ -141,13 +141,14 @@ class _LoginPageState extends State<LoginPage> {
 
     // TODO: Check if this is handled already in user data manager.
     await FirebaseFirestore.instance
-        .collection('userData')
-        .doc(user.uid)
+        .collection('userAccountData')
+        .doc(user.email)
         .set({
       'uid': user.uid,
       'email': email,
-      'measurementsTaken': 0,
-      'distanceTraveled': 0,
+      'totalPointsCollected': 0,
+      'distanceTraveled': 0.0,
+      'totalRadiusGyration': 0.0,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
@@ -196,7 +197,7 @@ class _LoginPageState extends State<LoginPage> {
                 color: Colors.white,
                 fontSize: 50)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -212,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color(0xFF440154),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(15),
               ),
@@ -227,7 +228,7 @@ class _LoginPageState extends State<LoginPage> {
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
               ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color(0xFF440154),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(15),
               ),

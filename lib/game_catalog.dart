@@ -43,7 +43,7 @@ class GameCatalog extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 25)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: Padding(
@@ -99,7 +99,8 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     gameURL = 'ZombieApocalypse.html';
     imagePath = game.imagePath;
   }
-  if (game.text == "Soul Seeker") {
+  // Commenting out some games for the Hozhoni event, add back after
+ /* if (game.text == "Soul Seeker") {
     title = "Soul Seeker";
     content = "Your soul has been shattered, and you must search for the fragments before it's too late!";
     gameURL = 'SoulSeeker.html';
@@ -110,7 +111,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     content = "Can you defeat the evil dragon?";
     gameURL = 'DragonSlayer.html';
     imagePath = game.imagePath;
-  }
+  } */
   if (game.text == "Scavenger Hunt") {
     title = "Scavenger Hunt";
     content = "Search for pictures and fun facts!";
@@ -123,7 +124,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     imagePath = game.imagePath;
   }
 
-  if (game.text == "Space Explorers") {
+  /*if (game.text == "Space Explorers") {
     title = "Space Explorers";
     content = "Testing this plz work!";
     imagePath = game.imagePath;
@@ -135,7 +136,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     content = "Testing this plz work!";
     imagePath = game.imagePath;
     gameURL = 'constellation_quest.html';
-  }
+  }*/
 
 
   return showDialog(
@@ -195,7 +196,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   Navigator.pop(context);
 
   // log the game start with the session manager
-  SessionManager.startGame(title);
+  SessionManager.startGame(title, userData.email);
   // begin location logging
   LocationLogger.start();
 
@@ -216,7 +217,7 @@ void _launchGame(String title, String gameFile, BuildContext context) {
       ),
     ).then((_) async {
       // log the game end with the session manager
-      SessionManager.endGame(); // also will stop logging location
+      SessionManager.endGame(userData.email); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
       loggingService.logEvent('Game complete: $title', email: userData.email);

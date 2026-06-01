@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'game_catalog.dart';
 
 class Information extends StatelessWidget {
   const Information({super.key});
@@ -11,6 +12,7 @@ class Information extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context);
+    loggingService.logEvent('User is in information page', email: userData.email);
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -21,16 +23,17 @@ class Information extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 25)
           ),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
-        body: Column(
+        body: SingleChildScrollView(
+        child: Column(
           children:[
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepOrangeAccent,
+              color: const Color(0xFF21918c),
               child:
               const Text(
                   'Our Mission',
@@ -47,7 +50,11 @@ class Information extends StatelessWidget {
               color: Colors.white,
               child:
               const Text(
-                  'This project aims to...',
+                  'This project aims to improve access to the internet while having fun.\n'
+                      'Whenever you play a NetGauge game, you record your internet speed. By '
+                      'doing this, you support a broader citizen science effort to improve '
+                      'mobile broadband infrastructure. With these measurements, we can '
+                      'prove to policy makers that we need better access.',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
@@ -59,7 +66,7 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepOrangeAccent,
+              color: const Color(0xFF21918c),
               child:
               const Text(
                   'How to Interpret Collected Data',
@@ -99,7 +106,7 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.deepOrangeAccent,
+              color: const Color(0xFF21918c),
               child:
               const Text(
                   'How to Collect a Measurement',
@@ -116,7 +123,9 @@ class Information extends StatelessWidget {
               color: Colors.white,
               child:
               const Text(
-                  'Instructions go here.',
+                  'You can collect measurements by either using the Measure Internet tool in the app, or \n'
+                      'by playing any of the games. Each of the games automatically include measuring the \n'
+                      'internet into their functionality, so you do not need to do any extra work.',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
@@ -124,8 +133,10 @@ class Information extends StatelessWidget {
                       fontSize: 20)
               ),
             ),
+            const SizedBox(height: 16),
           ],
         )
+    )
     );
   }
 }

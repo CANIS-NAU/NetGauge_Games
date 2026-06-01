@@ -4,33 +4,18 @@
 // importing libraries and packages
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
-import 'flutter_bridge.dart';
 import 'poi_generator.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 import 'vibration_controller.dart';
-import 'user_data_manager.dart';
-import 'package:dart_geohash/dart_geohash.dart';
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
-import 'dart:convert';
-import 'mapping.dart';
-import 'package:flutter/material.dart';
-import 'package:internet_measurement_games_app/location_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'session_manager.dart';
-import 'vibration_controller.dart';
 import 'dart:async';
-import 'ndt7_service.dart';
-import 'poi_generator.dart';
-import 'package:provider/provider.dart';
-import 'user_data_manager.dart';
-import 'package:uuid/uuid.dart';
-//import 'package:dart_geohash/dart_geohash.dart';
+import 'activity_logs.dart';
+import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
-import 'session_manager.dart';
+import 'dart:math';
 
 // data type for measurements
 class InternetMeasurement {
@@ -42,6 +27,8 @@ class InternetMeasurement {
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
     required this.jitters, required this.latency});
 }
+
+final loggingService = GetIt.instance<LoggingService>();
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
@@ -86,9 +73,10 @@ class SessionManager {
   }
 
   // updates current game when game is started
-  static void startGame(String gameTitle){
+  static void startGame(String gameTitle, String userEmail){
     // make sure there is not a session unintentionally going, clear lists
     _startTime = DateTime.now();
+    loggingService.logEvent('Starting $gameTitle at $startTime', email: userEmail);
     _measurements.clear();
     sessionLocationPoints.clear();
     _currentGame = gameTitle;
@@ -97,8 +85,10 @@ class SessionManager {
   }
 
   // updates current game to null when game is closed
-  static Future<void> endGame() async {
+  static Future<void> endGame(String userEmail) async {
     debugPrint('[SESSION_MANAGER] Game ending: $_currentGame');
+    DateTime endTime = DateTime.now();
+    loggingService.logEvent('Ending $_currentGame at $endTime', email: userEmail);
 
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();
@@ -155,7 +145,10 @@ class SessionManager {
     debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
     debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
-
+    int numLocationPoints = sessionLocationPoints.length;
+    double radiusGyration = calculateRadiusOfGyration(sessionLocationPoints);
+    provider.updateRadiusGyration(radiusGyration, numLocationPoints, userEmail);
+    provider.updateTotalLocationPoints(numLocationPoints, userEmail);
 
     // format data to send to firebase for this session
     final checkData = {
@@ -165,6 +158,7 @@ class SessionManager {
       'session_id': SessionManager.sessionId,
       'vpn_used' : vpnStatus,
       'session_distance': distanceTraveled,
+      'radius_gyration': radiusGyration,
       'collected_measurements': measurements.map((p) => {
         'upload_speed': p.uploadSpeed,
         'download_speed': p.downloadSpeed,
@@ -188,6 +182,7 @@ class SessionManager {
           .collection('sessions')
           .add(checkData);
       debugPrint("Write successful!");
+      loggingService.logEvent('Game session is saved to Firebase.', email: userEmail);
     } catch (e) {
       debugPrint("Firestore Error: $e");
     }
@@ -211,6 +206,27 @@ class SessionManager {
     }
     debugPrint("[FLUTTER_BRIDGE] Session distance traveled: $totalDistance");
     return totalDistance;
+  }
+
+  static double calculateRadiusOfGyration(List<LocationPoint> points) {
+    if (points.isEmpty || points.length == 1) return 0.0;
+
+    // Step 1: Find center of mass
+    final double centerLat = points.map((p) => p.latitude).reduce((a, b) => a + b) / points.length;
+    final double centerLon = points.map((p) => p.longitude).reduce((a, b) => a + b) / points.length;
+
+    // Step 2: Calculate RMS distance from center using Geolocator
+    final double sumSquaredDistances = points.map((p) {
+      final double d = Geolocator.distanceBetween(
+        p.latitude, p.longitude,
+        centerLat, centerLon,
+      );
+      return d * d;
+    }).reduce((a, b) => a + b);
+
+    final double rg = sqrt(sumSquaredDistances / points.length);
+    debugPrint("[SESSION_MANAGER] Radius of gyration: $rg meters");
+    return rg;
   }
 
 

@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
+import 'dart:math';
 
 // security things
 Future<bool> checkVPN() async {
@@ -28,10 +29,10 @@ final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
-  GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
-  GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
+  //GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  //GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
+  //GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
+  //GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
 ];
 
 class SessionData {
@@ -139,7 +140,7 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
-  int get measurementsTaken => _userData?['measurementsTaken'] ?? 0;
+  int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   String get email => _userData?['email'] ?? '';
 
@@ -149,8 +150,9 @@ class UserDataProvider extends ChangeNotifier {
 
   double get totalDistanceTraveled => (_userData?['totalDistanceTraveled'] as num?)?.toDouble() ?? 0.0;
   int get totalPointsCollected => (_userData?['totalPointsCollected'] as num?)?.toInt() ?? 0;
-  
-  int get totalRadiusGyration => _userData?['totalRadiusGyration'] ?? 0;
+  int get totalLocationPointsMeasured => (_userData?['totalLocationPointsMeasured'] as num?)?.toInt() ?? 0;
+  double get totalRadiusGyration => (_userData?['totalRadiusGyration'] as num?)?.toDouble() ?? 0.0;
+
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
   List<DataPoint> get collectedMeasurements => _collectedMeasurements;
   List<SessionData> get collectedSessions => _collectedSessions;
@@ -287,6 +289,53 @@ class UserDataProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateTotalLocationPoints(int pointCount, String email) async {
+    // Pull existing totals
+    int currentNum = totalLocationPointsMeasured;
+
+    if (currentNum + pointCount == 0) return;
+
+    int newNum = currentNum + pointCount;
+
+    _userData!['totalLocationPointsMeasured'] = newNum;
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({'totalLocationPointsMeasured': newNum});
+    }
+  }
+
+  Future<void> updateRadiusGyration(double sessionRg, int pointCount, String email) async {
+    // Pull existing totals
+    double currentRg = totalRadiusGyration;         // existing stored Rg
+    int currentCount = totalLocationPointsMeasured;      // total points across all sessions
+
+    if (currentCount + pointCount == 0) return;
+
+    // Weighted RMS combination
+    double newRg = sqrt(
+        ((currentCount * currentRg * currentRg) + (pointCount * sessionRg * sessionRg)) /
+            (currentCount + pointCount)
+    );
+
+    _userData!['totalRadiusGyration'] = newRg;
+    notifyListeners();
+
+    // Sync with Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({'totalRadiusGyration': totalRadiusGyration});
+    }
+  }
+
   Future<void> setDemographicStatus() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -325,14 +374,13 @@ class UserDataProvider extends ChangeNotifier {
         _userData = doc.data() as Map<String, dynamic>;
 
         // 2. Now that we know it exists, update the measurement count
-        _collectedMeasurements = await fetchCollectedMeasurements();
         _collectedSessions = await fetchSessionData();
+        final totalPoints = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
         await FirebaseFirestore.instance
             .collection('userAccountData')
             .doc(user.email)
-            .update({'totalPointsCollected': _collectedMeasurements.length});
-
-        _userData?['totalPointsCollected'] = _collectedMeasurements.length;
+            .update({'totalPointsCollected': totalPoints});
+        _userData?['totalPointsCollected'] = totalPoints;
 
         /*bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();

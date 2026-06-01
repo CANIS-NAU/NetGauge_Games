@@ -198,7 +198,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0), // Optional: set corner radius
         side: BorderSide(
-          color: Colors.deepPurple, // Set the border color
+          color: const Color(0xFF440154), // Set the border color
           width: 3.0, // Set the desired border thickness
         ),
       ),
@@ -207,7 +207,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         title: Text(label, style:
           const TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.deepPurple
+            color: const Color(0xFF440154)
           ),),
         trailing: Text(value, style:
         const TextStyle(
@@ -220,7 +220,9 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   // overall page constructor
   @override
   Widget build(BuildContext context) {
-    SessionManager.startGame('Speed Tester');
+    final userData = Provider.of<UserDataProvider>(context);
+    loggingService.logEvent('User is in speed-test control page.', email: userData.email);
+    SessionManager.startGame('Speed Tester', userData.email);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -231,7 +233,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
                 color: Colors.white,
                 fontSize: 25)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -261,7 +263,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: const Color(0xFF440154),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.all(20),
             ),

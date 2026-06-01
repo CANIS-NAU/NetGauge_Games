@@ -7,6 +7,12 @@ import 'package:provider/provider.dart';
 import 'surveys.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_page.dart';
+import 'activity_logs.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:uuid/uuid.dart';
 
 class Settings extends StatelessWidget {
   const Settings({super.key});
@@ -43,7 +49,7 @@ class Settings extends StatelessWidget {
                   color: Colors.white,
                   fontSize: 25)
           ),
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
         body: Column(

@@ -43,7 +43,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // TODO: Change this to match whatever is reflected in user data manager
   bool _onboardingShown = false;
   VoidCallback? _loadingListener;
@@ -77,13 +77,27 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final email = Provider.of<UserDataProvider>(context, listen: false).email;
+
+    if (state == AppLifecycleState.resumed) {
+      loggingService.logEvent('App is opened.', email: email);
+    } else if (state == AppLifecycleState.paused) {
+      loggingService.logEvent('App running in background.', email: email);
+    } else if (state == AppLifecycleState.detached) {
+      loggingService.logEvent('App session terminated.', email: email);
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     setupInteractedMessage();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
 
-      final userData = Provider.of<UserDataProvider>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
 
       if (userData.isLoading) {
         _loadingListener = () {
@@ -115,6 +129,12 @@ class _HomePageState extends State<HomePage> {
       showCustomOnBoardingPopup(context);
       if (mounted) setState(() => _onboardingShown = true);
     }*/
+
+    loggingService.logEvent('User is in homescreen.',
+      email: userData.email,
+      params: {'screen': 'HomeScreen'},
+    );
+
   }
 
   @override
@@ -123,10 +143,13 @@ class _HomePageState extends State<HomePage> {
     if (_loadingListener != null) {
       userData.removeListener(_loadingListener!);
     }
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     /*String surveyType = listenRemoteConfig();
     if (surveyType != 'none') {
       showSurveyPopup(context, surveyType);
@@ -134,6 +157,7 @@ class _HomePageState extends State<HomePage> {
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     loggingService.logEvent('User is in home page', email: userData.email);
+    final scaffoldContext = context;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -158,16 +182,16 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
-                fontSize: 25)
+              fontSize: 25)
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            //mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Container(
                 width: double.infinity,
@@ -176,7 +200,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                       'Total Points Collected: ${userData.totalPointsCollected} \n'
                           'Total Distance Traveled: ${userData.totalDistanceTraveled.toStringAsFixed(2)} \n'
-                          'Total Radius of Gyration: ${userData.totalRadiusGyration}',
+                          'Total Radius of Gyration: ${userData.totalRadiusGyration.toStringAsFixed(2)}',
                       textAlign: TextAlign.start,
                       style: const TextStyle(
                           fontWeight: FontWeight.w600,
@@ -202,7 +226,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   fixedSize: const Size(500, 25),
-                  backgroundColor: Colors.amberAccent,
+                  backgroundColor: const Color(0xFFfde725),
                   foregroundColor: Colors.black,
                   textStyle: const TextStyle(
                       fontSize: 20,
@@ -212,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                 child: const Text("Expand Player Statistics"),
                 //TODO: Nice-to-have-->add a trailing expand icon here
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 5),
               //TODO: Add map preview here, remove SizedBox placeholder
               Container(
                 decoration: BoxDecoration(
@@ -222,7 +246,7 @@ class _HomePageState extends State<HomePage> {
                     width: 3.0, // Specify the border thickness
                   ),
                 ),
-                height: 250,
+                height: 220,
                 width: double.infinity,
                 child: OSMFlutter(
                   controller: MapController(
@@ -249,7 +273,7 @@ class _HomePageState extends State<HomePage> {
                       personMarker: const MarkerIcon(
                         icon: Icon(
                           Icons.location_pin,
-                          color: Colors.deepPurpleAccent,
+                          color: Color(0xFF21918c),
                           size: 48,
                         ),
                       ),
@@ -283,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     fixedSize: const Size(500, 25),
-                    backgroundColor: Colors.amberAccent,
+                    backgroundColor: const Color(0xFFfde725),
                     foregroundColor: Colors.black,
                     textStyle: const TextStyle(
                       fontSize: 20,
@@ -296,6 +320,7 @@ class _HomePageState extends State<HomePage> {
               // Utility buttons
               GridView.builder(
                 shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
@@ -306,26 +331,27 @@ class _HomePageState extends State<HomePage> {
                 itemCount: utilityButtons.length,
                 itemBuilder: (context, index) {
                   return AppButtons(
-                    textColor: Colors.deepPurple,
+                    textColor: const Color(0xFF21918c),
                     backgroundColor: Colors.white,
-                    borderColor: Colors.deepPurple,
+                    borderColor: const Color(0xFF21918c),
                     text: utilityButtons[index].text,
                     icon: utilityButtons[index].icon,
                     imagePath: utilityButtons[index].imagePath,
                     isIcon: true,
                     iconSize: 25,
                     textSize: 13,
-                    buttonHeight: 40,
+                    buttonHeight: 60,
                     buttonLength: 65,
                     onTap: () async {
+                      // Capture messenger immediately, before any awaits
+                      final messenger = ScaffoldMessenger.of(scaffoldContext);
+
                       String buttonText = utilityButtons[index].text;
                       if (buttonText == 'Settings') {
                         loggingService.logEvent('Clicked on settings', email: userData.email);
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const Settings(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const Settings()),
                         );
                       } else if (buttonText == 'Game Catalog') {
                         loggingService.logEvent('Clicked game catalog', email: userData.email);
@@ -333,13 +359,18 @@ class _HomePageState extends State<HomePage> {
                           context,
                           MaterialPageRoute(builder: (context) => const GameCatalog()),
                         );
-                        // After returning, rebuild the UI to show the new favorites
                         setState(() {});
                       } else if (buttonText == 'Community Statistics') {
-                        loggingService.logEvent('Clicked community statistics', email: userData.email);
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const CommunityStatistics())
+                        loggingService.logEvent('Clicked on community statistics',
+                          email: userData.email,
+                        );
+                        debugPrint("[HOME] Community Statistics tapped, showing snackbar");
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Coming soon!'),
+                            duration: Duration(seconds: 5),
+                            behavior: SnackBarBehavior.floating,
+                          ),
                         );
                       }
                     },
@@ -350,6 +381,7 @@ class _HomePageState extends State<HomePage> {
               // Game buttons
               GridView.builder(
                 shrinkWrap: true,
+                padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,

@@ -137,7 +137,7 @@ class _DynamicMapState extends State<DynamicMap> {
       await _mapController.addMarker(
         GeoPoint(latitude: dp.point.latitude, longitude: dp.point.longitude),
         markerIcon: const MarkerIcon(
-          icon: Icon(Icons.location_on, color: Colors.red, size: 48),
+          icon: Icon(Icons.location_on, color: Colors.red, size: 80),
         ),
       );
     }
@@ -153,7 +153,7 @@ class _DynamicMapState extends State<DynamicMap> {
 
   @override
   Widget build(BuildContext context) {
-
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -162,7 +162,7 @@ class _DynamicMapState extends State<DynamicMap> {
         ),
         centerTitle: true,
         title: const Text('Map', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 25)),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color(0xFF440154),
         foregroundColor: Colors.white,
       ),
       body: OSMFlutter(
@@ -190,14 +190,20 @@ class _DynamicMapState extends State<DynamicMap> {
                   _approxEqual(dp.point.longitude, point.longitude),
             );
 
+            loggingService.logEvent('User clicked on geo-point: $clickedDp', email: userData.email);
+
             showDialog(
               context: context,
               builder: (context) => PointerInterceptor(
                 child: AlertDialog(
-                  title: Text('Measurement at ${clickedDp.gamePlayed}'),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 40.0,
+                  title: const Text('Measurement'),
+                  backgroundColor: Colors.white,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Text('Game Played: ${clickedDp.gamePlayed}'),
                       Text('Download: ${clickedDp.downloadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Upload: ${clickedDp.uploadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Latency: ${clickedDp.latency.toStringAsFixed(0)} ms'),

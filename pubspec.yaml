@@ -94,6 +94,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -154,6 +155,9 @@ flutter:
     - assets/images/open_treasure_chest_with_cutlass.png
     - assets/images/pirate_ship_wreck.png
     - assets/images/sea_of_shadows.png
+    - assets/images/pinon.jpg
+    - assets/images/scavenger_hunt_star.png
+    - assets/images/scavenger_hunt_spider.jpg
     - assets/images/sunken_ship_graveyard.png
     - assets/images/top_of_defunct_lighthouse.png
     - assets/images/treasure_chest_in_pirate_ship.png
@@ -178,6 +182,18 @@ flutter:
     - assets/images/cute_stars.gif
     - assets/images/space_fuel.png
     - assets/icons/alien_icon.png
+    - assets/icons/app_icon.png
+    - assets/buttons/continue_btn.png
+    - assets/buttons/item_found_btn.png
+    - assets/buttons/start_game_btn.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+  min_sdk_android: 21
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
