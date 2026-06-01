@@ -1013,13 +1013,13 @@ window.publishLikertResponses = function()
 &lt;div class=&quot;scientist&quot;&gt;
 &lt;div class=&quot;scientistHeader&quot;&gt;&lt;span&gt;SCIENTIST&lt;/span&gt;&lt;/div&gt;
 &lt;br&gt;
-Welcome to the war against the zombie plague, Doctor $playerName. 
+Welcome to the war against the zombie plague, Doctor. 
 &lt;br&gt;
-We have recently identified new plant life that contains antibodies with a natural resistance to the Zombie disease. As a new recruit, you are tasked with locating samples of this substance so that we may synthesize a vaccine. 
+We need you to find the cure! Look for the magical plant that can heal us from the plague.
 &lt;br&gt;
-Speak with your dispatcher, they will be able to provide you with information regarding the supposed location of the plant materials we are looking for. Be warned, though, as the zombies bite!
+Speak with your dispatcher, they will give you directions to help find the plant. Be warned, though, as the zombies bite!
 &lt;br&gt;
-Are you prepared to put your life on the line to save human civilization?
+Are you ready to save the world?
 &lt;br&gt;
 
 &lt;span class=&quot;buttonScientist&quot;&gt;&lt;&lt;button [[View Tutorial-&gt;ScientistInstructions]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;
@@ -1037,7 +1037,7 @@ Are you prepared to put your life on the line to save human civilization?
 &lt;div class=&quot;zombie&quot;&gt;
 &lt;div class=&quot;zombieHeader&quot;&gt;&lt;span&gt;ZOMBIE&lt;/span&gt;&lt;/div&gt;
 
-You awaken from the blackness of death with a start. You are weak, but manage to stand on wobbly legs, finding your sense of direction and ability to move severly hindered. Only one thought pounds against your rotting brain:
+You wake up with a sudden craving...
 &lt;br&gt;
 MUST. EAT. BRAINS. 
 &lt;br&gt;
@@ -1152,16 +1152,6 @@ Thanks for playing! You can now return to the home page.
 &lt;br&gt;
 Hello, and welcome to NetGauge&#39;s Zombie Apocalypse game!
 &lt;br&gt;
-What shall we call you?
-&lt;&lt;textbox &quot;$playerName&quot; &quot;&quot;&gt;&gt;
-&lt;&lt;button &quot;Submit&quot;&gt;&gt;
-	&lt;&lt;set State.variables.playerName = $playerName&gt;&gt;
-     &lt;&lt;replace &quot;#output&quot;&gt;&gt;Welcome $playerName! Ready to pick your role?&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/button&gt;&gt;
-&lt;br&gt;
-&lt;span id=&quot;output&quot;&gt;&lt;/span&gt;
-&lt;br&gt;
-
 &lt;span class=&quot;buttonGeneral&quot;&gt;&lt;&lt;button [[Select Role-&gt;RoleSelect]]&gt;&gt;&lt;&lt;/button&gt;&gt;&lt;/span&gt;
 &lt;br&gt;
 &lt;br&gt;

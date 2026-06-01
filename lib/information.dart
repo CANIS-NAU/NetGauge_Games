@@ -26,7 +26,8 @@ class Information extends StatelessWidget {
           backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
-        body: Column(
+        body: SingleChildScrollView(
+        child: Column(
           children:[
             const SizedBox(height: 8),
             Container(
@@ -49,7 +50,11 @@ class Information extends StatelessWidget {
               color: Colors.white,
               child:
               const Text(
-                  'This project aims to...',
+                  'This project aims to improve access to the internet while having fun.\n'
+                      'Whenever you play a NetGauge game, you record your internet speed. By '
+                      'doing this, you support a broader citizen science effort to improve '
+                      'mobile broadband infrastructure. With these measurements, we can '
+                      'prove to policy makers that we need better access.',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
@@ -118,7 +123,9 @@ class Information extends StatelessWidget {
               color: Colors.white,
               child:
               const Text(
-                  'Instructions go here.',
+                  'You can collect measurements by either using the Measure Internet tool in the app, or \n'
+                      'by playing any of the games. Each of the games automatically include measuring the \n'
+                      'internet into their functionality, so you do not need to do any extra work.',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
@@ -126,8 +133,10 @@ class Information extends StatelessWidget {
                       fontSize: 20)
               ),
             ),
+            const SizedBox(height: 16),
           ],
         )
+    )
     );
   }
 }
