@@ -98,10 +98,11 @@ class _SurveyState extends State<SurveyState> {
 
                 onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
-                  if(widget.surveyDocId == 'demographic') {
+                  if (widget.surveyDocId == 'demographic') {
                     userData.setDemographicStatus();
                   }
                   if (_formKey.currentState!.validate()) {
+                    await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       Navigator.push(
                         context,
@@ -109,7 +110,6 @@ class _SurveyState extends State<SurveyState> {
                       );
                     });
                   }
-                  debugPrint("[SURVEYS] Something went wrong with surveys. Check for recording.");
                 }
             ),
           ),
@@ -129,10 +129,26 @@ class _SurveyState extends State<SurveyState> {
       final rawQuestions = data?['questions'] as List<dynamic>;
       print("Raw questions: $rawQuestions");
       return rawQuestions.map((q) {
-        final choices = (q['choices'] as Map<String, dynamic>)
-            .values
-            .map((c) => c.toString())
-            .toList();
+        // Handle both array and map formats for backwards compatibility
+        List<String> choices;
+        final rawChoices = q['choices'];
+
+        if (rawChoices is List) {
+          // New format: array preserves order
+          choices = rawChoices.map((c) => c.toString()).toList();
+        } else if (rawChoices is Map) {
+          final sorted = (rawChoices as Map<String, dynamic>).entries.toList()
+            ..sort((a, b) {
+              // Parse keys as integers for correct numeric ordering
+              final aInt = int.tryParse(a.key) ?? 0;
+              final bInt = int.tryParse(b.key) ?? 0;
+              return aInt.compareTo(bInt);
+            });
+          choices = sorted.map((e) => e.value.toString()).toList();
+        } else {
+          choices = [];
+        }
+
         return Question(
           question: q['text'],
           isMandatory: q['mandatory'],

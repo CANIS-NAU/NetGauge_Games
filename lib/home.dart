@@ -16,8 +16,6 @@ import 'package:get_it/get_it.dart';
 import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
-import 'package:provider/provider.dart';
-import 'package:get_it/get_it.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -92,6 +90,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _waitForDataThenCheckSurvey();
+    });
     WidgetsBinding.instance.addObserver(this);
     setupInteractedMessage();
 
@@ -135,6 +136,64 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       params: {'screen': 'HomeScreen'},
     );
 
+  }
+
+  void _checkAndShowSurvey() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+
+    // Priority 1: Demographic survey on first open, always
+    if (!userData.getDemographicStatus) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SurveyState(
+            surveyDocId: 'demographic',
+            responseCollection: 'responses',
+          ),
+        ),
+      ).then((_) {
+        // After demographic is done, check if METUX should also show
+        _checkAndShowMetux(userData);
+      });
+      return; // Don't check METUX yet
+    }
+
+    // Priority 2: Remote Config-controlled survey (METUX etc.)
+    _checkAndShowMetux(userData);
+  }
+
+  void _checkAndShowMetux(UserDataProvider userData) {
+    if (userData.shouldShowSurvey) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SurveyState(
+            surveyDocId: userData.remoteSurveyDocId,
+            responseCollection: 'responses',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _waitForDataThenCheckSurvey() async {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+
+    // Wait until data is done loading
+    if (userData.isLoading) {
+      userData.addListener(_onDataLoaded);
+      return;
+    }
+
+    _checkAndShowSurvey();
+  }
+
+  void _onDataLoaded() {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    if (!userData.isLoading) {
+      userData.removeListener(_onDataLoaded);
+      _checkAndShowSurvey();
+    }
   }
 
   @override

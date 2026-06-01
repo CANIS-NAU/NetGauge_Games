@@ -10,11 +10,13 @@ import 'activity_logs.dart';
 // for Hive.initFlutter()
 import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'remote_config_service.dart';
 
 // app initialization
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await RemoteConfigService().initialize();
 
   final getIt = GetIt.instance;
   final loggingService = LoggingService();
