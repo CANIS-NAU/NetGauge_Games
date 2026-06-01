@@ -215,7 +215,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }*/
     final favoriteGames = Provider.of<UserDataProvider>(context).favoriteGames;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    loggingService.logEvent('User is in home page', email: userData.email);
+    //loggingService.logEvent('User is in home page', email: userData.email);
     final scaffoldContext = context;
     return Scaffold(
       appBar: AppBar(
