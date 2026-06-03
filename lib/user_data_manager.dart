@@ -28,12 +28,12 @@ Future<bool> checkFakeLocation() async {
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
-  GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
+  //GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-  //GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-  //GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
+  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
+  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
   //GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
-  //GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
+  GameData(text: "Constellation Quest", icon: Icons.star),
 ];
 
 class SessionData {

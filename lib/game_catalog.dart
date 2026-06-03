@@ -100,7 +100,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     imagePath = game.imagePath;
   }
   // Commenting out some games for the Hozhoni event, add back after
- /* if (game.text == "Soul Seeker") {
+  if (game.text == "Soul Seeker") {
     title = "Soul Seeker";
     content = "Your soul has been shattered, and you must search for the fragments before it's too late!";
     gameURL = 'SoulSeeker.html';
@@ -111,13 +111,13 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     content = "Can you defeat the evil dragon?";
     gameURL = 'DragonSlayer.html';
     imagePath = game.imagePath;
-  } */
-  if (game.text == "Scavenger Hunt") {
+  }
+  /*if (game.text == "Scavenger Hunt") {
     title = "Scavenger Hunt";
     content = "Search for pictures and fun facts!";
     gameURL = 'hozhoni_scavenger_hunt.html';
     imagePath = game.imagePath;
-  }
+  }*/
   if (game.text == "Measure Internet") {
     title = "Measure Internet";
     content = "Measure your connectivity!";
@@ -129,14 +129,14 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     content = "Testing this plz work!";
     imagePath = game.imagePath;
     gameURL = 'space_explorers_short.html';
-  }
+  }*/
 
   if (game.text == "Constellation Quest") {
     title = "Constellation Quest";
-    content = "Testing this plz work!";
+    content = "Can you find all of the stars?";
     imagePath = game.imagePath;
     gameURL = 'constellation_quest.html';
-  }*/
+  }
 
 
   return showDialog(
