@@ -16,6 +16,8 @@ import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:math';
+import 'surveys.dart';
+import 'home.dart';
 
 // data type for measurements
 class InternetMeasurement {
@@ -28,7 +30,7 @@ class InternetMeasurement {
     required this.jitters, required this.latency});
 }
 
-final loggingService = GetIt.instance<LoggingService>();
+//final loggingService = GetIt.instance<LoggingService>();
 
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
@@ -48,6 +50,7 @@ class SessionManager {
   static bool vpnStatus = false;
   static bool fakeLocationStatus = false;
   String userEmail = "";
+  static bool _sessionSaved = false;
 
   static String? get sessionId => _sessionId;
  // static String? get playerName => _playerName;
@@ -74,6 +77,7 @@ class SessionManager {
 
   // updates current game when game is started
   static void startGame(String gameTitle, String userEmail){
+    _sessionSaved = false;
     // make sure there is not a session unintentionally going, clear lists
     _startTime = DateTime.now();
     loggingService.logEvent('Starting $gameTitle at $startTime', email: userEmail);
@@ -135,21 +139,20 @@ class SessionManager {
 
 
   static Future<void> saveCurrentSession(String userEmail, UserDataProvider provider) async {
+    if (_sessionSaved) return;
+    _sessionSaved = true;
+
     VibrationController.stop();
     vpnStatus = await SessionManager().checkVPN();
     fakeLocationStatus = await SessionManager().checkFakeLocation();
     double distanceTraveled = calculateDistance(sessionLocationPoints);
     provider.updateDistanceTraveled(distanceTraveled, userEmail);
-    //provider.updateTotalPointsCollected(measurements.length, userEmail);
     DateTime endTime = DateTime.now();
-    debugPrint("[FLUTTER_BRIDGE] In endGameSession case.");
 
-    debugPrint("[FLUTTER_BRIDGE] Verifying measurements were recorded: $measurements");
     int numLocationPoints = sessionLocationPoints.length;
     double radiusGyration = calculateRadiusOfGyration(sessionLocationPoints);
     provider.updateRadiusGyration(radiusGyration, numLocationPoints, userEmail);
     provider.updateTotalLocationPoints(numLocationPoints, userEmail);
-
     // format data to send to firebase for this session
     final checkData = {
       'game': SessionManager.currentGame,
@@ -173,15 +176,12 @@ class SessionManager {
     };
     debugPrint("[FLUTTER_BRIDGE] Formatted data for firestore.");
 
-    // send to firebase
     try {
-      debugPrint("Attempting to write to Firestore...");
       await FirebaseFirestore.instance
           .collection('measurements')
           .doc(userEmail)
           .collection('sessions')
           .add(checkData);
-      debugPrint("Write successful!");
       loggingService.logEvent('Game session is saved to Firebase.', email: userEmail);
     } catch (e) {
       debugPrint("Firestore Error: $e");

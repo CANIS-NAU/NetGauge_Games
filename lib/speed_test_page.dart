@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
+import 'home.dart';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);

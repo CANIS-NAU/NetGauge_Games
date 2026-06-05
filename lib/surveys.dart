@@ -20,11 +20,17 @@ final FirebaseFirestore db = FirebaseFirestore.instance;
 class SurveyState extends StatefulWidget {
   final String surveyDocId;      // e.g. 'metux' or 'gemographic'
   final String responseCollection; // all going to survey responses right now...
+  final VoidCallback? onComplete;
+  final String? sessionId;
+  final String? gameTitle;
 
   const SurveyState({
     super.key,
     required this.surveyDocId,
     required this.responseCollection,
+    this.onComplete,
+    this.sessionId,
+    this.gameTitle,
   });
 
   @override
@@ -103,11 +109,10 @@ class _SurveyState extends State<SurveyState> {
                   }
                   if (_formKey.currentState!.validate()) {
                     await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
-                    addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
-                      );
+                    addUserData(userData.email, _questionResults, widget.surveyDocId, widget.sessionId, widget.gameTitle).then((_) {
+                      widget.onComplete != null
+                          ? widget.onComplete!()
+                          : Navigator.push(context, MaterialPageRoute(builder: (_) => const HomePage()));
                     });
                   }
                 }
@@ -118,40 +123,60 @@ class _SurveyState extends State<SurveyState> {
       ),
     );
   }
+
+
   Future<List<Question>> _fetchQuestions() async {
     try {
       print("Fetching questions for: ${widget.surveyDocId}");
       final doc = await db.collection('surveys').doc(widget.surveyDocId).get();
       print("Document exists: ${doc.exists}");
-      print("Document data: ${doc.data()}");
       if (!doc.exists) return [];
       final data = doc.data();
-      final rawQuestions = data?['questions'] as List<dynamic>;
+
+      // Handle both List and Map formats for the questions field
+      final rawQuestionsData = data?['questions'];
+      List<dynamic> rawQuestions;
+
+      if (rawQuestionsData is List) {
+        rawQuestions = rawQuestionsData;
+      } else if (rawQuestionsData is Map) {
+        // Sort by numeric key (0, 1, 2...) to preserve order
+        final sorted = (rawQuestionsData as Map<String, dynamic>).entries.toList()
+          ..sort((a, b) {
+            final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            return aInt.compareTo(bInt);
+          });
+        rawQuestions = sorted.map((e) => e.value).toList();
+      } else {
+        return [];
+      }
+
       print("Raw questions: $rawQuestions");
       return rawQuestions.map((q) {
         // Handle both array and map formats for backwards compatibility
         List<String> choices;
-        final rawChoices = q['choices'];
+        final rawChoices = q['choices'] ?? q['options'];
 
         if (rawChoices is List) {
           // New format: array preserves order
           choices = rawChoices.map((c) => c.toString()).toList();
         } else if (rawChoices is Map) {
-          final sorted = (rawChoices as Map<String, dynamic>).entries.toList()
-            ..sort((a, b) {
-              // Parse keys as integers for correct numeric ordering
-              final aInt = int.tryParse(a.key) ?? 0;
-              final bInt = int.tryParse(b.key) ?? 0;
-              return aInt.compareTo(bInt);
-            });
-          choices = sorted.map((e) => e.value.toString()).toList();
-        } else {
+        final sorted = (rawChoices as Map<String, dynamic>).entries.toList()
+          ..sort((a, b) {
+            // Strip 'option_' prefix before parsing as int
+            final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            return aInt.compareTo(bInt);
+          });
+        choices = sorted.map((e) => e.value.toString()).toList();
+      } else {
           choices = [];
         }
 
         return Question(
           question: q['text'],
-          isMandatory: q['mandatory'],
+          isMandatory: q['mandatory'] ?? false,  // <-- fallback to false if null
           answerChoices: {for (var c in choices) c: null},
         );
       }).toList();
@@ -164,7 +189,7 @@ class _SurveyState extends State<SurveyState> {
 
 
 // method for uploading data to the DB
-Future<void> addUserData(String userID, List<QuestionResult> results, String surveyDocId) async {
+Future<void> addUserData(String userID, List<QuestionResult> results, String surveyDocId, String? sessionId, String? gameTitle) async {
   final userData = {
     "ID": userID,
     "responses": results.map((r) => {
@@ -172,6 +197,8 @@ Future<void> addUserData(String userID, List<QuestionResult> results, String sur
       "answer": r.answers,
     }).toList(),
     "timestamp": FieldValue.serverTimestamp(),
+    if (sessionId != null) "session_id": sessionId,
+    if (gameTitle != null) "gameTitle": gameTitle,
   };
 
   try {

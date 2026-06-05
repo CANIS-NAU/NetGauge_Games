@@ -12,11 +12,19 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'remote_config_service.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 // app initialization
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await RemoteConfigService().initialize();
+
+  // Don't let a Remote Config failure block startup
+  try {
+    await RemoteConfigService().initialize();
+  } catch (e) {
+    debugPrint('[REMOTE CONFIG] Failed to initialize, using defaults: $e');
+  }
 
   final getIt = GetIt.instance;
   final loggingService = LoggingService();
@@ -29,17 +37,19 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (context) => UserDataProvider(),
-      child: const MyApp(),
+      child: MyApp(navigatorKey: navigatorKey),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
 
+  final GlobalKey<NavigatorState> navigatorKey;
+  const MyApp({super.key, required this.navigatorKey});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

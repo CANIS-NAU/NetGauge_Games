@@ -16,6 +16,9 @@ import 'package:uuid/uuid.dart';
 //import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'session_manager.dart';
+import 'main.dart';
+import 'surveys.dart';
+import 'home.dart';
 
 
 
@@ -48,15 +51,22 @@ class _WebViewPageState extends State<WebViewPage> {
   List<InternetMeasurement> measurements = [];
   final NDT7Service _ndt7Service = NDT7Service();
   DateTime? _lastMeasurementTime;
+  late String _cachedEmail;
+  late UserDataProvider _cachedUserData;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _cachedUserData = Provider.of<UserDataProvider>(context, listen: false);
+    _cachedEmail = _cachedUserData.email;
+  }
 
   @override
   void initState() {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
-    String userEmail = userData.email;
-
     super.initState();
-    SessionManager.startGame(widget.title, userEmail);
-    SessionManager.onWebViewClose = () async => await SessionManager.saveCurrentSession(userData.email, userData);
+    // Remove Provider.of here — use didChangeDependencies instead
+    SessionManager.onWebViewClose = () async =>
+    await SessionManager.saveCurrentSession(_cachedEmail, _cachedUserData);
     // create parameters for the platform-specific WebView controller
     const PlatformWebViewControllerCreationParams params =
         PlatformWebViewControllerCreationParams();
@@ -95,11 +105,27 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
-    SessionManager.saveCurrentSession(userData.email, userData).then((_) {
-      userData.fetchUserData();
-    });
     SessionManager.onWebViewClose = null;
+    final sessionId = SessionManager.sessionId;
+
+    SessionManager.saveCurrentSession(_cachedEmail, _cachedUserData).then((_) {
+      _cachedUserData.fetchUserData();
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => SurveyState(
+            surveyDocId: 'postGame',
+            gameTitle: SessionManager.currentGame,
+            responseCollection: 'responses',
+            sessionId: sessionId,
+            onComplete: () => navigatorKey.currentState?.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const HomePage()),
+                  (route) => false,
+            ),
+          ),
+        ),
+      );
+    });
+
     super.dispose();
   }
 
@@ -185,8 +211,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // case for when game is complete
         case 'endGameSession':
-          await SessionManager.saveCurrentSession(userData.email, userData);
-          await userData.fetchUserData();
+          await SessionManager.endGame(userData.email);
+          if (context.mounted) Navigator.pop(context); // closing triggers dispose → survey
           break;
 
         /*case 'publishPlayerName':
