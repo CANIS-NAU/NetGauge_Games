@@ -104,16 +104,22 @@ class _SurveyState extends State<SurveyState> {
 
                 onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
-                  if (widget.surveyDocId == 'demographic') {
-                    userData.setDemographicStatus();
-                  }
                   if (_formKey.currentState!.validate()) {
-                    await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
-                    addUserData(userData.email, _questionResults, widget.surveyDocId, widget.sessionId, widget.gameTitle).then((_) {
-                      widget.onComplete != null
-                          ? widget.onComplete!()
-                          : Navigator.push(context, MaterialPageRoute(builder: (_) => const HomePage()));
-                    });
+                    if (widget.surveyDocId == 'demographic') {
+                      await userData.setDemographicStatus();
+                    } else {
+                      // Only record the token for periodic surveys (like METUX)
+                      // so we don't accidentally skip them.
+                      await userData.recordSurveyToken(userData.email);
+                    }
+                    await addUserData(userData.email, _questionResults, widget.surveyDocId, widget.sessionId, widget.gameTitle);
+                    if (mounted) {
+                      if (widget.onComplete != null) {
+                        widget.onComplete!();
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    }
                   }
                 }
             ),
@@ -128,60 +134,102 @@ class _SurveyState extends State<SurveyState> {
   Future<List<Question>> _fetchQuestions() async {
     try {
       print("Fetching questions for: ${widget.surveyDocId}");
-      final doc = await db.collection('surveys').doc(widget.surveyDocId).get();
+      var doc = await db.collection('surveys').doc(widget.surveyDocId).get();
+      
+      // If not found, try lowercase version (e.g., METUX -> metux)
+      if (!doc.exists) {
+        print("Survey not found with ID ${widget.surveyDocId}, trying lowercase...");
+        doc = await db.collection('surveys').doc(widget.surveyDocId.toLowerCase()).get();
+      }
+
       print("Document exists: ${doc.exists}");
       if (!doc.exists) return [];
-      final data = doc.data();
+      final data = doc.data() ?? {};
+      print("Survey data keys: ${data.keys.toList()}");
 
-      // Handle both List and Map formats for the questions field
-      final rawQuestionsData = data?['questions'];
-      List<dynamic> rawQuestions;
-
-      if (rawQuestionsData is List) {
-        rawQuestions = rawQuestionsData;
-      } else if (rawQuestionsData is Map) {
-        // Sort by numeric key (0, 1, 2...) to preserve order
-        final sorted = (rawQuestionsData as Map<String, dynamic>).entries.toList()
-          ..sort((a, b) {
-            final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-            final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+      List<dynamic> rawQuestions = [];
+      
+      // 1. Try standard nested 'questions' or 'Questions' field first
+      final nestedQuestions = data['questions'] ?? data['Questions'];
+      
+      if (nestedQuestions != null) {
+        if (nestedQuestions is List) {
+          rawQuestions = nestedQuestions;
+        } else if (nestedQuestions is Map) {
+          // Sort by numeric key (0, 1, 2...) to preserve order
+          final sorted = (nestedQuestions as Map<String, dynamic>).entries.toList()
+            ..sort((a, b) {
+              final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              return aInt.compareTo(bInt);
+            });
+          rawQuestions = sorted.map((e) => e.value).toList();
+        }
+      } else {
+        // 2. Flat structure: questions are top-level fields (e.g. 'question1', 'question2'...)
+        final questionKeys = data.keys.where((k) => k.toLowerCase().startsWith('question')).toList();
+        if (questionKeys.isNotEmpty) {
+          print("Found flat structure with ${questionKeys.length} question fields.");
+          // Sort keys numerically so question2 comes before question10
+          questionKeys.sort((a, b) {
+            final aInt = int.tryParse(a.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+            final bInt = int.tryParse(b.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
             return aInt.compareTo(bInt);
           });
-        rawQuestions = sorted.map((e) => e.value).toList();
-      } else {
+          rawQuestions = questionKeys.map((k) => data[k]).toList();
+        }
+      }
+
+      if (rawQuestions.isEmpty) {
+        print("No questions found in document.");
         return [];
       }
 
-      print("Raw questions: $rawQuestions");
-      return rawQuestions.map((q) {
-        // Handle both array and map formats for backwards compatibility
-        List<String> choices;
+      print("Raw questions count: ${rawQuestions.length}");
+      final questions = rawQuestions.map((q) {
+        if (q == null) return null;
+        
+        List<String> choices = [];
         final rawChoices = q['choices'] ?? q['options'];
 
         if (rawChoices is List) {
-          // New format: array preserves order
           choices = rawChoices.map((c) => c.toString()).toList();
         } else if (rawChoices is Map) {
-        final sorted = (rawChoices as Map<String, dynamic>).entries.toList()
-          ..sort((a, b) {
-            // Strip 'option_' prefix before parsing as int
-            final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-            final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-            return aInt.compareTo(bInt);
-          });
-        choices = sorted.map((e) => e.value.toString()).toList();
-      } else {
-          choices = [];
+          final sorted = (rawChoices as Map<String, dynamic>).entries.toList()
+            ..sort((a, b) {
+              final aInt = int.tryParse(a.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              final bInt = int.tryParse(b.key.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+              return aInt.compareTo(bInt);
+            });
+          choices = sorted.map((e) => e.value.toString()).toList();
+        }
+
+        final text = (q['text'] ?? q['question'] ?? q['prompt'] ?? '').toString();
+        if (text.isEmpty) {
+          print("Warning: Skipping question with empty text: $q");
+          return null;
+        }
+
+        final rawMandatory = q['mandatory'] ?? q['required'];
+        bool isMandatory = false;
+        if (rawMandatory is bool) {
+          isMandatory = rawMandatory;
+        } else if (rawMandatory is String) {
+          isMandatory = rawMandatory.toLowerCase() == 'true';
         }
 
         return Question(
-          question: q['text'],
-          isMandatory: q['mandatory'] ?? false,  // <-- fallback to false if null
+          question: text,
+          isMandatory: isMandatory,
           answerChoices: {for (var c in choices) c: null},
         );
-      }).toList();
-    } catch (e) {
+      }).whereType<Question>().toList();
+
+      print("Successfully mapped ${questions.length} questions.");
+      return questions;
+    } catch (e, stack) {
       print("Error fetching questions: $e");
+      print(stack);
       return [];
     }
   }

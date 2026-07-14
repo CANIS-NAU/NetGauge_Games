@@ -118,24 +118,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _runStartupChecks(UserDataProvider userData) {
     if (!mounted) return;
 
-    final demographicStatus = userData.getDemographicStatus;
-    debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
-
-    if (!demographicStatus) {
-      debugPrint("[HOME] Demographic survey not taken. Prompting user.");
-      showSurveyPopup(context, "demographic");
-    }
-
-    /*if (!_onboardingShown) {
-      showCustomOnBoardingPopup(context);
-      if (mounted) setState(() => _onboardingShown = true);
-    }*/
-
     loggingService.logEvent('User is in homescreen.',
       email: userData.email,
       params: {'screen': 'HomeScreen'},
     );
-
   }
 
   void _checkAndShowSurvey() {
@@ -153,7 +139,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ).then((_) {
         // After demographic is done, check if METUX should also show
-        _checkAndShowMetux(userData);
+        // Brief delay to ensure the previous transition is finished
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _checkAndShowMetux(userData);
+        });
       });
       return; // Don't check METUX yet
     }
