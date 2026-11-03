@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1020382562858',
     projectId: 'nauimg-524b6',
     storageBucket: 'nauimg-524b6.firebasestorage.app',
-    iosBundleId: 'NetGague.Games',
+    iosBundleId: 'com.pht.netgauge',
   );
 }
