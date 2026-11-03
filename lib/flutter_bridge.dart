@@ -273,22 +273,16 @@ class _WebViewPageState extends State<WebViewPage> {
 
 
 
-            // get user location
-            final loc = await determineLocationData();
-            LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
-            locationPoints.add(point);
-            SessionManager.sessionLocationPoints.add(point);
+            // get user location; the measurement is still recorded without it if location is unavailable
+            LocationData? loc;
+            try {
+              loc = await determineLocationData();
+            } catch (e) {
+              debugPrint("[FLUTTER_BRIDGE] Location unavailable, recording measurement without it: $e");
+            }
 
-            // convert point to geohash, this is for mapping points later
-            final GeoFirePoint geoFirePoint = GeoFirePoint(GeoPoint(point.longitude, point.latitude));
-            String hash = geoFirePoint.geohash;
-
-            // upload data to firebase
-            final checkData = {
+            final checkData = <String, dynamic>{
               'game': SessionManager.currentGame,
-              'latitude': loc.position.latitude,
-              'longitude': loc.position.longitude,
-              'geohash': hash,
               'download_speed': download['speedMbps'],
               'upload_speed': upload['speedMbps'],
               'latency': download['latency'],
@@ -296,6 +290,18 @@ class _WebViewPageState extends State<WebViewPage> {
               'session_id': SessionManager.sessionId,
               'vpn_used' : vpn_status,
             };
+
+            if (loc != null) {
+              LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
+              locationPoints.add(point);
+              SessionManager.sessionLocationPoints.add(point);
+
+              // convert point to geohash, this is for mapping points later
+              final GeoFirePoint geoFirePoint = GeoFirePoint(GeoPoint(point.longitude, point.latitude));
+              checkData['latitude'] = loc.position.latitude;
+              checkData['longitude'] = loc.position.longitude;
+              checkData['geohash'] = geoFirePoint.geohash;
+            }
 
             try {
               debugPrint("Attempting to write to Firestore...");
@@ -379,14 +385,17 @@ class _WebViewPageState extends State<WebViewPage> {
         '[WRITECHECKDATA] Writing to Firestore with session: $sessionId');
     debugPrint('[WRITECHECKDATA] Payload: $payload');
 
-    // get location
-    final loc = await determineLocationData();
-    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
-    locationPoints.add(point);
+    // get location; still write the payload without it if location is unavailable
+    try {
+      final loc = await determineLocationData();
+      locationPoints.add(LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude));
+      payload['latitude'] = loc.position.latitude;
+      payload['longitude'] = loc.position.longitude;
+    } catch (e) {
+      debugPrint('[WRITECHECKDATA] Location unavailable, writing without it: $e');
+    }
 
     // write additional data to payload before publishing to firestore
-    payload['latitude'] = loc.position.latitude;
-    payload['longitude'] = loc.position.longitude;
     payload['sessionId'] = sessionId;
 
     // add the payload to firestore

@@ -82,8 +82,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       detailedLog = 'Step 1: Initializing...\n';
       errorLog = '';
     });
-    // write data to firestore
-    final loc = await determineLocationData();
     //final nickname = SessionManager.playerName;
     //final sessionId = SessionManager.sessionId;
 
@@ -142,7 +140,13 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         detailedLog += 'Step 4: Saving to Firestore...\n';
       });
 
-      final loc = await determineLocationData();
+      // location is optional: save the measurement even if location is unavailable
+      LocationData? loc;
+      try {
+        loc = await determineLocationData();
+      } catch (e) {
+        debugPrint('[SPEED_TEST] Location unavailable, saving without it: $e');
+      }
       final sessionId = SessionManager.sessionId;
 
       var gameSessionID = Uuid();
@@ -151,8 +155,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       final checkData = {
         'game': 'Speedtest',
         'session_id': sessionStringID,
-        'latitude': loc.position.latitude,
-        'longitude': loc.position.longitude,
+        if (loc != null) 'latitude': loc.position.latitude,
+        if (loc != null) 'longitude': loc.position.longitude,
         'download_speed': download['speedMbps'],
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],

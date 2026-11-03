@@ -67,9 +67,15 @@ class _LikertFormState extends State<LikertForm> {
       // Get location data for the current session
       final sessionLocationData = await _getSessionLocationData();
       
-      // Get current location for map center
-      final loc = await determineLocationData();
-      
+      // Location is optional: if services/permission are off, MapPage falls back to its default center
+      LatLng? center;
+      try {
+        final loc = await determineLocationData();
+        center = LatLng(loc.position.latitude, loc.position.longitude);
+      } catch (e) {
+        debugPrint('[LIKERT_FORM] Location unavailable, using default map center: $e');
+      }
+
       // Use session data if available, otherwise fall back to static data
       final mapData = sessionLocationData.isNotEmpty ? sessionLocationData : heatmapData;
       
@@ -82,7 +88,7 @@ class _LikertFormState extends State<LikertForm> {
             gradients: gradients,
             index: 0,
             rebuildStream: const Stream<void>.empty(),
-            center: LatLng(loc.position.latitude, loc.position.longitude),
+            center: center,
           ),
         ),
         (route) => route.isFirst, // Keep only the home page in the stack
