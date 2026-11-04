@@ -16,11 +16,12 @@ class DataPoint {
   final double uploadSpeed;
   final double downloadSpeed;
   final double latency;
+  final double jitter;
   final String gamePlayed;
   final String email;
 
   DataPoint({required this.point, required this.timestamp, required this.uploadSpeed,
-    required this.downloadSpeed, required this.latency, required this.gamePlayed, required this.email});
+    required this.downloadSpeed, required this.latency, required this.jitter, required this.gamePlayed, required this.email});
 
   factory DataPoint.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -35,6 +36,7 @@ class DataPoint {
       uploadSpeed: (data['upload_speed'] as num? ?? data['uploadSpeed'] as num? ?? 0.0).toDouble(),
       downloadSpeed: (data['download_speed'] as num? ?? data['downloadSpeed'] as num? ?? 0.0).toDouble(),
       latency: (data['latency'] as num? ?? 0.0).toDouble(),
+      jitter: (data['jitter'] as num? ?? 0.0).toDouble(),
       gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
       email: data['email'] as String? ?? 'Unknown',
     );
@@ -207,6 +209,7 @@ class _DynamicMapState extends State<DynamicMap> {
                       Text('Download: ${clickedDp.downloadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Upload: ${clickedDp.uploadSpeed.toStringAsFixed(2)} Mbps'),
                       Text('Latency: ${clickedDp.latency.toStringAsFixed(0)} ms'),
+                      Text('Jitter: ${clickedDp.jitter.toStringAsFixed(1)} ms'),
                     ],
                   ),
                   actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],

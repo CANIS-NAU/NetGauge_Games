@@ -110,6 +110,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
         downloadSpeed = '${download['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
         latency = '${download['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
+        jitter = '${download['jitter']?.toStringAsFixed(2) ?? '0.00'} ms';
       });
 
       setState(() {
@@ -154,7 +155,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         uploadSpeed: upload['speedMbps'],
         downloadSpeed: download['speedMbps'],
         latency: download['latency'],
-        jitters: 0.0,
+        jitters: download['jitter'] ?? 0.0,
       ));
       if (loc != null) {
         SessionManager.sessionLocationPoints.add(
@@ -173,6 +174,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'download_speed': download['speedMbps'],
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
+        'jitter': download['jitter'],
         'timestamp': FieldValue.serverTimestamp(),
       };
 
@@ -184,7 +186,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
       setState(() {
         detailedLog += 'Data saved to Firestore\n';
-        jitter = '-1';
         packetLoss = '-1';
       });
 

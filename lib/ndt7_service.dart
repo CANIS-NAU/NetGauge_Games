@@ -57,12 +57,23 @@ class NDT7Service {
             'downloadSpeed': download['speedMbps'],
             'uploadSpeed': upload['speedMbps'],
             'latency': download['latency'],
-            'jitter': -1,
+            'jitter': download['jitter'],
             'packetLoss': -1,
         };
     }
 
-    // Measures download speed
+    // Jitter is the average change between consecutive RTT samples (as in RFC 3550), in the same unit as the samples.
+    // With fewer than two samples there is nothing to compare, so it is reported as 0.
+    static double calculateJitter(List<double> rttSamples) {
+        if (rttSamples.length < 2) return 0.0;
+        double totalDifference = 0.0;
+        for (int i = 1; i < rttSamples.length; i++) {
+            totalDifference += (rttSamples[i] - rttSamples[i - 1]).abs();
+        }
+        return totalDifference / (rttSamples.length - 1);
+    }
+
+    // Measures download speed, latency and jitter
     Future<Map<String, dynamic>> runDownloadTest(
         Function(String) onStatus) async {
 
@@ -84,6 +95,8 @@ class NDT7Service {
         int jsonMessageCount = 0;
         int binaryMessageCount = 0;
         double? minRTT;
+        // every RTT sample (in ms) the server reports during the test, used to calculate jitter
+        final List<double> rttSamples = [];
         bool testStarted = false;
 
         final completer = Completer<Map<String, dynamic>>();
@@ -114,6 +127,10 @@ class NDT7Service {
                         final tcpInfo = data['TCPInfo'];
                         if (tcpInfo is Map && tcpInfo['MinRTT'] is num) {
                             minRTT = (tcpInfo['MinRTT'] as num) / 1000.0;
+                        }
+                        // TCPInfo.RTT (also microseconds) is the current round trip time; keep each sample
+                        if (tcpInfo is Map && tcpInfo['RTT'] is num) {
+                            rttSamples.add((tcpInfo['RTT'] as num) / 1000.0);
                         }
 
                         if (jsonMessageCount % 10 == 0) {
@@ -159,9 +176,16 @@ class NDT7Service {
                     ? (bytesReceived * 8) / (durationSeconds * 1e6)
                     : 0.0;
 
+                // latency is the lowest RTT seen, falling back to the average if MinRTT was never reported
+                final latency = minRTT ??
+                    (rttSamples.isNotEmpty ? rttSamples.reduce((a, b) => a + b) / rttSamples.length : 0.0);
+                final jitter = calculateJitter(rttSamples);
+                onStatus('Latency: ${latency.toStringAsFixed(1)} ms, jitter: ${jitter.toStringAsFixed(2)} ms (${rttSamples.length} RTT samples)');
+
                 completer.complete({
                     'speedMbps': speedMbps,
-                    'latency': minRTT ?? 0,
+                    'latency': latency,
+                    'jitter': jitter,
                     'bytesReceived': bytesReceived,
                     'duration': durationSeconds,
                     'messageCount': jsonMessageCount + binaryMessageCount,

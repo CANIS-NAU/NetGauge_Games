@@ -265,7 +265,7 @@ class _WebViewPageState extends State<WebViewPage> {
               uploadSpeed:  upload['speedMbps'],
               downloadSpeed: download['speedMbps'],
               latency: download['latency'],
-              jitters: 0.0,
+              jitters: download['jitter'] ?? 0.0,
             );
             loggingService.logEvent('Player measured their internet.', email: userData.email);
             debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
@@ -286,6 +286,7 @@ class _WebViewPageState extends State<WebViewPage> {
               'download_speed': download['speedMbps'],
               'upload_speed': upload['speedMbps'],
               'latency': download['latency'],
+              'jitter': download['jitter'],
               'timestamp': FieldValue.serverTimestamp(),
               'session_id': SessionManager.sessionId,
               'vpn_used' : vpn_status,
