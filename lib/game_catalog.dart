@@ -125,7 +125,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     imagePath = game.imagePath;
   }
 
-  /*if (game.text == "Space Explorers") {
+  if (game.text == "Space Explorers") {
     title = "Space Explorers";
     content = "Testing this plz work!";
     imagePath = game.imagePath;
@@ -137,7 +137,7 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
     content = "Testing this plz work!";
     imagePath = game.imagePath;
     gameURL = 'constellation_quest.html';
-  }*/
+  }
 
 
   return showDialog(
