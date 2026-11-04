@@ -98,19 +98,22 @@ class _SurveyState extends State<SurveyState> {
 
                 onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
-                  if (widget.surveyDocId == 'demographic') {
-                    userData.setDemographicStatus();
-                  }
                   if (_formKey.currentState!.validate()) {
-                    await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
+                    final isDemographic = widget.surveyDocId == 'demographic';
+                    if (isDemographic) {
+                      await userData.setDemographicStatus();
+                    } else {
+                      // only the remote-config survey (METUX etc.) counts as this wave's survey being seen;
+                      // recording it for the demographic survey would stop METUX from ever being shown
+                      await userData.recordSurveyToken(userData.email);
+                    }
                     final messenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       // the messenger belongs to the app, so the message stays visible after this page closes
                       messenger.showSnackBar(const SnackBar(content: Text('Survey submitted')));
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
-                      );
+                      // return to the screen that opened the survey, which can then show the next one
+                      navigator.pop();
                     });
                   }
                 }

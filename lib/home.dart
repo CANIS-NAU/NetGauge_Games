@@ -118,13 +118,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _runStartupChecks(UserDataProvider userData) {
     if (!mounted) return;
 
-    final demographicStatus = userData.getDemographicStatus;
-    debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
-
-    if (!demographicStatus) {
-      debugPrint("[HOME] Demographic survey not taken. Prompting user.");
-      showSurveyPopup(context, "demographic");
-    }
+    // the demographic survey itself is opened by _checkAndShowSurvey, so no extra pop-up is shown here
 
     /*if (!_onboardingShown) {
       showCustomOnBoardingPopup(context);
