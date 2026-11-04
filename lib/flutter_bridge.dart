@@ -567,11 +567,16 @@ class _WebViewPageState extends State<WebViewPage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: controller),
-          if (isLoading) const Center(child: CircularProgressIndicator()),
-        ],
+      // SafeArea keeps the game's bottom buttons out from under the system navigation bar
+      // (gesture area or home/back buttons), which newer Android versions draw over the app
+      body: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            WebViewWidget(controller: controller),
+            if (isLoading) const Center(child: CircularProgressIndicator()),
+          ],
+        ),
       ),
     );
   }

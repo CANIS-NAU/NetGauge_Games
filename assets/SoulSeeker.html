@@ -212,7 +212,45 @@ body {
 .button-link:hover {
     background-color: #45a049;
 }
-/* END BUTTON STYLING */</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
+/* END BUTTON STYLING */
+
+/* CENTERED LAYOUT: centers buttons and images/figures on every screen size.
+   Display-only rules; no story text or links are touched. */
+.passage button:not(.button-link),
+.passage input[type="button"],
+.passage input[type="submit"] {
+  display: block;
+  margin: 0.6em auto;
+}
+
+.passage img:not(.icon-image) {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  height: auto;
+}
+/* END CENTERED LAYOUT */
+
+/* CENTERED COLUMN: on phones SugarCube leaves room for the stowed side bar on the left only,
+   which pushes everything right of true center. Mirror it on the right so content is centered. */
+@media screen and (max-width: 768px) {
+  #story { margin-right: 3.5em; }
+}
+/* END CENTERED COLUMN */
+
+/* TAP-FRIENDLY CONTROLS: stops double-tap zoom and text selection from interfering when tapping
+   buttons and links. Display-only; no story text or links are touched. */
+.passage button,
+.passage a,
+.passage input[type="button"],
+.passage input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* END TAP-FRIENDLY CONTROLS */
+</style><script role="script" id="twine-user-script" type="text/twine-javascript">// FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2
 function calculateHexagonVertices(centerLatitude, centerLongitude, area) {
