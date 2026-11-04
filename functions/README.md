@@ -1,3 +1,7 @@
+> **Not in use.** This project is on the Firebase Spark plan, which cannot deploy Cloud Functions. The anonymized
+> `public_measurements` copies are written by the app instead (see `lib/public_measurements.dart`). This folder is kept
+> only in case the project moves to the Blaze plan later.
+
 # NetGauge Cloud Functions
 
 `publishAnonymizedMeasurement` copies each document in `measurements/{email}/collected_measurements`

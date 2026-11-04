@@ -72,6 +72,21 @@ class _SurveyState extends State<SurveyState> {
       body:
       _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _initialData.isEmpty
+          // never show a survey with nothing to answer
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('This survey is not available right now.', textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                  ],
+                ),
+              ),
+            )
           : Form(
         key: _formKey,
         child: Survey(
@@ -79,7 +94,7 @@ class _SurveyState extends State<SurveyState> {
           initialData: _initialData,
         ),
       ),
-      bottomNavigationBar: Column(
+      bottomNavigationBar: (_isLoading || _initialData.isEmpty) ? null : Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 5),
@@ -98,19 +113,21 @@ class _SurveyState extends State<SurveyState> {
 
                 onPressed: () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
-                  if (widget.surveyDocId == 'demographic') {
-                    userData.setDemographicStatus();
-                  }
                   if (_formKey.currentState!.validate()) {
-                    await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
+                    if (widget.surveyDocId == 'demographic') {
+                      await userData.setDemographicStatus();
+                    } else {
+                      // only the remote-config survey (METUX etc.) counts as this wave's survey being seen;
+                      // recording it for the demographic survey would stop METUX from ever being shown
+                      await userData.recordSurveyToken(userData.email);
+                    }
                     final messenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
                       // the messenger belongs to the app, so the message stays visible after this page closes
                       messenger.showSnackBar(const SnackBar(content: Text('Survey submitted')));
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
-                      );
+                      // return to the screen that opened the survey, which can then show the next one
+                      navigator.pop();
                     });
                   }
                 }

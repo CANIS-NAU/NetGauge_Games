@@ -7,6 +7,7 @@ import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:async'; // needed for StreamSubscription
 import 'user_data_manager.dart';
+import 'public_measurements.dart';
 import 'location_service.dart';
 import 'package:provider/provider.dart';
 
@@ -133,6 +134,9 @@ class _DynamicMapState extends State<DynamicMap> {
       debugPrint("MAPS ERROR: User email is empty.");
       return;
     }
+
+    // make sure this user's older measurements are also in the shared collection (a no-op after the first time)
+    PublicMeasurements.backfillOwn(userData.email);
 
     // switching scope replaces the previous subscription
     _streamSubscription?.cancel();

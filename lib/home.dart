@@ -16,6 +16,7 @@ import 'package:get_it/get_it.dart';
 import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -122,13 +123,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void _runStartupChecks(UserDataProvider userData) {
     if (!mounted) return;
 
-    final demographicStatus = userData.getDemographicStatus;
-    debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
-
-    if (!demographicStatus) {
-      debugPrint("[HOME] Demographic survey not taken. Prompting user.");
-      showSurveyPopup(context, "demographic");
-    }
+    // the demographic survey itself is opened by _checkAndShowSurvey, so no extra pop-up is shown here
 
     /*if (!_onboardingShown) {
       showCustomOnBoardingPopup(context);
@@ -142,49 +137,66 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
-  void _checkAndShowSurvey() {
+  // true if the survey document exists and has at least one question, so we never open an empty survey
+  Future<bool> _surveyHasQuestions(String surveyDocId) async {
+    if (surveyDocId.isEmpty) return false;
+    try {
+      final doc = await firestore.FirebaseFirestore.instance.collection('surveys').doc(surveyDocId).get();
+      final questions = doc.data()?['questions'];
+      return questions is List && questions.isNotEmpty;
+    } catch (e) {
+      debugPrint("[HOME] Could not check survey $surveyDocId: $e");
+      return false;
+    }
+  }
+
+  Future<void> _checkAndShowSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
 
-    // Priority 1: Demographic survey on first open, always
+    // Priority 1: Demographic survey on first open
     if (!userData.getDemographicStatus) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SurveyState(
-            surveyDocId: 'demographic',
-            responseCollection: 'responses',
+      if (await _surveyHasQuestions('demographic')) {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SurveyState(
+              surveyDocId: 'demographic',
+              responseCollection: 'responses',
+            ),
           ),
-        ),
-      ).then((_) {
+        );
         // After demographic is done, check if METUX should also show
-        _checkAndShowMetux(userData);
-      });
+        if (mounted) await _checkAndShowMetux(userData);
+      }
       return; // Don't check METUX yet
     }
 
     // Priority 2: Remote Config-controlled survey (METUX etc.)
-    _checkAndShowMetux(userData);
+    await _checkAndShowMetux(userData);
   }
 
-  void _checkAndShowMetux(UserDataProvider userData) {
-    if (userData.shouldShowSurvey) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SurveyState(
-            surveyDocId: userData.remoteSurveyDocId,
-            responseCollection: 'responses',
-          ),
+  Future<void> _checkAndShowMetux(UserDataProvider userData) async {
+    if (!userData.shouldShowSurvey) return;
+    if (!await _surveyHasQuestions(userData.remoteSurveyDocId)) return;
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SurveyState(
+          surveyDocId: userData.remoteSurveyDocId,
+          responseCollection: 'responses',
         ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _waitForDataThenCheckSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
 
-    // Wait until data is done loading
-    if (userData.isLoading) {
+    // Wait until the user's account data has actually loaded. Checking earlier would see an empty profile and
+    // think the demographic survey was never taken, even for returning users.
+    if (userData.userData == null || userData.isLoading) {
       userData.addListener(_onDataLoaded);
       return;
     }
@@ -194,7 +206,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _onDataLoaded() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    if (!userData.isLoading) {
+    if (userData.userData != null && !userData.isLoading) {
       userData.removeListener(_onDataLoaded);
       _checkAndShowSurvey();
     }

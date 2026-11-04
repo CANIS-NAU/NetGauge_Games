@@ -16,6 +16,7 @@ function toPublicMeasurement(data) {
     download_speed: isNum(data.download_speed) ? data.download_speed : 0,
     upload_speed: isNum(data.upload_speed) ? data.upload_speed : 0,
     latency: isNum(data.latency) ? data.latency : 0,
+    jitter: isNum(data.jitter) ? data.jitter : 0,
   };
 }
 
