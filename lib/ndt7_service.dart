@@ -109,11 +109,11 @@ class NDT7Service {
                             }
                         }
 
-                        if (data.containsKey('ConnectionInfo') && data['ConnectionInfo'] != null) {
-                            if (data['ConnectionInfo']['Client'] != null &&
-                                data['ConnectionInfo']['Client']['RTO'] != null) {
-                                minRTT = data['ConnectionInfo']['Client']['RTO'] / 1000.0;
-                            }
+                        // TCPInfo.MinRTT is reported in microseconds; convert to milliseconds for latency
+                        // (ConnectionInfo.Client is just an address string, so it holds no RTT)
+                        final tcpInfo = data['TCPInfo'];
+                        if (tcpInfo is Map && tcpInfo['MinRTT'] is num) {
+                            minRTT = (tcpInfo['MinRTT'] as num) / 1000.0;
                         }
 
                         if (jsonMessageCount % 10 == 0) {

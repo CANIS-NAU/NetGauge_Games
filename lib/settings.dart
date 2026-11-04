@@ -13,17 +13,37 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'daily_reminder_service.dart';
 
-class Settings extends StatelessWidget {
+class Settings extends StatefulWidget {
   const Settings({super.key});
 
-  Future<void> logout(BuildContext context) async {
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  bool _dailyReminderEnabled = DailyReminderService.isEnabled;
+
+  Future<void> _toggleDailyReminder(bool value) async {
+    setState(() => _dailyReminderEnabled = value);
+    final enabled = await DailyReminderService.setEnabled(value);
+    if (!mounted) return;
+    setState(() => _dailyReminderEnabled = enabled);
+    if (value && !enabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notifications are blocked. Enable them for NetGauge in your device settings.')),
+      );
+    }
+  }
+
+  Future<void> logout() async {
     try {
       await FirebaseAuth.instance.signOut();
       
       // Use pushAndRemoveUntil to clear the entire navigation stack
       // This prevents the user from using the back button to return to the app
-      if (context.mounted) {
+      if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
           (Route<dynamic> route) => false, // Remove all previous routes
@@ -85,13 +105,31 @@ class Settings extends StatelessWidget {
               //TODO: Nice-to-have-->add a trailing expand icon here
             ),*/
             const SizedBox(height: 20),
+            const CircleAvatar(
+              backgroundColor: Colors.purple,
+              radius: 60,
+              child: Icon(
+                Icons.person,
+                size: 60,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SwitchListTile(
+              activeThumbColor: Colors.purple,
+              title: const Text('Daily reminder'),
+              subtitle: const Text('Get a notification once a day to check into the app'),
+              value: _dailyReminderEnabled,
+              onChanged: _toggleDailyReminder,
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(20),
               ),
-              onPressed: () => logout(context),
+              onPressed: logout,
               child: const Text('Logout',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,

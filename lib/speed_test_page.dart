@@ -149,6 +149,19 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       }
       final sessionId = SessionManager.sessionId;
 
+      // record this test in the current session so it is saved to measurements/{email}/sessions when the page closes
+      SessionManager.addMeasurement(InternetMeasurement(
+        uploadSpeed: upload['speedMbps'],
+        downloadSpeed: download['speedMbps'],
+        latency: download['latency'],
+        jitters: 0.0,
+      ));
+      if (loc != null) {
+        SessionManager.sessionLocationPoints.add(
+          LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude),
+        );
+      }
+
       var gameSessionID = Uuid();
       String sessionStringID = gameSessionID.toString();
 
@@ -226,7 +239,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context);
     loggingService.logEvent('User is in speed-test control page.', email: userData.email);
-    SessionManager.startGame('Speed Tester', userData.email);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,

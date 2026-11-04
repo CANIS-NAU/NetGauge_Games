@@ -23,11 +23,12 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "NetGague.Games"
+    namespace "com.pht.netgauge"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -42,7 +43,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "NetGague.Games"
+        applicationId "com.pht.netgauge"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion flutter.minSdkVersion
@@ -65,6 +66,7 @@ flutter {
 }
 
 dependencies{
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation "com.google.firebase:firebase-analytics"
     implementation "com.google.firebase:firebase-firestore"
 }

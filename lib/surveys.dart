@@ -103,7 +103,10 @@ class _SurveyState extends State<SurveyState> {
                   }
                   if (_formKey.currentState!.validate()) {
                     await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
+                    final messenger = ScaffoldMessenger.of(context);
                     addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
+                      // the messenger belongs to the app, so the message stays visible after this page closes
+                      messenger.showSnackBar(const SnackBar(content: Text('Survey submitted')));
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const HomePage()),

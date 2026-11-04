@@ -9,6 +9,7 @@ import 'widgets/buttons.dart';
 import 'flutter_bridge.dart';
 import 'session_manager.dart';
 import 'location_logger.dart';
+import 'post_game_survey.dart';
 import 'vibration_controller.dart';
 import 'user_data_manager.dart';
 import 'activity_logs.dart';
@@ -192,6 +193,9 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   final userData = Provider.of<UserDataProvider>(context, listen: false);
   loggingService.logEvent('Launching $title', email: userData.email);
 
+  // keep the navigator: the dialog's context is no longer valid once the game ends
+  final navigator = Navigator.of(context);
+
   // Close the dialog first
   Navigator.pop(context);
 
@@ -200,37 +204,53 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   // begin location logging
   LocationLogger.start();
 
-  if(title == 'Measure Internet') {
+  final isSpeedTest = title == 'Measure Internet';
+  if (isSpeedTest) {
     loggingService.logEvent('Clicked measure internet.', email: userData.email);
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => const SpeedTestPage()
-        )
-    );
-  } else {
-    // navigate to the WebViewPage
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WebViewPage(title: title, gameFile: gameFile),
-      ),
-    ).then((_) async {
+  }
+
+  // Measure Internet is a native page, every other game runs in the WebView
+  final gamePage = isSpeedTest
+      ? MaterialPageRoute(builder: (context) => const SpeedTestPage())
+      : MaterialPageRoute(builder: (context) => WebViewPage(title: title, gameFile: gameFile));
+
+  // the end-of-session handling below runs for every game, including Measure Internet
+  navigator.push(gamePage).then((_) async {
+    // grab the session ID before the session is cleared, so the survey can be tied to it
+    final sessionId = SessionManager.sessionId ?? '';
+
+    // a failure while wrapping up the session must never keep the survey from being offered
+    try {
+      // the WebView games save their own session as they close; Measure Internet saves its session here,
+      // while the current game is still set, and only if at least one test was run
+      if (isSpeedTest && SessionManager.measurements.isNotEmpty) {
+        await SessionManager.saveCurrentSession(userData.email, userData);
+        userData.fetchUserData();
+      }
       // log the game end with the session manager
       SessionManager.endGame(userData.email); // also will stop logging location
       // Stop the vibration service, in case the game started it
       VibrationController.stop();
       loggingService.logEvent('Game complete: $title', email: userData.email);
+    } catch (e, stackTrace) {
+      debugPrint('[GAME_CATALOG] Error ending session for $title: $e\n$stackTrace');
+    }
 
-      // TODO: Navigate to home page
-      /*Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => home(gameTitle: title),
-      ),
-    );*/
-    });
-  }
+    // offer the optional post-game survey (skips are logged inside)
+    try {
+      debugPrint('[GAME_CATALOG] Offering post-game survey for $title (navigator mounted: ${navigator.mounted}).');
+      if (navigator.mounted) {
+        await offerPostGameSurvey(
+          navigator.context,
+          gameTitle: title,
+          sessionId: sessionId,
+          email: userData.email,
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[GAME_CATALOG] Error offering post-game survey: $e\n$stackTrace');
+    }
+  });
 }
 
 void updateFavorites(GameData game, BuildContext context) {

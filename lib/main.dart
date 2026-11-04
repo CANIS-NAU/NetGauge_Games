@@ -11,6 +11,7 @@ import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'remote_config_service.dart';
+import 'daily_reminder_service.dart';
 
 // app initialization
 void main() async {
@@ -25,6 +26,8 @@ void main() async {
 
   final notificationSettings = await FirebaseMessaging.instance.requestPermission(provisional: true);
   final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
+
+  await DailyReminderService.init();
 
   runApp(
     ChangeNotifierProvider(
@@ -56,6 +59,7 @@ class MyApp extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Provider.of<UserDataProvider>(context, listen: false)
                   .fetchUserData();
+              DailyReminderService.scheduleIfEnabled();
             });
             return const HomePage();
           }
@@ -64,6 +68,7 @@ class MyApp extends StatelessWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Provider.of<UserDataProvider>(context, listen: false)
                 .clearData();
+            DailyReminderService.cancel();
           });
 
           return const LoginPage();
