@@ -67,6 +67,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _handleMessage(RemoteMessage message) {
+    // guests are not shown surveys
+    if (Provider.of<UserDataProvider>(context, listen: false).isGuestUser) return;
     if (message.data['type'] == 'survey') {
       Navigator.pushNamed(context, '/survey',
         arguments: SurveyState(surveyDocId: message.data['type'], responseCollection: 'survey_responses',),
@@ -121,7 +123,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final demographicStatus = userData.getDemographicStatus;
     debugPrint("[HOME] Checking demographic survey status: $demographicStatus");
 
-    if (!demographicStatus) {
+    // guests are not shown surveys
+    if (!demographicStatus && !userData.isGuestUser) {
       debugPrint("[HOME] Demographic survey not taken. Prompting user.");
       showSurveyPopup(context, "demographic");
     }
@@ -140,6 +143,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   void _checkAndShowSurvey() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+
+    // guests are not shown surveys
+    if (userData.isGuestUser) return;
 
     // Priority 1: Demographic survey on first open, always
     if (!userData.getDemographicStatus) {
@@ -269,12 +275,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               // add expand player statistics button
               TextButton(
-                onPressed: () => {
+                onPressed: () {
+                  loggingService.logEvent('Clicked expand player statistics', email: userData.email);
+                  // statistics belong to an account, so guests only get a message
+                  if (userData.isGuestUser) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Must be logged into an account to view')),
+                    );
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const PlayerStatistics()),
-                  ),
-                  loggingService.logEvent('Clicked expand player statistics', email: userData.email)
+                  );
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(

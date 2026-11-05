@@ -142,6 +142,8 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
+  // true when using the app as a guest (anonymous sign-in, no account)
+  bool get isGuestUser => isGuest(FirebaseAuth.instance.currentUser);
   int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
   // Falls back to the signed-in account's ID (email, or a guest ID) while the user document has not loaded,
