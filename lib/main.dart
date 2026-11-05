@@ -43,6 +43,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Newer Android versions draw apps edge to edge, so the system navigation bar (gesture area or the
+      // home/back buttons) would cover the bottom of every screen, including the maps. Keeping every
+      // screen clear of it here fixes that in one place; the top is left to each screen's AppBar.
+      builder: (context, child) => ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {

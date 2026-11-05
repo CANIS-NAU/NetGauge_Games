@@ -143,7 +143,13 @@ class UserDataProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
-  String get email => _userData?['email'] ?? '';
+  // Falls back to the signed-in account's email while the user document has not loaded (or has no email field),
+  // so anything that needs the email as a Firestore document ID never gets an empty string.
+  String get email {
+    final fromDocument = _userData?['email'];
+    if (fromDocument is String && fromDocument.isNotEmpty) return fromDocument;
+    return FirebaseAuth.instance.currentUser?.email ?? '';
+  }
 
   bool get getDemographicStatus => (_userData?['demographicsSurveyTaken'] as bool?) ?? false;
   

@@ -12,6 +12,7 @@ import 'ndt7_service.dart';
 import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
+import 'public_measurements.dart';
 import 'package:uuid/uuid.dart';
 //import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
@@ -305,12 +306,14 @@ class _WebViewPageState extends State<WebViewPage> {
 
             try {
               debugPrint("Attempting to write to Firestore...");
-              await FirebaseFirestore.instance
+              final savedRef = await FirebaseFirestore.instance
                   .collection('measurements')
                   .doc(userData.email)
                   .collection('collected_measurements')
                   .add(checkData);
               debugPrint("Write successful!");
+              // also publish the anonymized copy that the shared map reads
+              await PublicMeasurements.publish(savedRef.id, checkData);
             } catch (e) {
               debugPrint("Firestore Error: $e");
             }
