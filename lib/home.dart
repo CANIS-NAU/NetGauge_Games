@@ -68,6 +68,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   }
 
   void _handleMessage(RemoteMessage message) {
+    // guests are not shown surveys
+    if (Provider.of<UserDataProvider>(context, listen: false).isGuestUser) return;
     if (message.data['type'] == 'survey') {
       Navigator.pushNamed(
         context,
@@ -152,6 +154,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   Future<void> _checkAndShowSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+
+    // guests are not shown surveys
+    if (userData.isGuestUser) return;
 
     // Priority 1: Demographic survey on first open
     if (!userData.getDemographicStatus) {
@@ -285,15 +290,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   ),
                   // add expand player statistics button
                   TextButton(
-                    onPressed: () => {
+                    onPressed: () {
+                      loggingService.logEvent('Clicked expand player statistics', email: userData.email);
+                      // statistics belong to an account, so guests only get a message
+                      if (userData.isGuestUser) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Must be logged into an account to view')),
+                        );
+                        return;
+                      }
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const PlayerStatistics()),
-                      ),
-                      loggingService.logEvent(
-                          'Clicked expand player statistics',
-                          email: userData.email)
+                        MaterialPageRoute(builder: (context) => const PlayerStatistics()),
+                      );
                     },
                     style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(

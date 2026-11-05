@@ -14,6 +14,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'daily_reminder_service.dart';
+import 'account_identity.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -35,6 +36,29 @@ class _SettingsState extends State<Settings> {
         const SnackBar(content: Text('Notifications are blocked. Enable them for NetGauge in your device settings.')),
       );
     }
+  }
+
+  // Guests have no account to sign back in to, so leaving guest mode means losing access to their data.
+  Future<void> _confirmAndLogout() async {
+    if (!isGuest(FirebaseAuth.instance.currentUser)) {
+      await logout();
+      return;
+    }
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave guest mode?'),
+        content: const Text(
+          "You're using the app as a guest. If you leave, you won't be able to get back to your guest data "
+          '(your stats, favorites and measurements). Measurements you already shared stay on the public map.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Stay')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Leave')),
+        ],
+      ),
+    );
+    if (leave == true) await logout();
   }
 
   Future<void> logout() async {
@@ -129,8 +153,8 @@ class _SettingsState extends State<Settings> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(20),
               ),
-              onPressed: logout,
-              child: const Text('Logout',
+              onPressed: _confirmAndLogout,
+              child: Text(isGuest(FirebaseAuth.instance.currentUser) ? 'Leave Guest Mode' : 'Logout',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

@@ -239,7 +239,8 @@ void _launchGame(String title, String gameFile, BuildContext context) {
     // offer the optional post-game survey (skips are logged inside)
     try {
       debugPrint('[GAME_CATALOG] Offering post-game survey for $title (navigator mounted: ${navigator.mounted}).');
-      if (navigator.mounted) {
+      // guests are not shown surveys
+      if (navigator.mounted && !userData.isGuestUser) {
         await offerPostGameSurvey(
           navigator.context,
           gameTitle: title,

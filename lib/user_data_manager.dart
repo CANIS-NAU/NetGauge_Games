@@ -3,6 +3,7 @@
 
 // import packages and libraries
 import 'package:flutter/material.dart';
+import 'account_identity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'game_catalog.dart';
@@ -141,14 +142,16 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
+  // true when using the app as a guest (anonymous sign-in, no account)
+  bool get isGuestUser => isGuest(FirebaseAuth.instance.currentUser);
   int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
-  // Falls back to the signed-in account's email while the user document has not loaded (or has no email field),
-  // so anything that needs the email as a Firestore document ID never gets an empty string.
+  // Falls back to the signed-in account's ID (email, or a guest ID) while the user document has not loaded,
+  // so anything that needs it as a Firestore document ID never gets an empty string.
   String get email {
     final fromDocument = _userData?['email'];
     if (fromDocument is String && fromDocument.isNotEmpty) return fromDocument;
-    return FirebaseAuth.instance.currentUser?.email ?? '';
+    return accountIdFor(FirebaseAuth.instance.currentUser);
   }
 
   bool get getDemographicStatus => (_userData?['demographicsSurveyTaken'] as bool?) ?? false;
@@ -217,7 +220,7 @@ class UserDataProvider extends ChangeNotifier {
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'favoriteGames': currentFavorites});
         debugPrint('Favorites updated in Firestore');
       }
@@ -227,8 +230,8 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<List<DataPoint>> fetchCollectedMeasurements() async {
-    final email = FirebaseAuth.instance.currentUser?.email;
-    if (email == null) return [];
+    final email = accountIdFor(FirebaseAuth.instance.currentUser);
+    if (email.isEmpty) return [];
 
     final snapshot_collected_points = await FirebaseFirestore.instance
         .collection('measurements')
@@ -240,8 +243,8 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<List<SessionData>> fetchSessionData() async {
-    final email = FirebaseAuth.instance.currentUser?.email;
-    if (email == null) return [];
+    final email = accountIdFor(FirebaseAuth.instance.currentUser);
+    if (email.isEmpty) return [];
 
     final sessionSnapshot = await FirebaseFirestore.instance
         .collection('measurements')
@@ -349,7 +352,7 @@ class UserDataProvider extends ChangeNotifier {
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'demographicsSurveyTaken': true});
 
         if (_userData != null) {
@@ -374,7 +377,7 @@ class UserDataProvider extends ChangeNotifier {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userAccountData')
-          .doc(user.email)
+          .doc(accountIdFor(user))
           .get();
 
       if (doc.exists) {
@@ -385,7 +388,7 @@ class UserDataProvider extends ChangeNotifier {
         final totalPoints = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'totalPointsCollected': totalPoints});
         _userData?['totalPointsCollected'] = totalPoints;
 
@@ -403,7 +406,7 @@ class UserDataProvider extends ChangeNotifier {
             .collection('ABC_Onboarding')
             .doc('user')
             .collection('user')
-            .where('email', isEqualTo: user.email)
+            .where('email', isEqualTo: accountIdFor(user))
             .limit(1)
             .get();
 
@@ -416,9 +419,9 @@ class UserDataProvider extends ChangeNotifier {
           await createOnboardingDocument(user);
         }
 
-        debugPrint("Data loaded for: ${user.email}. Measurements found: ${_collectedMeasurements.length}");
+        debugPrint("Data loaded for: ${accountIdFor(user)}. Measurements found: ${_collectedMeasurements.length}");
       } else {
-        debugPrint("No document found for UID: ${user.email}, creating one...");
+        debugPrint("No document found for UID: ${accountIdFor(user)}, creating one...");
         await createUserDocument(user);
         await fetchUserData();
       }
@@ -458,7 +461,7 @@ class UserDataProvider extends ChangeNotifier {
         .collection('ABC_Onboarding')
         .doc('user')
         .collection('user')
-        .where('email', isEqualTo: user.email)
+        .where('email', isEqualTo: accountIdFor(user))
         .limit(1)
         .get();
 
@@ -475,10 +478,11 @@ class UserDataProvider extends ChangeNotifier {
 
     await FirebaseFirestore.instance
         .collection('userAccountData')
-        .doc(user.email)
+        .doc(accountIdFor(user))
         .set({
       'uid': user.uid,
-      'email': user.email,
+      'email': accountIdFor(user),
+      'isGuest': isGuest(user),
       'demographicsSurveyTaken' : false,
       'totalPointsCollected': 0,
       'totalDistanceTraveled': 0.0,
@@ -497,7 +501,7 @@ class UserDataProvider extends ChangeNotifier {
         .doc('user')
         .collection('user')
         .add({
-      'email': user.email,
+      'email': accountIdFor(user),
       'messages_seen': {
         "control_message": false,
         "play_message": false,
