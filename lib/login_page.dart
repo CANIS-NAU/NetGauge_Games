@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'home.dart';
+import 'app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -382,10 +383,10 @@ class _LoginPageState extends State<LoginPage> {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'No account needed. Guest data stays on this device.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: context.inkColor.withValues(alpha: 0.6)),
             ),
           ],
         ),

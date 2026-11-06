@@ -18,6 +18,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'app_theme.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -277,15 +278,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 children: [
                   Container(
                     width: double.infinity,
-                    color: Colors.white,
+                    color: context.paperColor,
                     child: Text(
                         'Total Points Collected: ${userData.totalPointsCollected} \n'
                         'Total Distance Traveled: ${userData.totalDistanceTraveled.toStringAsFixed(2)} \n'
                         'Total Radius of Gyration: ${userData.totalRadiusGyration.toStringAsFixed(2)}',
                         textAlign: TextAlign.start,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: Colors.black,
+                            color: context.inkColor,
                             fontSize: 20)),
                   ),
                   // add expand player statistics button
@@ -306,8 +307,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     },
                     style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          side: const BorderSide(
-                            color: Colors.black, // Specify the border color
+                          side: BorderSide(
+                            color: context.inkColor, // Specify the border color
                             width: 3, // Specify the border width
                           ),
                           borderRadius: BorderRadius.circular(10),
@@ -328,7 +329,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     decoration: BoxDecoration(
                       // Use BoxDecoration to add a border and other styling
                       border: Border.all(
-                        color: Colors.black, // Specify the border color
+                        color: context.inkColor, // Specify the border color
                         width: 3.0, // Specify the border thickness
                       ),
                     ),
@@ -396,8 +397,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     },
                     style: TextButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          side: const BorderSide(
-                            color: Colors.black, // Specify the border color
+                          side: BorderSide(
+                            color: context.inkColor, // Specify the border color
                             width: 3, // Specify the border width
                           ),
                           borderRadius: BorderRadius.circular(10),
@@ -428,7 +429,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     itemBuilder: (context, index) {
                       return AppButtons(
                         textColor: const Color(0xFF21918c),
-                        backgroundColor: Colors.white,
+                        backgroundColor: context.paperColor,
                         borderColor: const Color(0xFF21918c),
                         text: utilityButtons[index].text,
                         icon: utilityButtons[index].icon,
@@ -496,9 +497,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     itemCount: favoriteGames.length,
                     itemBuilder: (context, index) {
                       return AppButtons(
-                        textColor: Colors.black,
-                        backgroundColor: Colors.white,
-                        borderColor: Colors.black,
+                        textColor: context.inkColor,
+                        backgroundColor: context.paperColor,
+                        borderColor: context.inkColor,
                         text: favoriteGames[index].text,
                         icon: favoriteGames[index].icon,
                         imagePath: favoriteGames[index].imagePath,
@@ -537,7 +538,6 @@ Future<void> showSurveyPopup(BuildContext context, String surveyID) {
       return StatefulBuilder(
         builder: (context, dialogSetState) {
           return AlertDialog(
-            backgroundColor: Colors.white,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -558,8 +558,8 @@ Future<void> showSurveyPopup(BuildContext context, String surveyID) {
                 },
                 style: TextButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      side: const BorderSide(
-                        color: Colors.black, // Specify the border color
+                      side: BorderSide(
+                        color: context.inkColor, // Specify the border color
                         width: 3, // Specify the border width
                       ),
                       borderRadius: BorderRadius.circular(10),

@@ -15,6 +15,7 @@ import 'user_data_manager.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
+import 'app_theme.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
 
@@ -59,9 +60,9 @@ class GameCatalog extends StatelessWidget {
           itemCount: games.length,
           itemBuilder: (context, index) {
             return AppButtons(
-              textColor: Colors.black,
-              backgroundColor: Colors.white,
-              borderColor: Colors.black,
+              textColor: context.inkColor,
+              backgroundColor: context.paperColor,
+              borderColor: context.inkColor,
               text: games[index].text,
               icon: games[index].icon,
               imagePath: games[index].imagePath,
@@ -150,7 +151,6 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
           final isFavorited = currentFavorites.any((favGame) => favGame.text == game.text);
 
           return AlertDialog(
-            backgroundColor: Colors.white,
             title: Text(title),
             content: Column(
               mainAxisSize: MainAxisSize.min,

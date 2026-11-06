@@ -10,6 +10,7 @@ import 'user_data_manager.dart';
 import 'public_measurements.dart';
 import 'location_service.dart';
 import 'package:provider/provider.dart';
+import 'app_theme.dart';
 
 // Data Point Class
 class DataPoint {
@@ -234,7 +235,6 @@ class _DynamicMapState extends State<DynamicMap> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 40.0,
         title: const Text('Measurement'),
-        backgroundColor: Colors.white,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -336,8 +336,6 @@ class _DynamicMapState extends State<DynamicMap> {
             child: Column(
               children: [
                 SegmentedButton<DataScope>(
-                  style:
-                      SegmentedButton.styleFrom(backgroundColor: Colors.white),
                   segments: const [
                     ButtonSegment(
                         value: DataScope.mine,
@@ -356,8 +354,6 @@ class _DynamicMapState extends State<DynamicMap> {
                 ),
                 const SizedBox(height: 8),
                 SegmentedButton<SpeedMetric>(
-                  style:
-                      SegmentedButton.styleFrom(backgroundColor: Colors.white),
                   segments: const [
                     ButtonSegment(
                         value: SpeedMetric.download,
@@ -385,7 +381,7 @@ class _DynamicMapState extends State<DynamicMap> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: context.paperColor.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(

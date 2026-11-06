@@ -17,6 +17,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:vpn_connection_detector/vpn_connection_detector.dart';
 import 'package:detect_fake_location/detect_fake_location.dart';
 import 'user_data_manager.dart';
+import 'app_theme.dart';
 
 // Declare class
 class CommunityStatistics extends StatelessWidget {
@@ -49,7 +50,7 @@ class CommunityStatistics extends StatelessWidget {
             ),
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: context.paperColor,
               child:
               Text(
                   'Total Points Collected: ${userData.totalPointsCollected} \n'
@@ -58,9 +59,9 @@ class CommunityStatistics extends StatelessWidget {
                       'Total Radius of Gyration: ${userData
                       .totalRadiusGyration}',
                   textAlign: TextAlign.start,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: context.inkColor,
                       fontSize: 20)
               ),
             ),

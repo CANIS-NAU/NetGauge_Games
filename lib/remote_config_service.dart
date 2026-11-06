@@ -21,7 +21,13 @@ class RemoteConfigService {
       'survey_doc_id': 'METUX',
     });
 
-    await _remoteConfig.fetchAndActivate();
+    // A failed fetch (no internet, DNS trouble, Firebase unreachable) must not stop the app from starting.
+    // The defaults above, or the last values that were fetched, are used until a fetch works.
+    try {
+      await _remoteConfig.fetchAndActivate();
+    } catch (e) {
+      debugPrint('[REMOTE CONFIG] Could not fetch new values, using defaults/cached ones: $e');
+    }
   }
   String get surveyTriggerToken => _remoteConfig.getString('survey_trigger_token');
   bool get showSurvey => _remoteConfig.getBool('show_survey');

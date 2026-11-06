@@ -11,6 +11,8 @@ import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'remote_config_service.dart';
+import 'app_theme.dart';
+import 'theme_controller.dart';
 import 'daily_reminder_service.dart';
 
 // app initialization
@@ -29,9 +31,15 @@ void main() async {
 
   await DailyReminderService.init();
 
+  // the saved light/dark choice (Hive was initialized by the logging service above)
+  final themeController = await ThemeController.load();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => UserDataProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => UserDataProvider()),
+        ChangeNotifierProvider.value(value: themeController),
+      ],
       child: const MyApp(),
     ),
   );
@@ -43,6 +51,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: context.watch<ThemeController>().mode,
       // Newer Android versions draw apps edge to edge, so the system navigation bar (gesture area or the
       // home/back buttons) would cover the bottom of every screen, including the maps. Keeping every
       // screen clear of it here fixes that in one place; the top is left to each screen's AppBar.
