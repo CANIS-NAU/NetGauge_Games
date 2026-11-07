@@ -155,6 +155,9 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   bool get getDemographicStatus => (_userData?['demographicsSurveyTaken'] as bool?) ?? false;
+
+  // whether this person (account or guest) has already seen the welcome pop-up
+  bool get welcomeSeen => (_userData?['welcomeSeen'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
 
@@ -343,6 +346,24 @@ class UserDataProvider extends ChangeNotifier {
           .collection('userAccountData')
           .doc(email)
           .update({'totalRadiusGyration': totalRadiusGyration});
+    }
+  }
+
+  // Remembers that the welcome pop-up has been shown, so it only appears once per account or guest.
+  Future<void> markWelcomeSeen() async {
+    _userData?['welcomeSeen'] = true;
+    notifyListeners();
+
+    try {
+      final id = accountIdFor(FirebaseAuth.instance.currentUser);
+      if (id.isEmpty) return;
+      // merge, so this works even if the profile document is missing some fields
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(id)
+          .set({'welcomeSeen': true}, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving that the welcome pop-up was seen: $e');
     }
   }
 
