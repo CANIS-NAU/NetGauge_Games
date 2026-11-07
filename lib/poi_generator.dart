@@ -73,14 +73,16 @@ class OverpassService {
   }) async {
     debugPrint("[POI_GENERATION]: Fetching nearest POIs.");
 
-    // Fetch a pool of candidates (double the limit)
+    // Overpass cannot sort by distance: when there are more matches than the limit it returns an arbitrary
+    // sample. So ask for a generous pool and pick the nearest here; the pool is large enough to hold every
+    // place within the radius except in the very busiest areas.
     final pois = await fetchPOIs(
       latitude: latitude,
       longitude: longitude,
       radius: radius,
       amenityType: amenityType,
       tags: tags,
-      limit: limit * 2,
+      limit: poolSizeFor(limit),
     );
 
     // Calculate distance for each POI
@@ -93,11 +95,23 @@ class OverpassService {
       );
     }
 
+    // A building, park or other area matches if any part of it is within the radius, but its "center" can be much
+    // further away. The player has to walk to that center, so anything beyond the radius is not a nearby POI.
+    pois.removeWhere((poi) => poi.distanceFromOrigin! > radius);
+
     // Sort by distance (nearest first)
     pois.sort((a, b) => a.distanceFromOrigin!.compareTo(b.distanceFromOrigin!));
 
     return pois.take(limit).toList();
   }
+
+  // how many results to ask Overpass for when we want the nearest [limit]
+  static int poolSizeFor(int limit) => (limit * 20).clamp(100, 300);
+
+  // What counts as a point of interest when the caller does not ask for something specific: named places a person
+  // can walk to (shops, cafes, parks, attractions, landmarks). Without this, anything with a name matched, including
+  // roads, bus routes and boundaries.
+  static const List<String> defaultPoiKeys = ['amenity', 'shop', 'tourism', 'leisure', 'historic'];
 
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371000; // meters
@@ -130,11 +144,19 @@ class OverpassService {
         tagFilters += '["${entry.key}"="${entry.value}"]';
       }
     }
-    if (tagFilters.isEmpty) tagFilters = '["name"]';
+
+    final around = '(around:$radius,$latitude,$longitude)';
+    final String search;
+    if (tagFilters.isEmpty) {
+      // any named place in one of the default categories
+      search = '(\n${defaultPoiKeys.map((key) => '        nwr["$key"]["name"]$around;').join('\n')}\n      );';
+    } else {
+      search = 'nwr$tagFilters$around;';
+    }
 
     return '''
       [out:json][timeout:30];
-      nwr$tagFilters(around:$radius,$latitude,$longitude);
+      $search
       out center ${limit ?? ''};
     '''.trim();
   }
@@ -142,20 +164,25 @@ class OverpassService {
   List<PointOfInterest> _parseResponse(Map<String, dynamic> jsonData) {
     final elements = jsonData['elements'] as List<dynamic>? ?? [];
 
-    return elements.map((element) {
+    final pois = <PointOfInterest>[];
+    for (final element in elements) {
       final lat = element['lat'] ?? element['center']?['lat'];
       final lon = element['lon'] ?? element['center']?['lon'];
-      final tags = element['tags'] as Map<String, dynamic>? ?? {};
+      // a result with no position cannot be walked to; skipping it (rather than placing it at 0, 0) means it can
+      // never be mistaken for a real nearby POI
+      if (lat is! num || lon is! num) continue;
 
-      return PointOfInterest(
+      final tags = element['tags'] as Map<String, dynamic>? ?? {};
+      pois.add(PointOfInterest(
         id: element['id'].toString(),
-        latitude: lat?.toDouble() ?? 0.0,
-        longitude: lon?.toDouble() ?? 0.0,
+        latitude: lat.toDouble(),
+        longitude: lon.toDouble(),
         name: tags['name'] ?? 'Unnamed',
-        amenityType: tags['amenity'] ?? tags['shop'] ?? tags['tourism'] ?? 'poi',
+        amenityType: tags['amenity'] ?? tags['shop'] ?? tags['tourism'] ?? tags['leisure'] ?? tags['historic'] ?? 'poi',
         tags: Map<String, String>.from(tags),
-      );
-    }).toList();
+      ));
+    }
+    return pois;
   }
 }
 
@@ -174,7 +201,9 @@ class PointOfInterest {
 class PoiListGenerator {
   double user_longitude = 0.0;
   double user_latitude = 0.0;
-  double max_distance = 500; // Increased default slightly to 1.5km
+  // true once the player's position has been read; user_latitude and user_longitude are only meaningful then
+  bool locationKnown = false;
+  double max_distance = 500; // search radius in meters
 
   Future<List<PointOfInterest>> generatePOIList(int listSize) async {
     try {
@@ -191,6 +220,7 @@ class PoiListGenerator {
     final loc = await determineLocationData().timeout(const Duration(seconds: 10));
     user_longitude = loc.position.longitude;
     user_latitude = loc.position.latitude;
+    locationKnown = true;
   }
 
   Future<List<PointOfInterest>> _callOverpassAPI(int numPois) async {

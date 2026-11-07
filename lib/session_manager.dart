@@ -13,6 +13,7 @@ import 'package:detect_fake_location/detect_fake_location.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'activity_logs.dart';
+import 'poi_logic.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:math';
@@ -53,6 +54,11 @@ class SessionManager {
  // static String? get playerName => _playerName;
   static String? get currentGame => _currentGame;
   static List<PointOfInterest> get poiList => _poiList;
+  // true when there are POIs for the player to find; otherwise the games use the "move a distance" fallback
+  static bool get hasPois => _poiList.isNotEmpty;
+
+  // progress in the "move a distance" fallback, for the game being played
+  static final FallbackTracker fallback = FallbackTracker();
 
   // sets the session ID
   static void setSessionId() {
@@ -79,6 +85,8 @@ class SessionManager {
     loggingService.logEvent('Starting $gameTitle at $startTime', email: userEmail);
     _measurements.clear();
     sessionLocationPoints.clear();
+    // progress in the fallback belongs to one game, so a new game must not inherit the last one's position
+    fallback.reset();
     _currentGame = gameTitle;
     setSessionId();
     debugPrint('[SESSION_MANAGER] Game started: $_currentGame');

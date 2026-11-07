@@ -13,15 +13,13 @@ import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'public_measurements.dart';
+import 'poi_logic.dart';
 import 'package:uuid/uuid.dart';
 //import 'package:dart_geohash/dart_geohash.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'session_manager.dart';
 
 
-
-//vars for mapping
-LocationPoint lastPOILocation = SessionManager.sessionLocationPoints[0];
 
 
 /// A stateful widget that displays a WebView
@@ -43,7 +41,11 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
-  bool poiListStatus = false;
+  // Whether there are POIs to find right now. This follows the actual list, so when the list runs out (every POI
+  // collected, or a new lookup finds none) the game goes back to the "move a distance" fallback by itself.
+  bool get poiListStatus => SessionManager.hasPois;
+  // the POI lookup currently in progress, so a check made while it runs can wait for it
+  Future<void>? _poiLookup;
   final DateTime startTime = DateTime.now();
   List<LocationPoint> locationPoints = [];
   List<InternetMeasurement> measurements = [];
@@ -197,24 +199,13 @@ class _WebViewPageState extends State<WebViewPage> {
           break;*/
 
         case 'setPOIs':
-          PoiListGenerator poiGenerator = PoiListGenerator();
-          final poiList = await poiGenerator.generatePOIList(5);
+          await (_poiLookup = _lookUpPois());
 
-          // checks to see if there are POIs around
-          if(poiList.isNotEmpty) {
-            // if POIs were found, update the global status
-            poiListStatus = true;
+          if (poiListStatus) {
             loggingService.logEvent('Game is setting POIs. Nearby POIs found.', email: userData.email);
-          }
-          else {
+          } else {
             loggingService.logEvent('Game checked for POIs and did not find any. Simulating POIs with distance traveled.', email: userData.email);
           }
-
-          debugPrint("[FLUTTER_BRIDGE] POI list set: $poiList");
-          // console: [FLUTTER_BRIDGE] POI list set: Instance of 'Future<List<PointOfInterest>>'
-
-          // store the POIs in the Sessionmanager
-          SessionManager.setPOIs(poiList);
           break;
 
         case 'POICheck':
@@ -362,17 +353,52 @@ class _WebViewPageState extends State<WebViewPage> {
         "window.onMetrics(${jsonEncode(json)})"); // need to encode the json twice for JS reception
   }
 
-  void setSessionPOIs() async {
+  // Looks for POIs near the player and stores them for the game. It never throws, and when none are found the
+  // list is simply empty, which puts the game in the "move a distance" fallback.
+  Future<void> _lookUpPois() async {
     try {
       debugPrint("[FLUTTER_BRIDGE]: Starting POI generation...");
-      PoiListGenerator poiGenerator = PoiListGenerator();
+      final poiGenerator = PoiListGenerator();
       final poiList = await poiGenerator.generatePOIList(5);
-      debugPrint("[FLUTTER_BRIDGE]: POI list generated in setSessionPOIs: $poiList");
+      debugPrint("[FLUTTER_BRIDGE]: POI list generated: $poiList");
       SessionManager.setPOIs(poiList);
-    } catch (e) {
-      debugPrint("[FLUTTER_BRIDGE]: Critical error in setSessionPOIs: $e");
-    }
 
+      // the fallback is measured from where the player was when the POIs were looked up
+      if (poiGenerator.locationKnown) {
+        SessionManager.fallback.startFrom(
+          LocationPoint(longitude: poiGenerator.user_longitude, latitude: poiGenerator.user_latitude),
+        );
+      }
+    } catch (e) {
+      debugPrint("[FLUTTER_BRIDGE]: Critical error looking up POIs: $e");
+      SessionManager.setPOIs([]);
+    }
+  }
+
+  void setSessionPOIs() {
+    _poiLookup = _lookUpPois();
+  }
+
+  // A check or hint asked for while the POI lookup is still running waits briefly for it, so it uses the POIs
+  // instead of wrongly falling back to the "move a distance" mode.
+  Future<void> _waitForPoiLookup() async {
+    final lookup = _poiLookup;
+    if (lookup == null) return;
+    try {
+      await lookup.timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint("[FLUTTER_BRIDGE]: POI lookup still running, continuing without waiting: $e");
+    }
+  }
+
+  // The player's current location, or null if it cannot be read (location off, no permission, or no fix in time).
+  Future<LocationData?> _currentLocation() async {
+    try {
+      return await determineLocationData().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint("[FLUTTER_BRIDGE]: Location unavailable: $e");
+      return null;
+    }
   }
 
   // helper function, sends name of POI
@@ -426,38 +452,35 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   // replaces the checkPOI function in the event that there are no POIs near the player
-  Future<void> noPOICheck() async {
-    bool collected = false;
-    // get the current distance traveled by the player in the game
-    LocationPoint lastTrackedLocation = SessionManager.sessionLocationPoints.last;
-    double currentDist = Geolocator.distanceBetween(lastPOILocation.latitude, lastPOILocation.longitude,
-        lastTrackedLocation.latitude, lastTrackedLocation.longitude);
+  Future<void> noPOICheck(LocationData loc) async {
+    final here = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
 
-    // goal is to get player to move around enough to "get a POI"
-    // if the distance is greater than 5 (we can change this check later)
-    // TODO: Check what the best distance for this would be
-    if(currentDist > 5) {
-      collected = true;
-      // set lastPOILocation to current user location
-      final loc = await determineLocationData();
-      lastPOILocation = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
-    }
+    // the player "finds" something once they have moved far enough from the last find (or from where they started)
+    final collected = SessionManager.fallback.checkFind(here);
+
     final resultJson = jsonEncode({'collected': collected});
     controller.runJavaScript("window.onPOICheck($resultJson)");
   }
 
   // Check if the player can collect a POI and return true/false to JS
   Future<void> checkPOI() async {
+    await _waitForPoiLookup();
+
     // grab players current position
-    final loc = await determineLocationData();
+    final loc = await _currentLocation();
+    if (loc == null) {
+      // the game is waiting for an answer, so give it one: nothing can be found without a location
+      controller.runJavaScript("window.onPOICheck(${jsonEncode({'collected': false, 'locationUnavailable': true})})");
+      return;
+    }
     LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
     locationPoints.add(point);
 
-    // if no POIs were previously found
-    if(poiListStatus == false) {
+    // if no POIs were found
+    if (!poiListStatus) {
       // break out of this function, check other function
       debugPrint("[FLUTTER_BRIDGE] No POIs found in area...moving on...");
-      noPOICheck();
+      await noPOICheck(loc);
     }
     else {
       // grab the current poi list in the session manager
@@ -472,7 +495,7 @@ class _WebViewPageState extends State<WebViewPage> {
       for (int i = 0; i < poiList.length; i++) {
         final poi = poiList[i];
         final distance = Geolocator.distanceBetween(loc.position.latitude,
-            loc.position.longitude, poi.latitude!, poi.longitude!);
+            loc.position.longitude, poi.latitude, poi.longitude);
 
         // a poi can be collected within 10 meters of the player
         if (distance <= 7) {
@@ -489,6 +512,8 @@ class _WebViewPageState extends State<WebViewPage> {
         SessionManager.poiList.removeAt(indexToRemove);
         debugPrint("[CHECKPOI] POI collected at index $indexToRemove");
         debugPrint("[CHECKPOI] Updated POI list: ${SessionManager.poiList}");
+        // if that was the last one, the game switches to the fallback, measured from here
+        if (!SessionManager.hasPois) SessionManager.fallback.startFrom(point);
       } else {
         debugPrint("[CHECKPOI] No POI within range.");
       }
@@ -499,69 +524,52 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
+  // sends a hint to the game
+  void _sendHint(String hint) {
+    controller.runJavaScript("window.onHint(${jsonEncode({'hint': hint})});");
+  }
+
   // Callback function to perform hint generation
   Future<void> provideHint() async {
+    await _waitForPoiLookup();
+
     // get user current position and heading
-    final loc = await determineLocationData();
+    final loc = await _currentLocation();
+    if (loc == null) {
+      _sendHint('not available because location is turned off. Turn on location and try again.');
+      return;
+    }
     LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
     locationPoints.add(point);
     final userPos = loc.position;
-    // default if hint cannot be calculated
-    String hint = "ERROR: Unable to give you a hint at this time. Try again.";
 
     // if there are no POIs
-    if(poiListStatus == false) {
-      // get distance traveled between last tracked POI and user
-      double currentDist = Geolocator.distanceBetween(lastPOILocation.latitude, lastPOILocation.longitude,
-          userPos.latitude, userPos.longitude);
-      double distRemaining = 5 - currentDist;
-      // re-assign hint
-      hint = "Keep going! You need to travel ${distRemaining.round()} meters further!";
+    if (!poiListStatus) {
+      // get distance traveled between the last find (or the start) and the player
+      final distanceMoved = SessionManager.fallback.distanceMoved(point);
+      _sendHint(fallbackHint(distanceMoved));
+      return;
     }
 
-    else {
-      final heading = loc.heading;
-      // verify that a heading was received
-      if (heading == null) {
-        controller.runJavaScript(
-            "window.onHint(JSON.stringify({hint: 'No compass available'}));");
-        return;
-      }
-
-      // get the nearest POI
-      final nearestPOI = SessionManager.getNearestPOI(userPos);
-      // verify POI exists
-      if (nearestPOI == null) {
-        controller.runJavaScript(
-            "window.onHint(JSON.stringify({hint: 'No POIs available'}));");
-        return;
-      }
-
-      // calculate bearing from user to POI
-      final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
-          userPos.longitude, nearestPOI.latitude!, nearestPOI.longitude!);
-
-      // Normalize and compare to user heading
-      double relativeBearing = (bearingToPOI - heading) % 360;
-      if (relativeBearing < 0) relativeBearing += 360;
-
-      // produce a hint based on the relative bearing
-      String hint;
-      if (relativeBearing >= 330 || relativeBearing < 30) {
-        hint = "in front of you";
-      } else if (relativeBearing >= 30 && relativeBearing < 150) {
-        hint = "to your right";
-      } else if (relativeBearing >= 150 && relativeBearing < 210) {
-        hint = "behind you";
-      } else {
-        hint = "to your left";
-      }
-
+    final heading = loc.heading;
+    // verify that a heading was received
+    if (heading == null) {
+      _sendHint('No compass available');
+      return;
     }
 
-    // send the hint back to the game
-    final resultJson = jsonEncode({'hint': hint});
-    controller.runJavaScript("window.onHint($resultJson);");
+    // get the nearest POI
+    final nearestPOI = SessionManager.getNearestPOI(userPos);
+    // verify POI exists
+    if (nearestPOI == null) {
+      _sendHint('No POIs available');
+      return;
+    }
+
+    // calculate bearing from user to POI, then say where it is relative to the way the player is facing
+    final bearingToPOI = Geolocator.bearingBetween(userPos.latitude,
+        userPos.longitude, nearestPOI.latitude, nearestPOI.longitude);
+    _sendHint(directionHint(bearingToPOI, heading));
   }
 
   @override
