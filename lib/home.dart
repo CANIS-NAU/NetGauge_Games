@@ -16,6 +16,7 @@ import 'package:get_it/get_it.dart';
 import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
+import 'location_notice.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -141,7 +142,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   }
 
-  void _checkAndShowSurvey() {
+  // Both survey steps wait for their survey to be closed, so whatever comes next never opens on top of one.
+  Future<void> _checkAndShowSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
 
     // guests are not shown surveys
@@ -149,7 +151,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     // Priority 1: Demographic survey on first open, always
     if (!userData.getDemographicStatus) {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => SurveyState(
@@ -157,20 +159,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             responseCollection: 'responses',
           ),
         ),
-      ).then((_) {
-        // After demographic is done, check if METUX should also show
-        _checkAndShowMetux(userData);
-      });
+      );
+      // After demographic is done, check if METUX should also show
+      if (mounted) await _checkAndShowMetux(userData);
       return; // Don't check METUX yet
     }
 
     // Priority 2: Remote Config-controlled survey (METUX etc.)
-    _checkAndShowMetux(userData);
+    await _checkAndShowMetux(userData);
   }
 
-  void _checkAndShowMetux(UserDataProvider userData) {
+  Future<void> _checkAndShowMetux(UserDataProvider userData) async {
     if (userData.shouldShowSurvey) {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => SurveyState(
@@ -182,6 +183,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  // set once the location notice has been handled, so it appears at most once each time the home screen opens
+  bool _locationNoticeHandled = false;
+
+  // Tells people who have location turned off that they will not get the full experience.
+  Future<void> _maybeShowLocationNotice() async {
+    if (_locationNoticeHandled || !mounted) return;
+    _locationNoticeHandled = true;
+
+    final issue = await checkLocationIssue();
+    if (issue == null || !mounted) return;
+
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('Showing location-off pop-up (${issue.name}).', email: userData.email);
+    await showLocationNotice(context, issue);
+  }
+
+  // everything shown on arrival, in order: any surveys, then the location notice
+  Future<void> _runFirstLaunchFlow() async {
+    await _checkAndShowSurvey();
+    if (mounted) await _maybeShowLocationNotice();
+  }
+
   Future<void> _waitForDataThenCheckSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
 
@@ -191,14 +214,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return;
     }
 
-    _checkAndShowSurvey();
+    _runFirstLaunchFlow();
   }
 
   void _onDataLoaded() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     if (!userData.isLoading) {
       userData.removeListener(_onDataLoaded);
-      _checkAndShowSurvey();
+      _runFirstLaunchFlow();
     }
   }
 
