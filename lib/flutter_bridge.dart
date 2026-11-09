@@ -5,6 +5,7 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'page_reader.dart';
 import 'session_manager.dart';
 import 'vibration_controller.dart';
 import 'dart:async';
@@ -48,6 +49,8 @@ class _WebViewPageState extends State<WebViewPage> {
   List<LocationPoint> locationPoints = [];
   List<InternetMeasurement> measurements = [];
   final NDT7Service _ndt7Service = NDT7Service();
+  // reads the current game page aloud when the player taps the Listen button
+  final PageReader _reader = PageReader();
   DateTime? _lastMeasurementTime;
 
   @override
@@ -70,6 +73,8 @@ class _WebViewPageState extends State<WebViewPage> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (String url) {
+            // so reading stops when the game moves to another page
+            controller.runJavaScript(passageChangeHookScript);
             setState(() {
               isLoading = false;
             });
@@ -96,6 +101,9 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
+    // stop any audio when leaving the game
+    _reader.stop();
+    _reader.dispose();
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     SessionManager.saveCurrentSession(userData.email, userData).then((_) {
       userData.fetchUserData();
@@ -215,6 +223,11 @@ class _WebViewPageState extends State<WebViewPage> {
 
           // store the POIs in the Sessionmanager
           SessionManager.setPOIs(poiList);
+          break;
+
+        // the game moved to another page, so what was being read aloud is out of date
+        case 'passageChanged':
+          _reader.stop();
           break;
 
         case 'POICheck':
@@ -564,11 +577,54 @@ class _WebViewPageState extends State<WebViewPage> {
     controller.runJavaScript("window.onHint($resultJson);");
   }
 
+  // The Listen button: reads the page the player is on aloud, or stops if it is already reading.
+  Future<void> _toggleReading() async {
+    if (_reader.isSpeaking) {
+      await _reader.stop();
+      return;
+    }
+
+    // ask the game page for the text it is showing right now
+    String text = '';
+    try {
+      final result = await controller.runJavaScriptReturningResult(readablePageTextScript);
+      text = decodeJavaScriptString(result);
+    } catch (e) {
+      debugPrint('[FLUTTER_BRIDGE] Could not get the page text: $e');
+    }
+
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('Player asked to listen to a page of ${widget.title}.', email: userData.email);
+
+    final outcome = await _reader.read(text);
+    if (!mounted) return;
+    final message = switch (outcome) {
+      ReadOutcome.nothingToRead => 'There is no text to read on this page.',
+      ReadOutcome.unavailable => 'Audio is not available on this device. Check that text-to-speech is installed and turned on.',
+      _ => null,
+    };
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          // changes between "listen" and "stop" as the page is read
+          ListenableBuilder(
+            listenable: _reader,
+            builder: (context, _) => IconButton(
+              icon: Icon(_reader.isSpeaking ? Icons.stop_circle_outlined : Icons.volume_up),
+              tooltip: _reader.isSpeaking ? 'Stop reading' : 'Listen to this page',
+              // nothing to read until the game has loaded
+              onPressed: isLoading ? null : _toggleReading,
+            ),
+          ),
+        ],
       ),
       // SafeArea keeps the game's bottom buttons out from under the system navigation bar
       // (gesture area or home/back buttons), which newer Android versions draw over the app
