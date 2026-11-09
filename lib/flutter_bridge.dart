@@ -5,6 +5,7 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'screen_awake.dart';
 import 'session_manager.dart';
 import 'vibration_controller.dart';
 import 'dart:async';
@@ -96,6 +97,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   void dispose() {
+    // leaving the game screen in any way (back button, a crash, signing out) lets the screen sleep again
+    ScreenAwake.disable();
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     SessionManager.saveCurrentSession(userData.email, userData).then((_) {
       userData.fetchUserData();

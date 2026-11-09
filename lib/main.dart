@@ -12,6 +12,7 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'remote_config_service.dart';
 import 'daily_reminder_service.dart';
+import 'screen_awake.dart';
 
 // app initialization
 void main() async {
@@ -28,6 +29,9 @@ void main() async {
   final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
 
   await DailyReminderService.init();
+
+  // the saved "keep the screen awake during games" choice (Hive was initialized by the logging service above)
+  await ScreenAwake.load();
 
   runApp(
     ChangeNotifierProvider(

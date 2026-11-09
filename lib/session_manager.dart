@@ -13,6 +13,7 @@ import 'package:detect_fake_location/detect_fake_location.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'activity_logs.dart';
+import 'screen_awake.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:math';
@@ -80,6 +81,8 @@ class SessionManager {
     _measurements.clear();
     sessionLocationPoints.clear();
     _currentGame = gameTitle;
+    // the player is now in a game, so the screen must not go to sleep until it ends
+    ScreenAwake.enable();
     setSessionId();
     debugPrint('[SESSION_MANAGER] Game started: $_currentGame');
   }
@@ -89,6 +92,9 @@ class SessionManager {
     debugPrint('[SESSION_MANAGER] Game ending: $_currentGame');
     DateTime endTime = DateTime.now();
     loggingService.logEvent('Ending $_currentGame at $endTime', email: userEmail);
+
+    // the game is over: let the screen sleep normally again (done first so nothing below can leave it awake)
+    ScreenAwake.disable();
 
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();

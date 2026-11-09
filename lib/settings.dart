@@ -15,6 +15,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
 import 'daily_reminder_service.dart';
 import 'account_identity.dart';
+import 'screen_awake.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -25,6 +26,7 @@ class Settings extends StatefulWidget {
 
 class _SettingsState extends State<Settings> {
   bool _dailyReminderEnabled = DailyReminderService.isEnabled;
+  bool _keepScreenAwake = ScreenAwake.isEnabled;
 
   Future<void> _toggleDailyReminder(bool value) async {
     setState(() => _dailyReminderEnabled = value);
@@ -96,7 +98,8 @@ class _SettingsState extends State<Settings> {
           backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
-        body: Column(
+        body: SingleChildScrollView(
+          child: Column(
           children:[
             const SizedBox(height: 8),
            /* TextButton(
@@ -146,6 +149,16 @@ class _SettingsState extends State<Settings> {
               value: _dailyReminderEnabled,
               onChanged: _toggleDailyReminder,
             ),
+            SwitchListTile(
+              activeThumbColor: Colors.purple,
+              title: const Text('Keep screen awake during games'),
+              subtitle: const Text('Stops your phone from dimming or locking while you play. Uses more battery.'),
+              value: _keepScreenAwake,
+              onChanged: (value) {
+                setState(() => _keepScreenAwake = value);
+                ScreenAwake.setEnabled(value);
+              },
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -161,6 +174,7 @@ class _SettingsState extends State<Settings> {
                       fontSize: 20)),
             ),
           ],
+        ),
         )
     );
   }
