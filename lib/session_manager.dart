@@ -15,6 +15,8 @@ import 'dart:async';
 import 'activity_logs.dart';
 import 'poi_logic.dart';
 import 'screen_awake.dart';
+import 'public_sessions.dart';
+import 'location_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:math';
@@ -199,6 +201,25 @@ class SessionManager {
       loggingService.logEvent('Game session is saved to Firebase.', email: userEmail);
     } catch (e) {
       debugPrint("Firestore Error: $e");
+    }
+
+    // also record the play, anonymously, for the community statistics
+    try {
+      final play = Map<String, dynamic>.from(checkData);
+      // a short play may end before any location point was logged, so use where the player is now
+      if (sessionLocationPoints.isEmpty) {
+        try {
+          final loc = await determineLocationData().timeout(const Duration(seconds: 3));
+          play['location_points'] = [
+            {'latitude': loc.position.latitude, 'longitude': loc.position.longitude},
+          ];
+        } catch (e) {
+          debugPrint("[SESSION_MANAGER] No location for this play, so it is not shared: $e");
+        }
+      }
+      await PublicSessions.publish(play);
+    } catch (e) {
+      debugPrint("[SESSION_MANAGER] Could not record the play: $e");
     }
   }
 

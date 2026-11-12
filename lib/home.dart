@@ -463,10 +463,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         buttonHeight: 60,
                         buttonLength: 65,
                         onTap: () async {
-                          // Capture messenger immediately, before any awaits
-                          final messenger =
-                              ScaffoldMessenger.of(scaffoldContext);
-
                           String buttonText = utilityButtons[index].text;
                           if (buttonText == 'Settings') {
                             loggingService.logEvent('Clicked on settings',
@@ -490,14 +486,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                               'Clicked on community statistics',
                               email: userData.email,
                             );
-                            debugPrint(
-                                "[HOME] Community Statistics tapped, showing snackbar");
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Coming soon!'),
-                                duration: Duration(seconds: 5),
-                                behavior: SnackBarBehavior.floating,
-                              ),
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const CommunityStatistics()),
                             );
                           }
                         },
