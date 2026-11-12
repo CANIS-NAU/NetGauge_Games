@@ -16,6 +16,7 @@ import 'package:get_it/get_it.dart';
 import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
+import 'welcome_onboarding.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'location_notice.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -214,9 +215,27 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     await showLocationNotice(context, issue);
   }
 
-  // everything shown on arrival, in order: any surveys, then the location notice
+  // set once the welcome pop-up has been shown or is on screen, so it can never open twice
+  bool _welcomeHandled = false;
+
+  // Shows the welcome pop-up to anyone who has not seen it yet: a new account's first login, or a guest's first
+  // time in. It comes after the surveys, so it never appears on top of one.
+  Future<void> _maybeShowWelcome() async {
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    if (_welcomeHandled || !mounted || userData.userData == null || userData.welcomeSeen) return;
+    _welcomeHandled = true;
+
+    loggingService.logEvent('Showing welcome pop-up.', email: userData.email);
+    await showWelcomeOnboarding(context);
+    if (!mounted) return;
+    loggingService.logEvent('Closed welcome pop-up.', email: userData.email);
+    await userData.markWelcomeSeen();
+  }
+
+  // everything shown on arrival, in order: any surveys, then the welcome pop-up, then the location notice
   Future<void> _runFirstLaunchFlow() async {
     await _checkAndShowSurvey();
+    if (mounted) await _maybeShowWelcome();
     if (mounted) await _maybeShowLocationNotice();
   }
 
