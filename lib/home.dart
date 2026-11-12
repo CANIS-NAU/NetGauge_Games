@@ -17,6 +17,7 @@ import 'abc_onboarding.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'surveys.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'location_notice.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -152,6 +153,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
   }
 
+  // Both survey steps wait for their survey to be closed, so whatever comes next never opens on top of one.
   Future<void> _checkAndShowSurvey() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
 
@@ -185,7 +187,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if (!userData.shouldShowSurvey) return;
     if (!await _surveyHasQuestions(userData.remoteSurveyDocId)) return;
     if (!mounted) return;
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => SurveyState(
@@ -194,6 +196,28 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
         ),
       ),
     );
+  }
+
+  // set once the location notice has been handled, so it appears at most once each time the home screen opens
+  bool _locationNoticeHandled = false;
+
+  // Tells people who have location turned off that they will not get the full experience.
+  Future<void> _maybeShowLocationNotice() async {
+    if (_locationNoticeHandled || !mounted) return;
+    _locationNoticeHandled = true;
+
+    final issue = await checkLocationIssue();
+    if (issue == null || !mounted) return;
+
+    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    loggingService.logEvent('Showing location-off pop-up (${issue.name}).', email: userData.email);
+    await showLocationNotice(context, issue);
+  }
+
+  // everything shown on arrival, in order: any surveys, then the location notice
+  Future<void> _runFirstLaunchFlow() async {
+    await _checkAndShowSurvey();
+    if (mounted) await _maybeShowLocationNotice();
   }
 
   Future<void> _waitForDataThenCheckSurvey() async {
@@ -206,14 +230,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       return;
     }
 
-    _checkAndShowSurvey();
+    _runFirstLaunchFlow();
   }
 
   void _onDataLoaded() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     if (userData.userData != null && !userData.isLoading) {
       userData.removeListener(_onDataLoaded);
-      _checkAndShowSurvey();
+      _runFirstLaunchFlow();
     }
   }
 

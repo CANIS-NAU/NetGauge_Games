@@ -182,6 +182,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _showRegistrationDialog() async {
     final regEmailController = TextEditingController();
     final regPasswordController = TextEditingController();
+    final regConfirmController = TextEditingController();
     String? dialogError;
 
     await showDialog(
@@ -210,6 +211,15 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     obscureText: true,
                   ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: regConfirmController,
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: OutlineInputBorder(),
+                    ),
+                    obscureText: true,
+                  ),
                   if (dialogError != null) ...[
                     const SizedBox(height: 10),
                     Text(
@@ -226,6 +236,17 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    final password = regPasswordController.text.trim();
+                    final confirm = regConfirmController.text.trim();
+                    if (password.isEmpty || confirm.isEmpty) {
+                      setDialogState(() => dialogError = 'Please enter and confirm your password.');
+                      return;
+                    }
+                    if (password != confirm) {
+                      setDialogState(() => dialogError = 'Passwords do not match. Please try again.');
+                      return;
+                    }
+                    setDialogState(() => dialogError = null);
                     try {
                       // Call signup with the TEXT from controllers
                       await signUpNewUser(
@@ -357,18 +378,18 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 10),
             if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
-              ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF440154),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.all(15),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF440154),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               ),
               onPressed: _showRegistrationDialog,
               child: const Text('Register',
-              style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 25,)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF440154),
+                    fontSize: 16,
+                  )),
             ),
             const SizedBox(height: 20),
             OutlinedButton(
