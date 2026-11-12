@@ -14,6 +14,7 @@ import 'location_service.dart';
 import 'public_measurements.dart';
 import 'public_sessions.dart';
 import 'account_identity.dart';
+import 'app_theme.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // where the map starts if the user's location is not available (Flagstaff, AZ)
@@ -198,7 +199,7 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: context.paperColor.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
@@ -215,11 +216,12 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
                 ),
                 const SizedBox(height: 4),
                 // each label may wrap instead of overflowing on narrow screens or with large text sizes
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Text('Fewer measurements', style: TextStyle(fontSize: 12))),
+                    Expanded(child: Text('Fewer measurements', style: TextStyle(fontSize: 12, color: context.inkColor))),
                     Expanded(
-                      child: Text('More measurements', textAlign: TextAlign.right, style: TextStyle(fontSize: 12)),
+                      child: Text('More measurements',
+                          textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: context.inkColor)),
                     ),
                   ],
                 ),
@@ -282,7 +284,12 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
           if (mostPlayed == null)
             const Text('No games have been played in this area yet.')
           else ...[
-            Text(mostPlayed.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF440154))),
+            // the dark purple used elsewhere is too dim on a dark background, so a lighter shade is used there
+            Text(mostPlayed.name,
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: context.isDarkMode ? const Color(0xFFD9B3E8) : const Color(0xFF440154))),
             Text('Played ${mostPlayed.count} ${mostPlayed.count == 1 ? 'time' : 'times'}', style: const TextStyle(fontSize: 14)),
             if (stats.topGames.length > 1) ...[
               const SizedBox(height: 10),
@@ -336,12 +343,12 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
                     if (_usingFallbackLocation)
                       Container(
                         width: double.infinity,
-                        color: Colors.amber.shade100,
+                        color: context.isDarkMode ? const Color(0xFF4A3B00) : Colors.amber.shade100,
                         padding: const EdgeInsets.all(8),
-                        child: const Text(
+                        child: Text(
                           "Your location isn't available, so this shows the Flagstaff area. Turn on location services to see your own area.",
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 13),
+                          style: TextStyle(fontSize: 13, color: context.inkColor),
                         ),
                       ),
                     Expanded(flex: 5, child: _buildMap(center!)),
