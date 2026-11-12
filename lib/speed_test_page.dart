@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
 import 'public_measurements.dart';
 import 'package:uuid/uuid.dart';
+import 'app_theme.dart';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -213,7 +214,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   // constructor for UI elements
   Widget _buildMetricsCard(String label, String value) {
     return Card.outlined(
-      color: Colors.white,
+      color: context.paperColor,
       borderOnForeground: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0), // Optional: set corner radius
@@ -269,8 +270,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black),
+                  color: context.paperColor,
+                  border: Border.all(color: context.inkColor),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: SelectableText(

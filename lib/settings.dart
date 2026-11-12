@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import 'daily_reminder_service.dart';
 import 'account_identity.dart';
 import 'screen_awake.dart';
+import 'theme_controller.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -142,6 +143,31 @@ class _SettingsState extends State<Settings> {
               ),
             ),
             const SizedBox(height: 20),
+            // light or dark mode, remembered on this device
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Appearance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.brightness_auto)),
+                        ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode)),
+                        ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode)),
+                      ],
+                      selected: {context.watch<ThemeController>().mode},
+                      onSelectionChanged: (selection) => context.read<ThemeController>().setMode(selection.first),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             SwitchListTile(
               activeThumbColor: Colors.purple,
               title: const Text('Daily reminder'),

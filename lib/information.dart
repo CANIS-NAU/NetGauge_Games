@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'user_data_manager.dart';
 import 'package:provider/provider.dart';
 import 'game_catalog.dart';
+import 'app_theme.dart';
 
 class Information extends StatelessWidget {
   const Information({super.key});
@@ -47,9 +48,9 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.white,
+              color: context.paperColor,
               child:
-              const Text(
+              Text(
                   'This project aims to improve access to the internet while having fun.\n'
                       'Whenever you play a NetGauge game, you record your internet speed. By '
                       'doing this, you support a broader citizen science effort to improve '
@@ -58,7 +59,7 @@ class Information extends StatelessWidget {
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
-                      color: Colors.black,
+                      color: context.inkColor,
                       fontSize: 20)
               ),
             ),
@@ -80,9 +81,9 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.white,
+              color: context.paperColor,
               child:
-              const Text(
+              Text(
                   'Whenever you collect a measurement, you record upload speed,'
                       'download speed, latency, and jitters. So, what does this all mean?'
                       '\n'
@@ -98,7 +99,7 @@ class Information extends StatelessWidget {
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
-                      color: Colors.black,
+                      color: context.inkColor,
                       fontSize: 20)
               ),
             ),
@@ -120,16 +121,16 @@ class Information extends StatelessWidget {
             Container(
               width: double.infinity,
               margin: const EdgeInsetsDirectional.only(start: 5, end: 5),
-              color: Colors.white,
+              color: context.paperColor,
               child:
-              const Text(
+              Text(
                   'You can collect measurements by either using the Measure Internet tool in the app, or \n'
                       'by playing any of the games. Each of the games automatically include measuring the \n'
                       'internet into their functionality, so you do not need to do any extra work.',
                   textAlign: TextAlign.start,
                   style: TextStyle(
                       fontWeight: FontWeight.w400,
-                      color: Colors.black,
+                      color: context.inkColor,
                       fontSize: 20)
               ),
             ),

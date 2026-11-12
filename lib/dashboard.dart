@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
+import 'app_theme.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
@@ -42,16 +43,16 @@ class PlayerStatistics extends StatelessWidget {
             ),
             Container(
               width: double.infinity,
-              color: Colors.white,
+              color: context.paperColor,
               child:
               Text(
                   'Total Points Collected: ${userData.totalPointsCollected} \n'
                       'Total Distance Traveled: ${userData.totalDistanceTraveled.toStringAsFixed(2)} \n'
                       'Total Radius of Gyration: ${userData.totalRadiusGyration.toStringAsFixed(2)}',
                   textAlign: TextAlign.start,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.black,
+                      color: context.inkColor,
                       fontSize: 20)
               ),
             ),
