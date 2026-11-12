@@ -94,6 +94,7 @@ dependencies:
   flutter_local_notifications: ^22.3.3
   flutter_timezone: ^5.1.1
   timezone: ^0.11.2
+  wakelock_plus: 1.5.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -105,6 +106,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
+  wakelock_plus_platform_interface: 1.4.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
