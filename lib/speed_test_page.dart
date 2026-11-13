@@ -10,6 +10,10 @@ import 'user_data_manager.dart';
 import 'public_measurements.dart';
 import 'package:uuid/uuid.dart';
 import 'app_theme.dart';
+import 'widgets/animated_ellipsis.dart';
+
+// what a measurement shows while it is being recorded; the page animates its dots
+const String testingValue = 'Testing...';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -78,9 +82,9 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   void _runSpeedTest() async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     setState(() {
-      downloadSpeed = 'Testing...';
-      uploadSpeed = 'Testing...';
-      latency = 'Testing...';
+      downloadSpeed = testingValue;
+      uploadSpeed = testingValue;
+      latency = testingValue;
       detailedLog = 'Step 1: Initializing...\n';
       errorLog = '';
     });
@@ -230,7 +234,10 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             fontWeight: FontWeight.bold,
             color: const Color(0xFF440154)
           ),),
-        trailing: Text(value, style:
+        // while a measurement is being recorded the dots after "Testing" animate, so the player can see it is working
+        trailing: value == testingValue
+            ? const AnimatedEllipsis('Testing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))
+            : Text(value, style:
         const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20)),
