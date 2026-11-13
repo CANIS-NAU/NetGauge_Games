@@ -9,6 +9,8 @@ import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geolocator/geolocator.dart';
 import 'app_theme.dart';
+import 'badge_library.dart';
+import 'badges.dart';
 
 class PlayerStatistics extends StatelessWidget {
   const PlayerStatistics({super.key});
@@ -56,7 +58,9 @@ class PlayerStatistics extends StatelessWidget {
                       fontSize: 20)
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            _BadgeSummary(email: userData.email),
+            const SizedBox(height: 8),
             const Text('Session Data',
               style:
                TextStyle(
@@ -171,6 +175,36 @@ class _ExpansionListStatisticsState extends State<ExpansionListStatistics> {
           isExpanded: item.isExpanded,
         );
       }).toList(),
+    );
+  }
+}
+
+// a row on the statistics page that shows how many badges are earned and opens the badge library
+class _BadgeSummary extends StatelessWidget {
+  final String email;
+  const _BadgeSummary({required this.email});
+
+  @override
+  Widget build(BuildContext context) {
+    final userData = Provider.of<UserDataProvider>(context);
+    final earned = earnedBadgeCount(userData.badgeStats, userData.earnedBadgeIds);
+
+    return ListTile(
+      leading: const Icon(Icons.emoji_events, color: Color(0xFF440154)),
+      title: const Text('Badges', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      subtitle: Text('$earned of ${allBadges.length} earned'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        loggingService.logEvent('Opened badge library', email: email);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BadgeLibraryPage(
+              onBadgeOpened: (id) => loggingService.logEvent('Viewed badge: $id', email: email),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'badge_announcement.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'flutter_bridge.dart';
@@ -55,6 +56,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: appMessengerKey,
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: context.watch<ThemeController>().mode,

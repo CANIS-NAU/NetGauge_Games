@@ -16,6 +16,7 @@ import 'activity_logs.dart';
 import 'poi_logic.dart';
 import 'screen_awake.dart';
 import 'public_sessions.dart';
+import 'badge_announcement.dart';
 import 'location_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
@@ -221,6 +222,9 @@ class SessionManager {
     } catch (e) {
       debugPrint("[SESSION_MANAGER] Could not record the play: $e");
     }
+
+    // the session is saved, so count it toward badges and tell the player about any new ones
+    announceBadges(await provider.awardNewBadges(refreshSessions: true));
   }
 
   /* // stores the nickname of the current player

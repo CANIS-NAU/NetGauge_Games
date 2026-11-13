@@ -4,6 +4,8 @@
 // import packages and libraries
 import 'package:flutter/material.dart';
 import 'account_identity.dart';
+import 'badges.dart';
+import 'badge_announcement.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'game_catalog.dart';
@@ -56,7 +58,20 @@ class SessionData {
 
   factory SessionData.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // the session document stores each measurement; the session's averages come from those
+    double? average(String key) {
+      final speeds = ((data['collected_measurements'] as List?) ?? [])
+          .whereType<Map>()
+          .map((m) => m[key])
+          .whereType<num>()
+          .toList();
+      return speeds.isEmpty ? null : speeds.reduce((a, b) => a + b) / speeds.length;
+    }
+
     return SessionData(
+      averageDownloadSpeed: average('download_speed'),
+      averageUploadSpeed: average('upload_speed'),
       startTime: (data['start_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
       endTime: (data['end_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
       game: data['game'] ?? 'Unknown',
@@ -165,6 +180,58 @@ class UserDataProvider extends ChangeNotifier {
   int get totalPointsCollected => (_userData?['totalPointsCollected'] as num?)?.toInt() ?? 0;
   int get totalLocationPointsMeasured => (_userData?['totalLocationPointsMeasured'] as num?)?.toInt() ?? 0;
   double get totalRadiusGyration => (_userData?['totalRadiusGyration'] as num?)?.toDouble() ?? 0.0;
+
+  // the badges stored on this account (see badges.dart)
+  Set<String> get earnedBadgeIds => storedBadgeIds(_userData?['earnedBadges']);
+
+  // what the badge rules are worked out from
+  BadgeStats get badgeStats => BadgeStats(
+        totalMeasurements: totalPointsCollected,
+        totalDistanceMeters: totalDistanceTraveled,
+        sessions: _collectedSessions
+            .map((s) => PlayedSession(game: s.game, endTime: s.endTime, averageDownload: s.averageDownloadSpeed))
+            .toList(),
+      );
+
+  bool _awardingBadges = false;
+
+  // Stores any badges the player has now earned but does not have yet, on their account, and returns them so the app
+  // can announce them. Badges are only ever added, never removed. Guests have no statistics page, so they get none.
+  // After a game, pass refreshSessions so the session that just ended is counted.
+  Future<List<AppBadge>> awardNewBadges({bool refreshSessions = false}) async {
+    if (_userData == null || isGuestUser || _awardingBadges) return [];
+    _awardingBadges = true;
+    try {
+      if (refreshSessions) {
+        _collectedSessions = await fetchSessionData();
+        _userData!['totalPointsCollected'] = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
+      }
+
+      final newBadges = badgesToAward(badgeStats, earnedBadgeIds);
+      if (newBadges.isEmpty) return [];
+
+      // a dotted path adds just these badges, leaving the ones already stored alone
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({for (final b in newBadges) 'earnedBadges.${b.id}': FieldValue.serverTimestamp()});
+
+      final stored = Map<String, dynamic>.from((_userData!['earnedBadges'] as Map?) ?? {});
+      for (final b in newBadges) {
+        stored[b.id] = Timestamp.now();
+      }
+      _userData!['earnedBadges'] = stored;
+      notifyListeners();
+
+      debugPrint('[BADGES] Awarded: ${newBadges.map((b) => b.id).join(', ')}');
+      return newBadges;
+    } catch (e) {
+      debugPrint('[BADGES] Could not award badges: $e');
+      return [];
+    } finally {
+      _awardingBadges = false;
+    }
+  }
 
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
   List<DataPoint> get collectedMeasurements => _collectedMeasurements;
@@ -412,6 +479,9 @@ class UserDataProvider extends ChangeNotifier {
             .doc(accountIdFor(user))
             .update({'totalPointsCollected': totalPoints});
         _userData?['totalPointsCollected'] = totalPoints;
+
+        // players who already have history get their badges now
+        announceBadges(await awardNewBadges());
 
         /*bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
