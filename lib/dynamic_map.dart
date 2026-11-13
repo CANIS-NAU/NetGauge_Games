@@ -9,6 +9,7 @@ import 'dart:async'; // needed for StreamSubscription
 import 'user_data_manager.dart';
 import 'public_measurements.dart';
 import 'location_service.dart';
+import 'h3_grid.dart';
 import 'package:provider/provider.dart';
 
 // Data Point Class
@@ -116,10 +117,18 @@ class _DynamicMapState extends State<DynamicMap> {
   bool _zoomedInForPins = false;
   // changes whenever the data or metric changes, which forces the heat map layer to redraw
   int _revision = 0;
+  // the H3 hexagon grid view (null grid means the H3 library could not be loaded)
+  H3Grid? _h3Grid;
+  bool _showH3 = false;
+  List<H3Sample> _h3Samples = [];
+  int? _h3Resolution;
 
   @override
   void initState() {
     super.initState();
+    H3Grid.tryLoad().then((grid) {
+      if (mounted) setState(() => _h3Grid = grid);
+    });
 
     // Use a post-frame callback to ensure context is available for Provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -169,6 +178,9 @@ class _DynamicMapState extends State<DynamicMap> {
         if (!mounted) return;
         setState(() {
           _points = points;
+          _h3Samples = points
+              .map((p) => H3Sample(location: p.point, downloadSpeed: p.downloadSpeed, uploadSpeed: p.uploadSpeed))
+              .toList();
           _revision++;
         });
       },
@@ -313,7 +325,7 @@ class _DynamicMapState extends State<DynamicMap> {
                 urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                 userAgentPackageName: 'com.pht.netgauge',
               ),
-              if (heatData.isNotEmpty)
+              if (!_showH3 && heatData.isNotEmpty)
                 HeatMapLayer(
                   key: ValueKey('$_metric-$_revision'),
                   heatMapDataSource: InMemoryHeatMapDataSource(data: heatData),
@@ -322,6 +334,19 @@ class _DynamicMapState extends State<DynamicMap> {
                     minOpacity: 0.5,
                     radius: 40.0,
                   ),
+                ),
+              // H3 view: one hexagon per area, colored by the average speed of the measurements inside it
+              if (_showH3 && _h3Grid != null)
+                H3OverlayLayer(
+                  grid: _h3Grid!,
+                  samples: _h3Samples,
+                  gradient: _speedGradient,
+                  styleKey: _metric,
+                  intensityOf: (cell, maxCount) {
+                    final speed = _metric == SpeedMetric.download ? cell.averageDownload : cell.averageUpload;
+                    return (speed / _referenceSpeedMbps).clamp(0.05, 1.0);
+                  },
+                  onResolutionChanged: (r) => setState(() => _h3Resolution = r),
                 ),
               // the user's own measurements always get pins; everyone's only when zoomed in, to keep the map readable
               if (_points.isNotEmpty && (_scope == DataScope.mine || _zoomedInForPins))
@@ -374,6 +399,24 @@ class _DynamicMapState extends State<DynamicMap> {
                     _revision++;
                   }),
                 ),
+                const SizedBox(height: 8),
+                // switches the heat map for the H3 hexagon grid
+                FilterChip(
+                  backgroundColor: Colors.white,
+                  selectedColor: Colors.deepPurple.shade100,
+                  avatar: const Icon(Icons.hexagon_outlined),
+                  label: const Text('H3 Grid'),
+                  selected: _showH3,
+                  onSelected: (on) {
+                    if (on && _h3Grid == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('The H3 grid is not available on this device.')),
+                      );
+                      return;
+                    }
+                    setState(() => _showH3 = on);
+                  },
+                ),
               ],
             ),
           ),
@@ -397,6 +440,11 @@ class _DynamicMapState extends State<DynamicMap> {
                         : '$metricLabel speed (${_points.length} ${_scope == DataScope.mine ? 'of your' : 'total'} measurements)',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  if (_showH3 && _h3Resolution != null)
+                    Text(
+                      'H3 hexagons, ${h3EdgeLabel(_h3Resolution!)} per side; zoom in for smaller ones',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   const SizedBox(height: 8),
                   Container(
                     height: 12,
