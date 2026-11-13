@@ -10,6 +10,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_heatmap/flutter_map_heatmap.dart';
 import 'package:latlong2/latlong.dart';
 import 'community_stats.dart';
+import 'h3_grid.dart';
 import 'location_service.dart';
 import 'public_measurements.dart';
 import 'public_sessions.dart';
@@ -100,12 +101,19 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
   bool _usingFallbackLocation = false;
   CommunityStats? _stats;
   List<DensityCell> _cells = [];
+  // the H3 hexagon grid drawn over the map (null if the H3 library could not be loaded)
+  H3Grid? _h3Grid;
+  List<H3Sample> _h3Samples = [];
+  int? _h3Resolution;
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    H3Grid.tryLoad().then((grid) {
+      if (mounted) setState(() => _h3Grid = grid);
+    });
     _load();
   }
 
@@ -123,6 +131,9 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
         _usingFallbackLocation = data.usingFallbackLocation;
         _stats = data.stats;
         _cells = buildDensityCells(data.stats.points);
+        _h3Samples = data.stats.points
+            .map((p) => H3Sample(location: p.location, downloadSpeed: p.downloadSpeed, uploadSpeed: p.uploadSpeed))
+            .toList();
         _loading = false;
       });
     } catch (e) {
@@ -168,6 +179,19 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
                   minOpacity: 0.4,
                   radius: 35.0,
                 ),
+              ),
+            // H3 hexagons: shaded by how many measurements each holds, and gray where there are none at all.
+            // Kept at a coarse size so the whole area can be checked for gaps.
+            if (_h3Grid != null)
+              H3OverlayLayer(
+                grid: _h3Grid!,
+                samples: _h3Samples,
+                gradient: _densityGradient,
+                maxResolution: 6,
+                emptyAreaCenter: center,
+                emptyAreaRadiusMeters: _radiusMeters,
+                intensityOf: (cell, maxCount) => (cell.count / maxCount).clamp(0.15, 1.0),
+                onResolutionChanged: (r) => setState(() => _h3Resolution = r),
               ),
             // the 50 mile area
             CircleLayer(circles: [
@@ -225,6 +249,29 @@ class _CommunityStatisticsState extends State<CommunityStatistics> {
                     ),
                   ],
                 ),
+                if (_h3Grid != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: Colors.blueGrey.withValues(alpha: 0.3),
+                          border: Border.all(color: Colors.blueGrey.shade700),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'No measurements'
+                          '${_h3Resolution == null ? '' : ' (H3 hexagons, ${h3EdgeLabel(_h3Resolution!)} per side)'}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

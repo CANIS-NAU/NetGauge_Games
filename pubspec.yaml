@@ -96,6 +96,7 @@ dependencies:
   timezone: ^0.11.2
   wakelock_plus: 1.5.1
   flutter_tts: ^4.2.5
+  h3_flutter: ^0.8.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
