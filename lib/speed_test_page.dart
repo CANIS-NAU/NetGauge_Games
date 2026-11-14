@@ -3,6 +3,8 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
+import 'network_context.dart';
+import 'integrity_checks.dart';
 import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
@@ -93,6 +95,9 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
     try {
       final service = NDT7Service();
+      // the connection the test runs on, read before and after so a change part way through is flagged
+      final networkAtStart = await NetworkContext.capture();
+      final integrityAtStart = await IntegrityChecks.instance.capture(network: networkAtStart);
 
       setState(() {
         detailedLog += 'Step 2: Starting download test...\n';
@@ -141,6 +146,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         detailedLog += '✅ ALL TESTS COMPLETE!\n';
       });
 
+      final networkAtEnd = await NetworkContext.capture();
+
       // Save to Firestore
       setState(() {
         detailedLog += 'Step 4: Saving to Firestore...\n';
@@ -155,12 +162,20 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       }
       final sessionId = SessionManager.sessionId;
 
+      // VPN and fake-location signals from before and after the test; a problem at either time counts
+      final integrity = integrityAtStart.mergedWith(
+        await IntegrityChecks.instance.capture(network: networkAtEnd, position: loc?.position),
+      );
+
       // record this test in the current session so it is saved to measurements/{email}/sessions when the page closes
       SessionManager.addMeasurement(InternetMeasurement(
         uploadSpeed: upload['speedMbps'],
         downloadSpeed: download['speedMbps'],
         latency: download['latency'],
         jitters: 0.0,
+        networkType: networkAtStart.type,
+        vpnUsed: integrity.vpnUsed,
+        mockLocation: integrity.mockLocation,
       ));
       if (loc != null) {
         SessionManager.sessionLocationPoints.add(
@@ -180,6 +195,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
         'timestamp': FieldValue.serverTimestamp(),
+        'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
+        ...integrity.toMeasurementFields(networkChanged: networkAtStart.type != networkAtEnd.type),
       };
 
       final savedRef = await FirebaseFirestore.instance
