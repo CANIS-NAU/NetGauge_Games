@@ -48,6 +48,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // TODO: Change this to match whatever is reflected in user data manager
   bool _onboardingShown = false;
   VoidCallback? _loadingListener;
+  // created once (a new one on every rebuild re-initialises the native map); starts on Flagstaff, and is not
+  // restricted to an area so the player's own location can always be shown
+  final MapController _mapController = MapController(
+    initPosition: GeoPoint(latitude: 35.1983, longitude: -111.6513),
+  );
+  late final UserDataProvider _userDataProvider;
 
   /*
   Remote config survey prompting code
@@ -108,6 +114,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     setupInteractedMessage();
 
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+    _userDataProvider = userData;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (userData.isLoading) {
@@ -263,10 +270,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    // providers cannot be looked up while disposing, so the one kept from initState is used
+    final userData = _userDataProvider;
     if (_loadingListener != null) {
       userData.removeListener(_loadingListener!);
     }
+    userData.removeListener(_onDataLoaded);
+    _mapController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -384,16 +394,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: ClipRect(
                       child: AbsorbPointer(
                         child: OSMFlutter(
-                          controller: MapController(
-                            initPosition: GeoPoint(
-                                latitude: 47.4358055, longitude: 8.4737324),
-                            areaLimit: const BoundingBox(
-                              east: 10.4922941,
-                              north: 47.8084648,
-                              south: 45.817995,
-                              west: 5.9559113,
-                            ),
-                          ),
+                          controller: _mapController,
                           osmOption: OSMOption(
                             userTrackingOption: const UserTrackingOption(
                               enableTracking: true,

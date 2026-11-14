@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screen_awake.dart';
+import 'game_progress.dart';
 import 'page_reader.dart';
 import 'session_manager.dart';
 import 'vibration_controller.dart';
@@ -32,8 +33,11 @@ class WebViewPage extends StatefulWidget {
   // that would help with easily grabbing the game name
   final String gameFile; // holds the html file to be loaded into webview
 
+  // Where the player left off, when they chose to carry on rather than start again (see GameProgress). Null starts
+  // the game from the beginning.
+  final SavedGame? resumeFrom;
 
-  const WebViewPage({Key? key, required this.title, required this.gameFile})
+  const WebViewPage({Key? key, required this.title, required this.gameFile, this.resumeFrom})
       : super(key: key);
 
   @override
@@ -55,11 +59,18 @@ class _WebViewPageState extends State<WebViewPage> {
   // reads the current game page aloud when the player taps the Listen button
   final PageReader _reader = PageReader();
   DateTime? _lastMeasurementTime;
+  // who this play belongs to, so a save goes back to the same person; read once, because the saved progress has to
+  // be written while the game screen is closing, when the providers are no longer reachable
+  late final String _account;
+  // kept from initState: providers cannot be looked up while the widget is being disposed
+  late final UserDataProvider _userData;
 
   @override
   void initState() {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
+    _userData = userData;
     String userEmail = userData.email;
+    _account = userEmail;
 
     super.initState();
     SessionManager.startGame(widget.title, userEmail);
@@ -78,6 +89,9 @@ class _WebViewPageState extends State<WebViewPage> {
           onPageFinished: (String url) {
             // so reading stops when the game moves to another page
             controller.runJavaScript(passageChangeHookScript);
+            // put the player back where they left off, and keep saving their place from here on
+            _installProgressScripts();
+            if (!mounted) return;
             setState(() {
               isLoading = false;
             });
@@ -109,7 +123,7 @@ class _WebViewPageState extends State<WebViewPage> {
     // stop any audio when leaving the game
     _reader.stop();
     _reader.dispose();
-    final userData = Provider.of<UserDataProvider>(context, listen: false);
+    final userData = _userData;
     SessionManager.saveCurrentSession(userData.email, userData).then((_) {
       userData.fetchUserData();
     });
@@ -199,8 +213,55 @@ class _WebViewPageState extends State<WebViewPage> {
 
         // case for when game is complete
         case 'endGameSession':
+          // the game has been played to the end, so there is no longer a place to come back to
+          await GameProgress.clear(_account, widget.title);
           await SessionManager.saveCurrentSession(userData.email, userData);
           await userData.fetchUserData();
+          break;
+
+        // the player reached an ending, so there is nothing to come back to
+        case 'gameFinished':
+          await GameProgress.clear(_account, widget.title);
+          break;
+
+        // the player turned a page, so this is where they would come back to
+        case 'saveGameProgress':
+          final payload = data['payload'];
+          if (payload is! Map) break;
+          final state = payload['save'];
+          if (state is! String) break;
+          final passage = payload['passage'];
+          await GameProgress.save(
+            _account,
+            widget.title,
+            state,
+            passage: passage is String ? passage : null,
+          );
+          break;
+
+        // the player was put back where they left off
+        case 'gameResumed':
+          loggingService.logEvent('Resumed ${widget.title} where the player left off.', email: userData.email);
+          break;
+
+        // The save could not be used, so the player is at the start of the game instead. The save is thrown away:
+        // it failed once and would fail the same way every time, and keeping it would offer a resume that cannot
+        // happen. The player is told, because otherwise the game silently starting over looks like a bug.
+        case 'gameResumeFailed':
+          final reason = (data['payload'] is Map ? data['payload']['reason'] : null) ?? 'unknown';
+          debugPrint('[FLUTTER_BRIDGE] Could not resume ${widget.title}: $reason');
+          loggingService.logEvent('Could not resume ${widget.title}: $reason', email: userData.email);
+          await GameProgress.clear(_account, widget.title);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Your saved game could not be opened, so this one starts at the beginning.')),
+            );
+          }
+          break;
+
+        // the game's state could not be read; nothing to do but note it, the player plays on
+        case 'gameProgressProblem':
+          debugPrint('[FLUTTER_BRIDGE] Saving ${widget.title} did not work: ${data['payload']}');
           break;
 
         /*case 'publishPlayerName':
@@ -341,20 +402,23 @@ class _WebViewPageState extends State<WebViewPage> {
 
   // handler for getting the location data from the location service
   void sendLocationJSON(context) async {
-    // get location
-    final loc = await determineLocationData();
-    LocationPoint point = LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude);
-    locationPoints.add(point);
-
-    // build return JSON
-    final json = jsonEncode({
-      'latitude': loc.position.latitude,
-      'longitude': loc.position.longitude,
-      'context': context, // echo back context
-    });
+    // get location; the game is always answered, with an error if there is no location, so it never waits forever
+    final loc = await _currentLocation();
+    if (!mounted) return;
+    final Map<String, dynamic> reply;
+    if (loc == null) {
+      reply = {'latitude': null, 'longitude': null, 'context': context, 'error': 'location unavailable'};
+    } else {
+      locationPoints.add(LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude));
+      reply = {
+        'latitude': loc.position.latitude,
+        'longitude': loc.position.longitude,
+        'context': context, // echo back context
+      };
+    }
     // return the location json to JS
     controller.runJavaScript(
-        "window.onLocationJSON(${jsonEncode(json)})"); // need to encode the json twice for JS reception
+        "window.onLocationJSON(${jsonEncode(jsonEncode(reply))})"); // need to encode the json twice for JS reception
   }
 
   // uses measureInternet() function to measure internet and send data to JS
@@ -393,6 +457,25 @@ class _WebViewPageState extends State<WebViewPage> {
 
   void setSessionPOIs() {
     _poiLookup = _lookUpPois();
+  }
+
+  // Sets up saving and resuming in the game's page, once it has loaded.
+  //
+  // The resume script goes in first on purpose: it holds off saving before the story shows anything, so the opening
+  // passage cannot overwrite the very save the player is being put back into. The page can finish loading more than
+  // once (an in-game reload), and both scripts do nothing the second time, so this is safe to run again.
+  Future<void> _installProgressScripts() async {
+    final resumeFrom = widget.resumeFrom;
+    try {
+      if (resumeFrom != null) {
+        debugPrint('[FLUTTER_BRIDGE] Resuming ${widget.title} from ${resumeFrom.passage ?? 'the saved point'}.');
+        await controller.runJavaScript(resumeScript(resumeFrom.save));
+      }
+      await controller.runJavaScript(gameProgressHookScript);
+    } catch (e) {
+      // the game is still perfectly playable, it just will not remember where the player got to
+      debugPrint('[FLUTTER_BRIDGE] Could not set up saving for ${widget.title}: $e');
+    }
   }
 
   // A check or hint asked for while the POI lookup is still running waits briefly for it, so it uses the POIs

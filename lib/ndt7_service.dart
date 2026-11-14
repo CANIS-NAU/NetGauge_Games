@@ -70,7 +70,7 @@ class NDT7Service {
         final urls = await getNDT7Urls();
         final downloadUrl = urls['download']!;
 
-        onStatus('Connecting to: ${downloadUrl.substring(0, 50)}...');
+        onStatus('Connecting to download server...');
 
         final socket = await WebSocket.connect(
             downloadUrl,
@@ -193,11 +193,11 @@ class NDT7Service {
         final urls = await getNDT7Urls();
         final uploadUrl = urls['upload']!;
 
-        onStatus('Connecting to: ${uploadUrl.substring(0, 50)}...');
+        onStatus('Connecting to upload server...');
 
         final socket = await WebSocket.connect(
-        uploadUrl,
-        protocols: ['net.measurementlab.ndt.v7'],
+            uploadUrl,
+            protocols: ['net.measurementlab.ndt.v7'],
         );
 
         onStatus('WebSocket connected!');
@@ -208,100 +208,96 @@ class NDT7Service {
         int bytesSent = 0;
         int chunksSent = 0;
         bool isDone = false;
-
-        // NDT7 upload: client sends binary data, server sends JSON measurements
-        final payload = Uint8List(8192); // 8KB chunks
-
-        // Fill with random data (optional, but more realistic)
-        for (int i = 0; i < payload.length; i++) {
-        payload[i] = i % 256;
-        }
-
+        // what the server says it has received, which is what the upload speed is really measured from
+        int serverBytes = 0;
+        double serverElapsedSeconds = 0;
         int serverMessageCount = 0;
 
+        // 64 KB frames, sent as fast as the connection takes them (the old 8 KB every 10 ms capped the test at 6.5 Mbps)
+        final payload = Uint8List(64 * 1024);
+        for (int i = 0; i < payload.length; i++) {
+            payload[i] = i % 256;
+        }
+        // how far ahead of the server the client may get before it waits, so a slow link does not buffer without limit
+        const maxLead = 4 * 1024 * 1024;
+
+        void finish() {
+            if (completer.isCompleted) return;
+            isDone = true;
+            socket.close();
+            final durationSeconds = DateTime.now().difference(startTime).inMilliseconds / 1000;
+            // prefer the server's own count and clock; fall back to what was handed to the socket
+            final speedMbps = (serverBytes > 0 && serverElapsedSeconds > 0)
+                ? (serverBytes * 8) / (serverElapsedSeconds * 1e6)
+                : (durationSeconds > 0 ? (bytesSent * 8) / (durationSeconds * 1e6) : 0.0);
+            completer.complete({
+                'speedMbps': speedMbps,
+                'bytesSent': bytesSent,
+                'duration': durationSeconds,
+                'chunksSent': chunksSent,
+            });
+        }
+
         socket.listen(
-        (message) {
-        // Server sends JSON measurement messages during upload
-        if (message is String) {
-        serverMessageCount++;
-        if (serverMessageCount % 5 == 0) {
-        onStatus('Server measurement msgs: $serverMessageCount');
-        }
-        }
-        },
-        onError: (error) {
-        onStatus('Upload error: $error');
-        if (!completer.isCompleted) {
-        completer.completeError(error);
-        }
-        },
-        onDone: () {
-        onStatus('Upload socket closed by server');
-        },
+            (message) {
+                if (message is String) {
+                    serverMessageCount++;
+                    try {
+                        final data = jsonDecode(message);
+                        final app = data is Map ? data['AppInfo'] : null;
+                        if (app is Map && app['NumBytes'] is num && app['ElapsedTime'] is num) {
+                            serverBytes = (app['NumBytes'] as num).toInt();
+                            // ElapsedTime is in microseconds
+                            serverElapsedSeconds = (app['ElapsedTime'] as num) / 1e6;
+                        }
+                    } catch (_) {}
+                    if (serverMessageCount % 5 == 0) {
+                        onStatus('Server measurement msgs: $serverMessageCount');
+                    }
+                }
+            },
+            onError: (error) {
+                onStatus('Upload error: $error');
+                if (!completer.isCompleted) {
+                    completer.completeError(error);
+                }
+            },
+            onDone: () {
+                onStatus('Upload socket closed by server');
+                // the server ends the test itself; report what was measured rather than waiting for the safety timer
+                if (!isDone) finish();
+            },
         );
 
         const testDuration = Duration(seconds: 10);
 
-        // Send data continuously
-        Timer.periodic(const Duration(milliseconds: 10), (timer) {
-        if (isDone) {
-        timer.cancel();
-        return;
-        }
-
-        try {
-        socket.add(payload);
-        bytesSent += payload.length;
-        chunksSent++;
-
-        if (chunksSent % 200 == 0) {
-        final mbSent = (bytesSent / 1024 / 1024).toStringAsFixed(2);
-        onStatus('Sent: $mbSent MB ($chunksSent chunks)');
-        }
-        } catch (e) {
-        onStatus('Send error: $e');
-        isDone = true;
-        timer.cancel();
-        }
-
-        if (DateTime.now().difference(startTime) >= testDuration) {
-        isDone = true;
-        timer.cancel();
-
-        onStatus('Upload duration complete, closing...');
-        socket.close();
-
-        final durationSeconds =
-        DateTime.now().difference(startTime).inMilliseconds / 1000;
-
-        final speedMbps = (bytesSent * 8) / (durationSeconds * 1e6);
-
-        completer.complete({
-        'speedMbps': speedMbps,
-        'bytesSent': bytesSent,
-        'duration': durationSeconds,
-        'chunksSent': chunksSent,
-        });
-        }
-        });
+        () async {
+            while (!isDone && DateTime.now().difference(startTime) < testDuration) {
+                final waiting = serverMessageCount == 0 ? bytesSent > 1024 * 1024 : bytesSent - serverBytes > maxLead;
+                if (waiting) {
+                    await Future.delayed(const Duration(milliseconds: 5));
+                    continue;
+                }
+                try {
+                    socket.add(payload);
+                    bytesSent += payload.length;
+                    chunksSent++;
+                } catch (e) {
+                    onStatus('Send error: $e');
+                    break;
+                }
+                // let the socket and the listener run between frames
+                await Future.delayed(Duration.zero);
+            }
+            finish();
+        }();
 
         // Safety timeout
         Future.delayed(const Duration(seconds: 15), () {
-        if (!completer.isCompleted) {
-        onStatus('Upload timeout');
-        socket.close();
-
-        final durationSeconds =
-        DateTime.now().difference(startTime).inMilliseconds / 1000;
-        final speedMbps = (bytesSent * 8) / (durationSeconds * 1e6);
-
-        completer.complete({
-        'speedMbps': speedMbps,
-        'bytesSent': bytesSent,
-        'duration': durationSeconds,
-        'chunksSent': chunksSent,
-        });
-        }
+            if (!completer.isCompleted) {
+                onStatus('Upload timeout');
+                finish();
+            }
         });
 
         return completer.future;

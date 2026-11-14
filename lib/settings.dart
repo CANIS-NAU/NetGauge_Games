@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import 'daily_reminder_service.dart';
 import 'account_identity.dart';
 import 'screen_awake.dart';
+import 'game_progress.dart';
 import 'theme_controller.dart';
 
 class Settings extends StatefulWidget {
@@ -62,6 +63,43 @@ class _SettingsState extends State<Settings> {
       ),
     );
     if (leave == true) await logout();
+  }
+
+  // Lets a player throw away every game they have part-finished, so they can start the catalog fresh. Asked about
+  // first, because it cannot be undone.
+  Future<void> _confirmAndClearProgress() async {
+    final account = Provider.of<UserDataProvider>(context, listen: false).email;
+    final waiting = GameProgress.inProgress(account);
+    if (waiting.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have no games in progress.')),
+      );
+      return;
+    }
+
+    final clear = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear saved games?'),
+        content: Text(
+          'You have ${waiting.length} game${waiting.length == 1 ? '' : 's'} in progress '
+          '(${waiting.map((s) => s.game).join(', ')}). Clearing means each one starts from the beginning next '
+          'time you play it. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep them')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Clear')),
+        ],
+      ),
+    );
+    if (clear != true) return;
+
+    await GameProgress.clearAll(account);
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your saved games were cleared.')),
+    );
   }
 
   Future<void> logout() async {
@@ -184,6 +222,12 @@ class _SettingsState extends State<Settings> {
                 setState(() => _keepScreenAwake = value);
                 ScreenAwake.setEnabled(value);
               },
+            ),
+            ListTile(
+              title: const Text('Clear saved games'),
+              subtitle: const Text('Games you have part-finished will start from the beginning again'),
+              trailing: const Icon(Icons.restart_alt),
+              onTap: _confirmAndClearProgress,
             ),
             const SizedBox(height: 20),
             ElevatedButton(

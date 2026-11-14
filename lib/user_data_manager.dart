@@ -33,8 +33,8 @@ final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-  GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-  GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
+  // Soul Seeker and Dragon Slayer are switched off in the game catalog pop-up (see showCustomPopup); listing them
+  // here would show tiles that open a blank game. Add them back in both places together.
   GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
   GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
 ];
@@ -251,7 +251,7 @@ class UserDataProvider extends ChangeNotifier {
     if (rawFavorites is List) {
       favoriteNames = rawFavorites;
     } else {
-      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+      favoriteNames = ['Zombie Apocalypse', 'Scavenger Hunt'];
     }
 
     List<GameData> favoritesList = [];
@@ -274,7 +274,7 @@ class UserDataProvider extends ChangeNotifier {
     final rawFavorites = _userData!['favoriteGames'];
     List<dynamic> currentFavorites = (rawFavorites is List) 
         ? List.from(rawFavorites) 
-        : ['Zombie Apocalypse', 'Soul Seeker'];
+        : ['Zombie Apocalypse', 'Scavenger Hunt'];
 
     if (currentFavorites.contains(gameName)) {
       currentFavorites.remove(gameName);
@@ -579,7 +579,7 @@ class UserDataProvider extends ChangeNotifier {
       'totalDistanceTraveled': 0.0,
       'dataPoints': [],
       'radGyration': [0],
-      'favoriteGames': ['Zombie Apocalypse', 'Soul Seeker'],
+      'favoriteGames': ['Zombie Apocalypse', 'Scavenger Hunt'],
       'createdAt': FieldValue.serverTimestamp(),
       //'isVPN' : vpn,
       //'isFakeLocation' : fake,

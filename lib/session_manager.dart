@@ -13,6 +13,7 @@ import 'package:detect_fake_location/detect_fake_location.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'activity_logs.dart';
+import 'location_logger.dart';
 import 'poi_logic.dart';
 import 'screen_awake.dart';
 import 'public_sessions.dart';
@@ -38,6 +39,9 @@ final loggingService = GetIt.instance<LoggingService>();
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
   static String? _sessionId;
+  // the session that has already been written, so closing a game (route pop, widget dispose, end-of-game message)
+  // cannot save the same play more than once
+  static String? _savedSessionId;
   //static String? _playerName;
   static String? _currentGame;
   static List<PointOfInterest> _poiList = [];
@@ -110,6 +114,7 @@ class SessionManager {
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();
     VibrationController.stop();
+    LocationLogger.stop();
 
     _currentGame = null;
     debugPrint('[SESSION_MANAGER] Session cleared.');
@@ -153,6 +158,13 @@ class SessionManager {
 
   static Future<void> saveCurrentSession(String userEmail, UserDataProvider provider) async {
     VibrationController.stop();
+    // each play is saved once; every way of closing a game funnels through here
+    final playId = _sessionId;
+    if (playId != null && playId == _savedSessionId) {
+      debugPrint('[SESSION_MANAGER] Session $playId already saved, not saving again.');
+      return;
+    }
+    _savedSessionId = playId;
     vpnStatus = await SessionManager().checkVPN();
     fakeLocationStatus = await SessionManager().checkFakeLocation();
     double distanceTraveled = calculateDistance(sessionLocationPoints);

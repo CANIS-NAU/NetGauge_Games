@@ -8,6 +8,7 @@ import 'package:internet_measurement_games_app/speed_test_page.dart';
 import 'widgets/buttons.dart';
 import 'flutter_bridge.dart';
 import 'session_manager.dart';
+import 'game_progress.dart';
 import 'location_logger.dart';
 import 'post_game_survey.dart';
 import 'vibration_controller.dart';
@@ -150,6 +151,11 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
           final currentFavorites = Provider.of<UserDataProvider>(context).favoriteGames;
           final isFavorited = currentFavorites.any((favGame) => favGame.text == game.text);
 
+          // where this player left off in this game, if they have a game waiting
+          final saved = GameProgress.supportsResume(title)
+              ? GameProgress.progressFor(userData.email, title)
+              : null;
+
           return AlertDialog(
             title: Text(title),
             content: Column(
@@ -160,6 +166,13 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
                   const SizedBox(height: 16),
                 ],
                 Text(content),
+                if (saved != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'You have a game in progress, from ${describeSavedAt(saved.savedAt)}.',
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -173,10 +186,21 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
                   // No need for dialogSetState(() {}) because Provider will rebuild the widget
                 },
               ),
-              TextButton(
-                onPressed: () => _launchGame(title, gameURL, context),
-                child: const Text("Play"),
-              ),
+              if (saved == null)
+                TextButton(
+                  onPressed: () => _launchGame(title, gameURL, context),
+                  child: const Text("Play"),
+                )
+              else ...[
+                TextButton(
+                  onPressed: () => _launchGame(title, gameURL, context, resumeFrom: saved),
+                  child: const Text("Continue"),
+                ),
+                TextButton(
+                  onPressed: () => _startOver(title, gameURL, context),
+                  child: const Text("Start over"),
+                ),
+              ],
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text("Close"),
@@ -189,9 +213,41 @@ Future<void> showCustomPopup(BuildContext context, GameData game) {
   );
 }
 
-void _launchGame(String title, String gameFile, BuildContext context) {
+// Throwing away a saved game cannot be undone, so the player is asked first. On "start over" the save is cleared
+// and the game opens at the beginning; on "keep my place" nothing happens and the game's pop-up stays open.
+Future<void> _startOver(String title, String gameFile, BuildContext context) async {
   final userData = Provider.of<UserDataProvider>(context, listen: false);
-  loggingService.logEvent('Launching $title', email: userData.email);
+  final navigator = Navigator.of(context);
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('Start $title over?'),
+      content: const Text(
+        'Where you left off in this game will be thrown away and the game will start from the beginning. '
+        'This cannot be undone.',
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep my place')),
+        TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Start over')),
+      ],
+    ),
+  );
+  if (confirmed != true) return;
+
+  await GameProgress.clear(userData.email, title);
+  loggingService.logEvent('Player started $title over.', email: userData.email);
+  if (!navigator.mounted) return;
+  // the game's own pop-up is still open underneath; _launchGame closes it
+  _launchGame(title, gameFile, navigator.context);
+}
+
+void _launchGame(String title, String gameFile, BuildContext context, {SavedGame? resumeFrom}) {
+  final userData = Provider.of<UserDataProvider>(context, listen: false);
+  loggingService.logEvent(
+    resumeFrom == null ? 'Launching $title' : 'Launching $title, carrying on from where the player left off',
+    email: userData.email,
+  );
 
   // keep the navigator: the dialog's context is no longer valid once the game ends
   final navigator = Navigator.of(context);
@@ -212,7 +268,9 @@ void _launchGame(String title, String gameFile, BuildContext context) {
   // Measure Internet is a native page, every other game runs in the WebView
   final gamePage = isSpeedTest
       ? MaterialPageRoute(builder: (context) => const SpeedTestPage())
-      : MaterialPageRoute(builder: (context) => WebViewPage(title: title, gameFile: gameFile));
+      : MaterialPageRoute(
+          builder: (context) => WebViewPage(title: title, gameFile: gameFile, resumeFrom: resumeFrom),
+        );
 
   // the end-of-session handling below runs for every game, including Measure Internet
   navigator.push(gamePage).then((_) async {
