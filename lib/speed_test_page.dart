@@ -3,6 +3,7 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
+import 'mlab_info.dart';
 import 'network_context.dart';
 import 'integrity_checks.dart';
 import 'dart:io';
@@ -146,6 +147,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         detailedLog += '✅ ALL TESTS COMPLETE!\n';
       });
 
+      final mlab = service.serverInfo.withUuids(download: download['uuid'], upload: upload['uuid']);
       final networkAtEnd = await NetworkContext.capture();
 
       // Save to Firestore
@@ -176,6 +178,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         networkType: networkAtStart.type,
         vpnUsed: integrity.vpnUsed,
         mockLocation: integrity.mockLocation,
+        mlab: mlab,
       ));
       if (loc != null) {
         SessionManager.sessionLocationPoints.add(
@@ -196,6 +199,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'latency': download['latency'],
         'timestamp': FieldValue.serverTimestamp(),
         'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
+        'mlab': mlab.toMeasurementField(),
         ...integrity.toMeasurementFields(networkChanged: networkAtStart.type != networkAtEnd.type),
       };
 

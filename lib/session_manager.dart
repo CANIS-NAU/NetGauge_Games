@@ -2,6 +2,7 @@
 // https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
 
 // importing libraries and packages
+import 'mlab_info.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'poi_generator.dart';
@@ -33,10 +34,12 @@ class InternetMeasurement {
   // whether it was taken on a VPN / with a faked position (null = could not tell; see integrity_checks.dart)
   final bool? vpnUsed;
   final bool? mockLocation;
+  // M-Lab test IDs and server (see mlab_info.dart), used to match this test to M-Lab's own records
+  final MlabTestInfo? mlab;
 
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
     required this.jitters, required this.latency, this.networkType = 'unknown',
-    this.vpnUsed, this.mockLocation});
+    this.vpnUsed, this.mockLocation, this.mlab});
 }
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -195,6 +198,7 @@ class SessionManager {
         'network_type': p.networkType,
         'vpn_used': p.vpnUsed,
         'mock_location': p.mockLocation,
+        if (p.mlab != null) 'mlab': p.mlab!.toMeasurementField(),
       }).toList(),
       'location_points': sessionLocationPoints.map((p) => {
         'latitude': p.latitude,

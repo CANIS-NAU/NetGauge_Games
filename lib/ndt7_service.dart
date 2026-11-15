@@ -3,12 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'mlab_info.dart';
 
 
 class NDT7Service {
     // time of last request
     DateTime? _lastRequestTime;
     Map<String, String>? _cachedUrls;
+    // the M-Lab server behind the cached URLs (hostname and location), kept with them
+    MlabTestInfo _cachedServer = const MlabTestInfo();
+    MlabTestInfo get serverInfo => _cachedServer;
 
 
     // get URLs for speed test
@@ -28,6 +32,7 @@ class NDT7Service {
 
       final data = jsonDecode(response.body);
       final Map<String, dynamic> urls = data['results'][0]['urls'];
+      _cachedServer = MlabTestInfo.serverFromLocate(data['results'][0]);
       String downloadUrl = urls['ws:///ndt/v7/download'];
       String uploadUrl = urls['ws:///ndt/v7/upload'];
 
@@ -54,6 +59,9 @@ class NDT7Service {
         });
 
         return {
+            'mlab': serverInfo
+                .withUuids(download: download['uuid'], upload: upload['uuid'])
+                .toMeasurementField(),
             'downloadSpeed': download['speedMbps'],
             'uploadSpeed': upload['speedMbps'],
             'latency': download['latency'],
@@ -84,6 +92,7 @@ class NDT7Service {
         int jsonMessageCount = 0;
         int binaryMessageCount = 0;
         double? minRTT;
+        String? uuid;
         bool testStarted = false;
 
         final completer = Completer<Map<String, dynamic>>();
@@ -101,6 +110,8 @@ class NDT7Service {
 
                     try {
                         final data = jsonDecode(message);
+                        // M-Lab's ID for this test, used later to match it to their own records
+                        uuid ??= MlabTestInfo.uuidFromMessage(data);
 
                         // NDT7 sends different message types
                         if (data.containsKey('AppInfo') && data['AppInfo'] != null) {
@@ -162,6 +173,7 @@ class NDT7Service {
                 completer.complete({
                     'speedMbps': speedMbps,
                     'latency': minRTT ?? 0,
+                    'uuid': uuid,
                     'bytesReceived': bytesReceived,
                     'duration': durationSeconds,
                     'messageCount': jsonMessageCount + binaryMessageCount,
@@ -218,12 +230,20 @@ class NDT7Service {
         }
 
         int serverMessageCount = 0;
+        String? uuid;
 
         socket.listen(
         (message) {
         // Server sends JSON measurement messages during upload
         if (message is String) {
         serverMessageCount++;
+        if (uuid == null) {
+        try {
+        uuid = MlabTestInfo.uuidFromMessage(jsonDecode(message));
+        } catch (_) {
+        // not every message has to be JSON we understand; the speed does not depend on this
+        }
+        }
         if (serverMessageCount % 5 == 0) {
         onStatus('Server measurement msgs: $serverMessageCount');
         }
@@ -278,6 +298,7 @@ class NDT7Service {
 
         completer.complete({
         'speedMbps': speedMbps,
+        'uuid': uuid,
         'bytesSent': bytesSent,
         'duration': durationSeconds,
         'chunksSent': chunksSent,
@@ -297,6 +318,7 @@ class NDT7Service {
 
         completer.complete({
         'speedMbps': speedMbps,
+        'uuid': uuid,
         'bytesSent': bytesSent,
         'duration': durationSeconds,
         'chunksSent': chunksSent,

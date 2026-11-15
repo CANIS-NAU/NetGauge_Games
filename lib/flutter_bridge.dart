@@ -13,6 +13,7 @@ import 'integrity_checks.dart';
 import 'vibration_controller.dart';
 import 'dart:async';
 import 'ndt7_service.dart';
+import 'mlab_info.dart';
 import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
@@ -272,6 +273,7 @@ class _WebViewPageState extends State<WebViewPage> {
             // call NDT7-client
             final download = await _ndt7Service.runDownloadTest((status) {});
             final upload = await _ndt7Service.runUploadTest((status) {});
+            final mlab = _ndt7Service.serverInfo.withUuids(download: download['uuid'], upload: upload['uuid']);
             final networkAtEnd = await NetworkContext.capture();
 
             // get user location; the measurement is still recorded without it if location is unavailable
@@ -295,6 +297,7 @@ class _WebViewPageState extends State<WebViewPage> {
               networkType: networkAtStart.type,
               vpnUsed: integrity.vpnUsed,
               mockLocation: integrity.mockLocation,
+              mlab: mlab,
             );
             loggingService.logEvent('Player measured their internet.', email: userData.email);
             debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
@@ -308,6 +311,7 @@ class _WebViewPageState extends State<WebViewPage> {
               'timestamp': FieldValue.serverTimestamp(),
               'session_id': SessionManager.sessionId,
               'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
+              'mlab': mlab.toMeasurementField(),
               ...integrity.toMeasurementFields(networkChanged: networkAtStart.type != networkAtEnd.type),
             };
 
