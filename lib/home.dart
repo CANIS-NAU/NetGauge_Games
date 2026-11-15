@@ -20,6 +20,7 @@ import 'welcome_onboarding.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'location_notice.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'announcements.dart';
 import 'app_theme.dart';
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -91,6 +92,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.resumed) {
       loggingService.logEvent('App is opened.', email: email);
+      // a message published while the app was in the background shows when the player comes back
+      // (only when the home screen is what is showing, never on top of a game or another page)
+      if (ModalRoute.of(context)?.isCurrent ?? false) {
+        final userData = Provider.of<UserDataProvider>(context, listen: false);
+        AnnouncementService.maybeShow(context, isGuest: userData.isGuestUser, refresh: true);
+      }
     } else if (state == AppLifecycleState.paused) {
       loggingService.logEvent('App running in background.', email: email);
     } else if (state == AppLifecycleState.detached) {
@@ -140,6 +147,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       email: userData.email,
       params: {'screen': 'HomeScreen'},
     );
+
+    // any pop-up message pushed through Remote Config (see announcements.dart)
+    AnnouncementService.maybeShow(context, isGuest: userData.isGuestUser);
   }
 
   // true if the survey document exists and has at least one question, so we never open an empty survey
