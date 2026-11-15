@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'mlab_info.dart';
+import 'ndt7_tcp_stats.dart';
 
 
 class NDT7Service {
@@ -65,8 +66,8 @@ class NDT7Service {
             'downloadSpeed': download['speedMbps'],
             'uploadSpeed': upload['speedMbps'],
             'latency': download['latency'],
-            'jitter': -1,
-            'packetLoss': -1,
+            'jitter': download['jitter'],
+            'packetLoss': download['packetLoss'],
         };
     }
 
@@ -93,6 +94,7 @@ class NDT7Service {
         int binaryMessageCount = 0;
         double? minRTT;
         String? uuid;
+        final tcpStats = Ndt7TcpStats();
         bool testStarted = false;
 
         final completer = Completer<Map<String, dynamic>>();
@@ -123,6 +125,8 @@ class NDT7Service {
                         // TCPInfo.MinRTT is reported in microseconds; convert to milliseconds for latency
                         // (ConnectionInfo.Client is just an address string, so it holds no RTT)
                         final tcpInfo = data['TCPInfo'];
+                        // round-trip times and re-sent bytes, for jitter and packet loss
+                        tcpStats.addTcpInfo(tcpInfo);
                         if (tcpInfo is Map && tcpInfo['MinRTT'] is num) {
                             minRTT = (tcpInfo['MinRTT'] as num) / 1000.0;
                         }
@@ -173,6 +177,9 @@ class NDT7Service {
                 completer.complete({
                     'speedMbps': speedMbps,
                     'latency': minRTT ?? 0,
+                    // null when the server did not report enough to work them out
+                    'jitter': tcpStats.jitterMs,
+                    'packetLoss': tcpStats.packetLossPercent,
                     'uuid': uuid,
                     'bytesReceived': bytesReceived,
                     'duration': durationSeconds,

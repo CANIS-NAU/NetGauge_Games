@@ -31,6 +31,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   String latency = '---';
   String jitter = '---';
   String packetLoss = '---';
+  // true while a test is running; the button is greyed out and ignores taps until it finishes
+  bool _running = false;
   String errorLog = '';
   String detailedLog = '';
 
@@ -83,11 +85,16 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   }
 
   void _runSpeedTest() async {
+    // a second tap while a test is running would start an overlapping test
+    if (_running) return;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     setState(() {
+      _running = true;
       downloadSpeed = testingValue;
       uploadSpeed = testingValue;
       latency = testingValue;
+      jitter = testingValue;
+      packetLoss = testingValue;
       detailedLog = 'Step 1: Initializing...\n';
       errorLog = '';
     });
@@ -122,7 +129,9 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
         downloadSpeed = '${download['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
         latency = '${download['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
-      });
+        // estimated from the download test's TCP info; "Not available" if the server did not report it
+        jitter = _formatMetric(download['jitter'], 'ms');
+        packetLoss = _formatMetric(download['packetLoss'], '%');      });
 
       setState(() {
         detailedLog += 'Step 3: Starting upload test...\n';
@@ -174,7 +183,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         uploadSpeed: upload['speedMbps'],
         downloadSpeed: download['speedMbps'],
         latency: download['latency'],
-        jitters: 0.0,
+        jitters: download['jitter'] as double?,
+        packetLoss: download['packetLoss'] as double?,
         networkType: networkAtStart.type,
         vpnUsed: integrity.vpnUsed,
         mockLocation: integrity.mockLocation,
@@ -197,6 +207,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         'download_speed': download['speedMbps'],
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
+        if (download['jitter'] != null) 'jitter': download['jitter'],
+        if (download['packetLoss'] != null) 'packet_loss': download['packetLoss'],
         'timestamp': FieldValue.serverTimestamp(),
         'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
         'mlab': mlab.toMeasurementField(),
@@ -213,8 +225,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
       setState(() {
         detailedLog += 'Data saved to Firestore\n';
-        jitter = '-1';
-        packetLoss = '-1';
       });
 
       // TODO: Total points collected should be incremented here (lazy approach)
@@ -230,10 +240,21 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         downloadSpeed = 'Failed';
         uploadSpeed = 'Failed';
         latency = 'Failed';
+        jitter = 'Failed';
+        packetLoss = 'Failed';
         errorLog = 'ERROR:\n${e.toString()}\n\nStack trace:\n${stackTrace.toString()}';
         detailedLog += '\nTEST FAILED: $e\n';
       });
+    } finally {
+      // the button comes back whether the test worked or not
+      if (mounted) setState(() => _running = false);
     }
+  }
+
+  // "12.34 ms", or "Not available" when the server did not report the value
+  String _formatMetric(dynamic value, String unit) {
+    if (value is! num) return 'Not available';
+    return '${value.toStringAsFixed(2)} $unit';
   }
 
   // constructor for UI elements
@@ -291,7 +312,7 @@ class SpeedTestPageState extends State<SpeedTestPage> {
           _buildMetricsCard('Upload Speed', uploadSpeed),
           _buildMetricsCard('Latency', latency),
           _buildMetricsCard('Jitter', jitter),
-          _buildMetricsCard('Packet Loss', packetLoss),
+          _buildMetricsCard('Packet Loss (estimated)', packetLoss),
           if (errorLog.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -313,13 +334,16 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF440154),
               foregroundColor: Colors.white,
+              // grey while a test is running, so it is clear the button can't be pressed again yet
+              disabledBackgroundColor: Colors.grey.shade400,
+              disabledForegroundColor: Colors.grey.shade700,
               padding: const EdgeInsets.all(20),
             ),
-            onPressed: _runSpeedTest,
-            child: const Text('Run Test',
-            style: TextStyle(
+            onPressed: _running ? null : _runSpeedTest,
+            child: Text(_running ? 'Running...' : 'Run Test',
+            // no fixed text color: the button's own (enabled or greyed-out) color applies
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
               fontSize: 20)),
           ),
           const SizedBox(height: 20),

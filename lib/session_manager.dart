@@ -28,7 +28,9 @@ import 'dart:math';
 class InternetMeasurement {
   final double uploadSpeed;
   final double downloadSpeed;
-  final double jitters;
+  final double? jitters;
+  // estimated share of data that had to be re-sent, in percent (see ndt7_tcp_stats.dart)
+  final double? packetLoss;
   final double latency;
   // the connection type it ran on (see network_context.dart)
   final String networkType;
@@ -39,7 +41,7 @@ class InternetMeasurement {
   final MlabTestInfo? mlab;
 
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
-    required this.jitters, required this.latency, this.networkType = 'unknown',
+    required this.jitters, this.packetLoss, required this.latency, this.networkType = 'unknown',
     this.vpnUsed, this.mockLocation, this.mlab});
 }
 
@@ -207,6 +209,7 @@ class SessionManager {
         'download_speed': p.downloadSpeed,
         'latency': p.latency,
         'jitters': p.jitters,
+        'packet_loss': p.packetLoss,
         'network_type': p.networkType,
         'vpn_used': p.vpnUsed,
         'mock_location': p.mockLocation,
