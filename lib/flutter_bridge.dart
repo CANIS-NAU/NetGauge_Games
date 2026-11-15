@@ -8,9 +8,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'screen_awake.dart';
 import 'page_reader.dart';
 import 'session_manager.dart';
+import 'network_context.dart';
+import 'integrity_checks.dart';
 import 'vibration_controller.dart';
 import 'dart:async';
 import 'ndt7_service.dart';
+import 'mlab_info.dart';
 import 'poi_generator.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
@@ -123,7 +126,6 @@ class _WebViewPageState extends State<WebViewPage> {
   /// that may be a mistake. Making a note here in case things aren't working right.
   void handleNativeMessage(String message) async {
     final userData = Provider.of<UserDataProvider>(context, listen: false);
-    bool vpn_status = userData.vpnStatus;
 
     try {
       final Map<String, dynamic> data = json.decode(message);
@@ -265,21 +267,14 @@ class _WebViewPageState extends State<WebViewPage> {
           _lastMeasurementTime = now;
           try {
             debugPrint("[FLUTTER_BRIDGE]: Calling getInternetMeasurement, recording speed.");
+            // the connection the test runs on, read before and after so a change part way through is flagged
+            final networkAtStart = await NetworkContext.capture();
+            final integrityAtStart = await IntegrityChecks.instance.capture(network: networkAtStart);
             // call NDT7-client
             final download = await _ndt7Service.runDownloadTest((status) {});
             final upload = await _ndt7Service.runUploadTest((status) {});
-
-            InternetMeasurement measurement = InternetMeasurement(
-              uploadSpeed:  upload['speedMbps'],
-              downloadSpeed: download['speedMbps'],
-              latency: download['latency'],
-              jitters: 0.0,
-            );
-            loggingService.logEvent('Player measured their internet.', email: userData.email);
-            debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
-            SessionManager.addMeasurement(measurement);
-
-
+            final mlab = _ndt7Service.serverInfo.withUuids(download: download['uuid'], upload: upload['uuid']);
+            final networkAtEnd = await NetworkContext.capture();
 
             // get user location; the measurement is still recorded without it if location is unavailable
             LocationData? loc;
@@ -289,6 +284,25 @@ class _WebViewPageState extends State<WebViewPage> {
               debugPrint("[FLUTTER_BRIDGE] Location unavailable, recording measurement without it: $e");
             }
 
+            // VPN and fake-location signals from before and after the test; a problem at either time counts
+            final integrity = integrityAtStart.mergedWith(
+              await IntegrityChecks.instance.capture(network: networkAtEnd, position: loc?.position),
+            );
+
+            InternetMeasurement measurement = InternetMeasurement(
+              uploadSpeed:  upload['speedMbps'],
+              downloadSpeed: download['speedMbps'],
+              latency: download['latency'],
+              jitters: 0.0,
+              networkType: networkAtStart.type,
+              vpnUsed: integrity.vpnUsed,
+              mockLocation: integrity.mockLocation,
+              mlab: mlab,
+            );
+            loggingService.logEvent('Player measured their internet.', email: userData.email);
+            debugPrint("[FLUTTER_BRIDGE]: Adding measurement to measurements list.");
+            SessionManager.addMeasurement(measurement);
+
             final checkData = <String, dynamic>{
               'game': SessionManager.currentGame,
               'download_speed': download['speedMbps'],
@@ -296,7 +310,9 @@ class _WebViewPageState extends State<WebViewPage> {
               'latency': download['latency'],
               'timestamp': FieldValue.serverTimestamp(),
               'session_id': SessionManager.sessionId,
-              'vpn_used' : vpn_status,
+              'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
+              'mlab': mlab.toMeasurementField(),
+              ...integrity.toMeasurementFields(networkChanged: networkAtStart.type != networkAtEnd.type),
             };
 
             if (loc != null) {

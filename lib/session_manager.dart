@@ -2,14 +2,15 @@
 // https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
 
 // importing libraries and packages
+import 'mlab_info.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'poi_generator.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 import 'vibration_controller.dart';
-import 'package:vpn_connection_detector/vpn_connection_detector.dart';
-import 'package:detect_fake_location/detect_fake_location.dart';
+import 'integrity_checks.dart';
+import 'network_context.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'activity_logs.dart';
@@ -28,9 +29,17 @@ class InternetMeasurement {
   final double downloadSpeed;
   final double jitters;
   final double latency;
+  // the connection type it ran on (see network_context.dart)
+  final String networkType;
+  // whether it was taken on a VPN / with a faked position (null = could not tell; see integrity_checks.dart)
+  final bool? vpnUsed;
+  final bool? mockLocation;
+  // M-Lab test IDs and server (see mlab_info.dart), used to match this test to M-Lab's own records
+  final MlabTestInfo? mlab;
 
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
-    required this.jitters, required this.latency});
+    required this.jitters, required this.latency, this.networkType = 'unknown',
+    this.vpnUsed, this.mockLocation, this.mlab});
 }
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -50,8 +59,9 @@ class SessionManager {
   static void addMeasurement(InternetMeasurement m) => _measurements.add(m);
   static DateTime _startTime = DateTime.now();
   static DateTime get startTime =>_startTime;
-  static bool vpnStatus = false;
-  static bool fakeLocationStatus = false;
+  // whether the last saved session involved a VPN / a faked position (null = could not tell)
+  static bool? vpnStatus;
+  static bool? fakeLocationStatus;
   String userEmail = "";
 
   static String? get sessionId => _sessionId;
@@ -69,17 +79,6 @@ class SessionManager {
     // unique session ID for games
     var gameSessionID = Uuid().v4();
     _sessionId = gameSessionID;
-  }
-
-  // security things
-  Future<bool> checkVPN() async {
-    bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
-    return isVpnConnected;
-  }
-
-  Future<bool> checkFakeLocation() async {
-    bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
-    return isFakeLocation;
   }
 
   // updates current game when game is started
@@ -151,10 +150,24 @@ class SessionManager {
   }
 
 
+  // true if any value is true, null if none could tell, otherwise false
+  static bool? _anyTrue(Iterable<bool?> values) {
+    var sawFalse = false;
+    for (final v in values) {
+      if (v == true) return true;
+      if (v == false) sawFalse = true;
+    }
+    return sawFalse ? false : null;
+  }
+
   static Future<void> saveCurrentSession(String userEmail, UserDataProvider provider) async {
     VibrationController.stop();
-    vpnStatus = await SessionManager().checkVPN();
-    fakeLocationStatus = await SessionManager().checkFakeLocation();
+    // The session is flagged if any measurement in it was, or if the phone is on a VPN / has a faked position now.
+    // These checks never fail the save: a check that cannot run just leaves the flag empty.
+    final endNetwork = await NetworkContext.capture();
+    final endSignals = await IntegrityChecks.instance.capture(network: endNetwork);
+    vpnStatus = _anyTrue(measurements.map((m) => m.vpnUsed).followedBy([endSignals.vpnUsed]));
+    fakeLocationStatus = _anyTrue(measurements.map((m) => m.mockLocation).followedBy([endSignals.mockLocation]));
     double distanceTraveled = calculateDistance(sessionLocationPoints);
     provider.updateDistanceTraveled(distanceTraveled, userEmail);
     //provider.updateTotalPointsCollected(measurements.length, userEmail);
@@ -174,13 +187,18 @@ class SessionManager {
       'end_time': endTime,
       'session_id': SessionManager.sessionId,
       'vpn_used' : vpnStatus,
+      'fake_location': fakeLocationStatus,
       'session_distance': distanceTraveled,
       'radius_gyration': radiusGyration,
       'collected_measurements': measurements.map((p) => {
         'upload_speed': p.uploadSpeed,
         'download_speed': p.downloadSpeed,
         'latency': p.latency,
-        'jitters': p.jitters
+        'jitters': p.jitters,
+        'network_type': p.networkType,
+        'vpn_used': p.vpnUsed,
+        'mock_location': p.mockLocation,
+        if (p.mlab != null) 'mlab': p.mlab!.toMeasurementField(),
       }).toList(),
       'location_points': sessionLocationPoints.map((p) => {
         'latitude': p.latitude,

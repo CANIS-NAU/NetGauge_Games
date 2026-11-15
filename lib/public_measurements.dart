@@ -29,6 +29,8 @@ class PublicMeasurements {
       'upload_speed': data['upload_speed'] is num ? data['upload_speed'] : 0,
       'latency': data['latency'] is num ? data['latency'] : 0,
       if (data['jitter'] is num) 'jitter': data['jitter'],
+      // only the connection type (wifi, cellular, ...): it says nothing about who the person is
+      if (data['network'] is Map && (data['network'] as Map)['type'] is String) 'network_type': (data['network'] as Map)['type'],
       // When it was collected. A measurement being saved right now carries a "server timestamp" placeholder,
       // so the copy gets the server's time too; older measurements already hold their real time.
       if (data['timestamp'] is Timestamp) 'timestamp': data['timestamp'],

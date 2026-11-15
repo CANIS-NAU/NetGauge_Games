@@ -13,21 +13,8 @@ import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
-import 'package:vpn_connection_detector/vpn_connection_detector.dart';
-import 'package:detect_fake_location/detect_fake_location.dart';
 import 'dart:math';
 import 'remote_config_service.dart';
-
-// security things
-Future<bool> checkVPN() async {
-  bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
-  return isVpnConnected;
-}
-
-Future<bool> checkFakeLocation() async {
-  bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
-  return isFakeLocation;
-}
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
@@ -77,8 +64,8 @@ class SessionData {
       game: data['game'] ?? 'Unknown',
       distanceTraveled: (data['session_distance'] as num?)?.toDouble() ?? 0.0,
       pointsCollected: (data['collected_measurements'] as List?)?.length ?? 0,
-      isVPN: data['vpn_used'] as bool? ?? false,
-      isFakeLocation: false, // Placeholder as it's not in the sessions doc yet
+      isVPN: data['vpn_used'] as bool?,
+      isFakeLocation: data['fake_location'] as bool?,
     );
   }
 }
@@ -133,7 +120,7 @@ class DataPoint {
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
       isVPN: data['vpn_used'] as bool? ?? false,
-      isFakeLocation: data['isFakeLocation'] as bool? ?? false,
+      isFakeLocation: (data['mock_location'] ?? data['isFakeLocation']) as bool? ?? false,
       session_id: data['session_id'] as String? ?? 'Unknown',
     );
   }
@@ -236,9 +223,6 @@ class UserDataProvider extends ChangeNotifier {
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
   List<DataPoint> get collectedMeasurements => _collectedMeasurements;
   List<SessionData> get collectedSessions => _collectedSessions;
-
-  // Inside UserDataProvider class in user_data_manager.dart
-  bool get vpnStatus => (_userData?['isVPN'] as bool?) ?? false;
 
   List<GameData> get favoriteGames {
     if (_userData == null) {
@@ -564,8 +548,6 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<void> createUserDocument(User user) async {
-    bool vpn = await checkVPN();
-    bool fake = await checkFakeLocation();
 
     await FirebaseFirestore.instance
         .collection('userAccountData')
