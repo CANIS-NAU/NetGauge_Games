@@ -69,12 +69,12 @@ Future<LocationData> determineLocationData() async
 
   // Grab the current position
   Position position = await Geolocator.getCurrentPosition(
-    locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
+    locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15)));
 
   // get the current heading
   double? heading;
   try {
-    CompassEvent compassEvent = await FlutterCompass.events!.first;
+    CompassEvent compassEvent = await FlutterCompass.events!.first.timeout(const Duration(seconds: 2));
     heading = compassEvent.heading;
   } catch (e) {
     heading = null; // Device doesn have a compass sensor

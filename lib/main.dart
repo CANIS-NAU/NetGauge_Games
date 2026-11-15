@@ -16,6 +16,7 @@ import 'app_theme.dart';
 import 'theme_controller.dart';
 import 'daily_reminder_service.dart';
 import 'screen_awake.dart';
+import 'game_progress.dart';
 
 // app initialization
 void main() async {
@@ -35,6 +36,9 @@ void main() async {
 
   // the saved "keep the screen awake during games" choice (Hive was initialized by the logging service above)
   await ScreenAwake.load();
+
+  // where players left off in their games (Hive was initialized by the logging service above)
+  await GameProgress.load();
 
   // the saved light/dark choice (Hive was initialized by the logging service above)
   final themeController = await ThemeController.load();
