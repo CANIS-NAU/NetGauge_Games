@@ -3,6 +3,9 @@
 
 // import packages and libraries
 import 'package:flutter/material.dart';
+import 'account_identity.dart';
+import 'badges.dart';
+import 'badge_announcement.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'game_catalog.dart';
@@ -10,30 +13,17 @@ import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
-import 'package:vpn_connection_detector/vpn_connection_detector.dart';
-import 'package:detect_fake_location/detect_fake_location.dart';
 import 'dart:math';
 import 'remote_config_service.dart';
-
-// security things
-Future<bool> checkVPN() async {
-  bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
-  return isVpnConnected;
-}
-
-Future<bool> checkFakeLocation() async {
-  bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
-  return isFakeLocation;
-}
 
 final List<GameData> games = [
   GameData(text: "Measure Internet", icon: Icons.wifi),
   GameData(text: "Scavenger Hunt", icon: Icons.location_pin),
   GameData(text: "Zombie Apocalypse", imagePath: 'assets/icons/zombie_outline.png'),
-  //GameData(text: "Soul Seeker", imagePath: 'assets/icons/soul_icon.png'),
-  //GameData(text: "Dragon Slayer", imagePath: 'assets/icons/dragon_outline.png'),
-  //GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
-  //GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
+  // Soul Seeker and Dragon Slayer are switched off in the game catalog pop-up (see showCustomPopup); listing them
+  // here would show tiles that open a blank game. Add them back in both places together.
+  GameData(text: "Space Explorers", imagePath: 'assets/icons/alien_icon.png'),
+  GameData(text: "Constellation Quest", imagePath: 'assets/icons/alien_icon.png'),
 ];
 
 class SessionData {
@@ -55,14 +45,27 @@ class SessionData {
 
   factory SessionData.fromFirestore(firestore.DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // the session document stores each measurement; the session's averages come from those
+    double? average(String key) {
+      final speeds = ((data['collected_measurements'] as List?) ?? [])
+          .whereType<Map>()
+          .map((m) => m[key])
+          .whereType<num>()
+          .toList();
+      return speeds.isEmpty ? null : speeds.reduce((a, b) => a + b) / speeds.length;
+    }
+
     return SessionData(
+      averageDownloadSpeed: average('download_speed'),
+      averageUploadSpeed: average('upload_speed'),
       startTime: (data['start_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
       endTime: (data['end_time'] as firestore.Timestamp?)?.toDate() ?? DateTime.now(),
       game: data['game'] ?? 'Unknown',
       distanceTraveled: (data['session_distance'] as num?)?.toDouble() ?? 0.0,
       pointsCollected: (data['collected_measurements'] as List?)?.length ?? 0,
-      isVPN: data['vpn_used'] as bool? ?? false,
-      isFakeLocation: false, // Placeholder as it's not in the sessions doc yet
+      isVPN: data['vpn_used'] as bool?,
+      isFakeLocation: data['fake_location'] as bool?,
     );
   }
 }
@@ -117,7 +120,7 @@ class DataPoint {
       latency: (data['latency'] as num?)?.toDouble() ?? 0.0,
       gamePlayed: data['game'] as String? ?? data['gamePlayed'] as String? ?? 'Unknown',
       isVPN: data['vpn_used'] as bool? ?? false,
-      isFakeLocation: data['isFakeLocation'] as bool? ?? false,
+      isFakeLocation: (data['mock_location'] ?? data['isFakeLocation']) as bool? ?? false,
       session_id: data['session_id'] as String? ?? 'Unknown',
     );
   }
@@ -141,11 +144,22 @@ class UserDataProvider extends ChangeNotifier {
 
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
+  // true when using the app as a guest (anonymous sign-in, no account)
+  bool get isGuestUser => isGuest(FirebaseAuth.instance.currentUser);
   int get measurementsTaken => _userData?['totalPointsCollected'] ?? 0;
   String get uid => _userData?['uid'] ?? '';
-  String get email => _userData?['email'] ?? '';
+  // Falls back to the signed-in account's ID (email, or a guest ID) while the user document has not loaded,
+  // so anything that needs it as a Firestore document ID never gets an empty string.
+  String get email {
+    final fromDocument = _userData?['email'];
+    if (fromDocument is String && fromDocument.isNotEmpty) return fromDocument;
+    return accountIdFor(FirebaseAuth.instance.currentUser);
+  }
 
   bool get getDemographicStatus => (_userData?['demographicsSurveyTaken'] as bool?) ?? false;
+
+  // whether this person (account or guest) has already seen the welcome pop-up
+  bool get welcomeSeen => (_userData?['welcomeSeen'] as bool?) ?? false;
   
   String get phone => _userData?['phone'] ?? '1111111111';
 
@@ -154,12 +168,61 @@ class UserDataProvider extends ChangeNotifier {
   int get totalLocationPointsMeasured => (_userData?['totalLocationPointsMeasured'] as num?)?.toInt() ?? 0;
   double get totalRadiusGyration => (_userData?['totalRadiusGyration'] as num?)?.toDouble() ?? 0.0;
 
+  // the badges stored on this account (see badges.dart)
+  Set<String> get earnedBadgeIds => storedBadgeIds(_userData?['earnedBadges']);
+
+  // what the badge rules are worked out from
+  BadgeStats get badgeStats => BadgeStats(
+        totalMeasurements: totalPointsCollected,
+        totalDistanceMeters: totalDistanceTraveled,
+        sessions: _collectedSessions
+            .map((s) => PlayedSession(game: s.game, endTime: s.endTime, averageDownload: s.averageDownloadSpeed))
+            .toList(),
+      );
+
+  bool _awardingBadges = false;
+
+  // Stores any badges the player has now earned but does not have yet, on their account, and returns them so the app
+  // can announce them. Badges are only ever added, never removed. Guests have no statistics page, so they get none.
+  // After a game, pass refreshSessions so the session that just ended is counted.
+  Future<List<AppBadge>> awardNewBadges({bool refreshSessions = false}) async {
+    if (_userData == null || isGuestUser || _awardingBadges) return [];
+    _awardingBadges = true;
+    try {
+      if (refreshSessions) {
+        _collectedSessions = await fetchSessionData();
+        _userData!['totalPointsCollected'] = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
+      }
+
+      final newBadges = badgesToAward(badgeStats, earnedBadgeIds);
+      if (newBadges.isEmpty) return [];
+
+      // a dotted path adds just these badges, leaving the ones already stored alone
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(email)
+          .update({for (final b in newBadges) 'earnedBadges.${b.id}': FieldValue.serverTimestamp()});
+
+      final stored = Map<String, dynamic>.from((_userData!['earnedBadges'] as Map?) ?? {});
+      for (final b in newBadges) {
+        stored[b.id] = Timestamp.now();
+      }
+      _userData!['earnedBadges'] = stored;
+      notifyListeners();
+
+      debugPrint('[BADGES] Awarded: ${newBadges.map((b) => b.id).join(', ')}');
+      return newBadges;
+    } catch (e) {
+      debugPrint('[BADGES] Could not award badges: $e');
+      return [];
+    } finally {
+      _awardingBadges = false;
+    }
+  }
+
   List<dynamic> get dataPoints => _userData?['dataPoints'] ?? [];
   List<DataPoint> get collectedMeasurements => _collectedMeasurements;
   List<SessionData> get collectedSessions => _collectedSessions;
-
-  // Inside UserDataProvider class in user_data_manager.dart
-  bool get vpnStatus => (_userData?['isVPN'] as bool?) ?? false;
 
   List<GameData> get favoriteGames {
     if (_userData == null) {
@@ -172,7 +235,7 @@ class UserDataProvider extends ChangeNotifier {
     if (rawFavorites is List) {
       favoriteNames = rawFavorites;
     } else {
-      favoriteNames = ['Zombie Apocalypse', 'Soul Seeker'];
+      favoriteNames = ['Zombie Apocalypse', 'Scavenger Hunt'];
     }
 
     List<GameData> favoritesList = [];
@@ -195,7 +258,7 @@ class UserDataProvider extends ChangeNotifier {
     final rawFavorites = _userData!['favoriteGames'];
     List<dynamic> currentFavorites = (rawFavorites is List) 
         ? List.from(rawFavorites) 
-        : ['Zombie Apocalypse', 'Soul Seeker'];
+        : ['Zombie Apocalypse', 'Scavenger Hunt'];
 
     if (currentFavorites.contains(gameName)) {
       currentFavorites.remove(gameName);
@@ -211,7 +274,7 @@ class UserDataProvider extends ChangeNotifier {
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'favoriteGames': currentFavorites});
         debugPrint('Favorites updated in Firestore');
       }
@@ -221,8 +284,8 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<List<DataPoint>> fetchCollectedMeasurements() async {
-    final email = FirebaseAuth.instance.currentUser?.email;
-    if (email == null) return [];
+    final email = accountIdFor(FirebaseAuth.instance.currentUser);
+    if (email.isEmpty) return [];
 
     final snapshot_collected_points = await FirebaseFirestore.instance
         .collection('measurements')
@@ -234,8 +297,8 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<List<SessionData>> fetchSessionData() async {
-    final email = FirebaseAuth.instance.currentUser?.email;
-    if (email == null) return [];
+    final email = accountIdFor(FirebaseAuth.instance.currentUser);
+    if (email.isEmpty) return [];
 
     final sessionSnapshot = await FirebaseFirestore.instance
         .collection('measurements')
@@ -337,13 +400,31 @@ class UserDataProvider extends ChangeNotifier {
     }
   }
 
+  // Remembers that the welcome pop-up has been shown, so it only appears once per account or guest.
+  Future<void> markWelcomeSeen() async {
+    _userData?['welcomeSeen'] = true;
+    notifyListeners();
+
+    try {
+      final id = accountIdFor(FirebaseAuth.instance.currentUser);
+      if (id.isEmpty) return;
+      // merge, so this works even if the profile document is missing some fields
+      await FirebaseFirestore.instance
+          .collection('userAccountData')
+          .doc(id)
+          .set({'welcomeSeen': true}, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving that the welcome pop-up was seen: $e');
+    }
+  }
+
   Future<void> setDemographicStatus() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'demographicsSurveyTaken': true});
 
         if (_userData != null) {
@@ -368,7 +449,7 @@ class UserDataProvider extends ChangeNotifier {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
           .collection('userAccountData')
-          .doc(user.email)
+          .doc(accountIdFor(user))
           .get();
 
       if (doc.exists) {
@@ -379,9 +460,12 @@ class UserDataProvider extends ChangeNotifier {
         final totalPoints = _collectedSessions.fold<int>(0, (sum, s) => sum + (s.pointsCollected ?? 0));
         await FirebaseFirestore.instance
             .collection('userAccountData')
-            .doc(user.email)
+            .doc(accountIdFor(user))
             .update({'totalPointsCollected': totalPoints});
         _userData?['totalPointsCollected'] = totalPoints;
+
+        // players who already have history get their badges now
+        announceBadges(await awardNewBadges());
 
         /*bool vpn = await checkVPN();
         bool fake = await checkFakeLocation();
@@ -397,7 +481,7 @@ class UserDataProvider extends ChangeNotifier {
             .collection('ABC_Onboarding')
             .doc('user')
             .collection('user')
-            .where('email', isEqualTo: user.email)
+            .where('email', isEqualTo: accountIdFor(user))
             .limit(1)
             .get();
 
@@ -410,9 +494,9 @@ class UserDataProvider extends ChangeNotifier {
           await createOnboardingDocument(user);
         }
 
-        debugPrint("Data loaded for: ${user.email}. Measurements found: ${_collectedMeasurements.length}");
+        debugPrint("Data loaded for: ${accountIdFor(user)}. Measurements found: ${_collectedMeasurements.length}");
       } else {
-        debugPrint("No document found for UID: ${user.email}, creating one...");
+        debugPrint("No document found for UID: ${accountIdFor(user)}, creating one...");
         await createUserDocument(user);
         await fetchUserData();
       }
@@ -452,7 +536,7 @@ class UserDataProvider extends ChangeNotifier {
         .collection('ABC_Onboarding')
         .doc('user')
         .collection('user')
-        .where('email', isEqualTo: user.email)
+        .where('email', isEqualTo: accountIdFor(user))
         .limit(1)
         .get();
 
@@ -464,21 +548,20 @@ class UserDataProvider extends ChangeNotifier {
   }
 
   Future<void> createUserDocument(User user) async {
-    bool vpn = await checkVPN();
-    bool fake = await checkFakeLocation();
 
     await FirebaseFirestore.instance
         .collection('userAccountData')
-        .doc(user.email)
+        .doc(accountIdFor(user))
         .set({
       'uid': user.uid,
-      'email': user.email,
+      'email': accountIdFor(user),
+      'isGuest': isGuest(user),
       'demographicsSurveyTaken' : false,
       'totalPointsCollected': 0,
       'totalDistanceTraveled': 0.0,
       'dataPoints': [],
       'radGyration': [0],
-      'favoriteGames': ['Zombie Apocalypse', 'Soul Seeker'],
+      'favoriteGames': ['Zombie Apocalypse', 'Scavenger Hunt'],
       'createdAt': FieldValue.serverTimestamp(),
       //'isVPN' : vpn,
       //'isFakeLocation' : fake,
@@ -491,7 +574,7 @@ class UserDataProvider extends ChangeNotifier {
         .doc('user')
         .collection('user')
         .add({
-      'email': user.email,
+      'email': accountIdFor(user),
       'messages_seen': {
         "control_message": false,
         "play_message": false,

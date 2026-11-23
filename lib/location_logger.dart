@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'location_service.dart';
 import 'session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
@@ -9,10 +10,22 @@ import 'user_data_manager.dart';
 // class that manages logging of persistent location data to firestore
 class LocationLogger {
   static int _writeCount = 0;
+  static StreamSubscription<Position>? _subscription;
+
+  // Stops logging (called when a game ends) so the GPS is released and points are not recorded outside a game.
+  static void stop() {
+    _subscription?.cancel();
+    _subscription = null;
+  }
 
   static void start() {
     debugPrint("[LOCATION_LOGGER] Starting location logging.");
-    LocationDispatcher.stream.listen((Position pos) async {
+    // only ever one listener, however many games are launched
+    stop();
+    _writeCount = 0;
+    _subscription = LocationDispatcher.stream.listen(onError: (Object e) {
+      debugPrint("[LOCATION_LOGGER] Location stream error: $e");
+    }, (Position pos) async {
       _writeCount++;
 
       debugPrint("[LOCATION_LOGGER] Location update received. Count: $_writeCount");

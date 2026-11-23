@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'badge_announcement.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'flutter_bridge.dart';
@@ -11,6 +12,11 @@ import 'activity_logs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'remote_config_service.dart';
+import 'app_theme.dart';
+import 'theme_controller.dart';
+import 'daily_reminder_service.dart';
+import 'screen_awake.dart';
+import 'game_progress.dart';
 
 // app initialization
 void main() async {
@@ -26,9 +32,23 @@ void main() async {
   final notificationSettings = await FirebaseMessaging.instance.requestPermission(provisional: true);
   final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
 
+  await DailyReminderService.init();
+
+  // the saved "keep the screen awake during games" choice (Hive was initialized by the logging service above)
+  await ScreenAwake.load();
+
+  // where players left off in their games (Hive was initialized by the logging service above)
+  await GameProgress.load();
+
+  // the saved light/dark choice (Hive was initialized by the logging service above)
+  final themeController = await ThemeController.load();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => UserDataProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => UserDataProvider()),
+        ChangeNotifierProvider.value(value: themeController),
+      ],
       child: const MyApp(),
     ),
   );
@@ -40,6 +60,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: appMessengerKey,
+      theme: lightTheme,
+      darkTheme: darkTheme,
+      themeMode: context.watch<ThemeController>().mode,
+      // Newer Android versions draw apps edge to edge, so the system navigation bar (gesture area or the
+      // home/back buttons) would cover the bottom of every screen, including the maps. Keeping every
+      // screen clear of it here fixes that in one place; the top is left to each screen's AppBar.
+      builder: (context, child) => ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
@@ -56,6 +92,7 @@ class MyApp extends StatelessWidget {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Provider.of<UserDataProvider>(context, listen: false)
                   .fetchUserData();
+              DailyReminderService.scheduleIfEnabled();
             });
             return const HomePage();
           }
@@ -64,6 +101,7 @@ class MyApp extends StatelessWidget {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Provider.of<UserDataProvider>(context, listen: false)
                 .clearData();
+            DailyReminderService.cancel();
           });
 
           return const LoginPage();

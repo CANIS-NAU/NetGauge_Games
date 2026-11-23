@@ -101,7 +101,6 @@ Future<void> showCustomOnBoardingPopup(BuildContext context) async {
       return StatefulBuilder(
         builder: (context, dialogSetState) {
           return AlertDialog(
-            backgroundColor: Colors.white,
             title: Text(onboardingData.onboarding_header),
             content: SingleChildScrollView(
               child: Column(

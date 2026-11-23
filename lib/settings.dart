@@ -13,17 +13,102 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:uuid/uuid.dart';
+import 'daily_reminder_service.dart';
+import 'account_identity.dart';
+import 'screen_awake.dart';
+import 'game_progress.dart';
+import 'theme_controller.dart';
 
-class Settings extends StatelessWidget {
+class Settings extends StatefulWidget {
   const Settings({super.key});
 
-  Future<void> logout(BuildContext context) async {
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  bool _dailyReminderEnabled = DailyReminderService.isEnabled;
+  bool _keepScreenAwake = ScreenAwake.isEnabled;
+
+  Future<void> _toggleDailyReminder(bool value) async {
+    setState(() => _dailyReminderEnabled = value);
+    final enabled = await DailyReminderService.setEnabled(value);
+    if (!mounted) return;
+    setState(() => _dailyReminderEnabled = enabled);
+    if (value && !enabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notifications are blocked. Enable them for NetGauge in your device settings.')),
+      );
+    }
+  }
+
+  // Guests have no account to sign back in to, so leaving guest mode means losing access to their data.
+  Future<void> _confirmAndLogout() async {
+    if (!isGuest(FirebaseAuth.instance.currentUser)) {
+      await logout();
+      return;
+    }
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Leave guest mode?'),
+        content: const Text(
+          "You're using the app as a guest. If you leave, you won't be able to get back to your guest data "
+          '(your stats, favorites and measurements). Measurements you already shared stay on the public map.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Stay')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Leave')),
+        ],
+      ),
+    );
+    if (leave == true) await logout();
+  }
+
+  // Lets a player throw away every game they have part-finished, so they can start the catalog fresh. Asked about
+  // first, because it cannot be undone.
+  Future<void> _confirmAndClearProgress() async {
+    final account = Provider.of<UserDataProvider>(context, listen: false).email;
+    final waiting = GameProgress.inProgress(account);
+    if (waiting.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You have no games in progress.')),
+      );
+      return;
+    }
+
+    final clear = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear saved games?'),
+        content: Text(
+          'You have ${waiting.length} game${waiting.length == 1 ? '' : 's'} in progress '
+          '(${waiting.map((s) => s.game).join(', ')}). Clearing means each one starts from the beginning next '
+          'time you play it. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep them')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Clear')),
+        ],
+      ),
+    );
+    if (clear != true) return;
+
+    await GameProgress.clearAll(account);
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Your saved games were cleared.')),
+    );
+  }
+
+  Future<void> logout() async {
     try {
       await FirebaseAuth.instance.signOut();
       
       // Use pushAndRemoveUntil to clear the entire navigation stack
       // This prevents the user from using the back button to return to the app
-      if (context.mounted) {
+      if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
           (Route<dynamic> route) => false, // Remove all previous routes
@@ -52,7 +137,8 @@ class Settings extends StatelessWidget {
           backgroundColor: const Color(0xFF440154),
           foregroundColor: Colors.white,
         ),
-        body: Column(
+        body: SingleChildScrollView(
+          child: Column(
           children:[
             const SizedBox(height: 8),
            /* TextButton(
@@ -85,20 +171,80 @@ class Settings extends StatelessWidget {
               //TODO: Nice-to-have-->add a trailing expand icon here
             ),*/
             const SizedBox(height: 20),
+            const CircleAvatar(
+              backgroundColor: Colors.purple,
+              radius: 60,
+              child: Icon(
+                Icons.person,
+                size: 60,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 20),
+            // light or dark mode, remembered on this device
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Appearance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<ThemeMode>(
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.brightness_auto)),
+                        ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode)),
+                        ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode)),
+                      ],
+                      selected: {context.watch<ThemeController>().mode},
+                      onSelectionChanged: (selection) => context.read<ThemeController>().setMode(selection.first),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              activeThumbColor: Colors.purple,
+              title: const Text('Daily reminder'),
+              subtitle: const Text('Get a notification once a day to check into the app'),
+              value: _dailyReminderEnabled,
+              onChanged: _toggleDailyReminder,
+            ),
+            SwitchListTile(
+              activeThumbColor: Colors.purple,
+              title: const Text('Keep screen awake during games'),
+              subtitle: const Text('Stops your phone from dimming or locking while you play. Uses more battery.'),
+              value: _keepScreenAwake,
+              onChanged: (value) {
+                setState(() => _keepScreenAwake = value);
+                ScreenAwake.setEnabled(value);
+              },
+            ),
+            ListTile(
+              title: const Text('Clear saved games'),
+              subtitle: const Text('Games you have part-finished will start from the beginning again'),
+              trailing: const Icon(Icons.restart_alt),
+              onTap: _confirmAndClearProgress,
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(20),
               ),
-              onPressed: () => logout(context),
-              child: const Text('Logout',
+              onPressed: _confirmAndLogout,
+              child: Text(isGuest(FirebaseAuth.instance.currentUser) ? 'Leave Guest Mode' : 'Logout',
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       fontSize: 20)),
             ),
           ],
+        ),
         )
     );
   }

@@ -3,11 +3,20 @@ import 'package:internet_measurement_games_app/location_service.dart';
 import 'package:internet_measurement_games_app/session_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ndt7_service.dart';
+import 'mlab_info.dart';
+import 'network_context.dart';
+import 'integrity_checks.dart';
 import 'dart:io';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
 import 'user_data_manager.dart';
+import 'public_measurements.dart';
 import 'package:uuid/uuid.dart';
+import 'app_theme.dart';
+import 'widgets/animated_ellipsis.dart';
+
+// what a measurement shows while it is being recorded; the page animates its dots
+const String testingValue = 'Testing...';
 
 class SpeedTestPage extends StatefulWidget{
   const SpeedTestPage({Key? key}) : super(key: key);
@@ -22,6 +31,8 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   String latency = '---';
   String jitter = '---';
   String packetLoss = '---';
+  // true while a test is running; the button is greyed out and ignores taps until it finishes
+  bool _running = false;
   String errorLog = '';
   String detailedLog = '';
 
@@ -74,21 +85,27 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   }
 
   void _runSpeedTest() async {
+    // a second tap while a test is running would start an overlapping test
+    if (_running) return;
     final userData = Provider.of<UserDataProvider>(context, listen: false);
     setState(() {
-      downloadSpeed = 'Testing...';
-      uploadSpeed = 'Testing...';
-      latency = 'Testing...';
+      _running = true;
+      downloadSpeed = testingValue;
+      uploadSpeed = testingValue;
+      latency = testingValue;
+      jitter = testingValue;
+      packetLoss = testingValue;
       detailedLog = 'Step 1: Initializing...\n';
       errorLog = '';
     });
-    // write data to firestore
-    final loc = await determineLocationData();
     //final nickname = SessionManager.playerName;
     //final sessionId = SessionManager.sessionId;
 
     try {
       final service = NDT7Service();
+      // the connection the test runs on, read before and after so a change part way through is flagged
+      final networkAtStart = await NetworkContext.capture();
+      final integrityAtStart = await IntegrityChecks.instance.capture(network: networkAtStart);
 
       setState(() {
         detailedLog += 'Step 2: Starting download test...\n';
@@ -112,7 +129,9 @@ class SpeedTestPageState extends State<SpeedTestPage> {
 
         downloadSpeed = '${download['speedMbps']?.toStringAsFixed(2) ?? '0.00'} Mbps';
         latency = '${download['latency']?.toStringAsFixed(2) ?? '0.00'} ms';
-      });
+        // estimated from the download test's TCP info; "Not available" if the server did not report it
+        jitter = _formatMetric(download['jitter'], 'ms');
+        packetLoss = _formatMetric(download['packetLoss'], '%');      });
 
       setState(() {
         detailedLog += 'Step 3: Starting upload test...\n';
@@ -137,13 +156,45 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         detailedLog += '✅ ALL TESTS COMPLETE!\n';
       });
 
+      final mlab = service.serverInfo.withUuids(download: download['uuid'], upload: upload['uuid']);
+      final networkAtEnd = await NetworkContext.capture();
+
       // Save to Firestore
       setState(() {
         detailedLog += 'Step 4: Saving to Firestore...\n';
       });
 
-      final loc = await determineLocationData();
+      // location is optional: save the measurement even if location is unavailable
+      LocationData? loc;
+      try {
+        loc = await determineLocationData();
+      } catch (e) {
+        debugPrint('[SPEED_TEST] Location unavailable, saving without it: $e');
+      }
       final sessionId = SessionManager.sessionId;
+
+      // VPN and fake-location signals from before and after the test; a problem at either time counts
+      final integrity = integrityAtStart.mergedWith(
+        await IntegrityChecks.instance.capture(network: networkAtEnd, position: loc?.position),
+      );
+
+      // record this test in the current session so it is saved to measurements/{email}/sessions when the page closes
+      SessionManager.addMeasurement(InternetMeasurement(
+        uploadSpeed: upload['speedMbps'],
+        downloadSpeed: download['speedMbps'],
+        latency: download['latency'],
+        jitters: download['jitter'] as double?,
+        packetLoss: download['packetLoss'] as double?,
+        networkType: networkAtStart.type,
+        vpnUsed: integrity.vpnUsed,
+        mockLocation: integrity.mockLocation,
+        mlab: mlab,
+      ));
+      if (loc != null) {
+        SessionManager.sessionLocationPoints.add(
+          LocationPoint(longitude: loc.position.longitude, latitude: loc.position.latitude),
+        );
+      }
 
       var gameSessionID = Uuid();
       String sessionStringID = gameSessionID.toString();
@@ -151,24 +202,29 @@ class SpeedTestPageState extends State<SpeedTestPage> {
       final checkData = {
         'game': 'Speedtest',
         'session_id': sessionStringID,
-        'latitude': loc.position.latitude,
-        'longitude': loc.position.longitude,
+        if (loc != null) 'latitude': loc.position.latitude,
+        if (loc != null) 'longitude': loc.position.longitude,
         'download_speed': download['speedMbps'],
         'upload_speed': upload['speedMbps'],
         'latency': download['latency'],
+        if (download['jitter'] != null) 'jitter': download['jitter'],
+        if (download['packetLoss'] != null) 'packet_loss': download['packetLoss'],
         'timestamp': FieldValue.serverTimestamp(),
+        'network': networkAtStart.toMeasurementField(atEnd: networkAtEnd),
+        'mlab': mlab.toMeasurementField(),
+        ...integrity.toMeasurementFields(networkChanged: networkAtStart.type != networkAtEnd.type),
       };
 
-      await FirebaseFirestore.instance
+      final savedRef = await FirebaseFirestore.instance
           .collection('measurements')
           .doc(userData.email)
           .collection('collected_measurements')
           .add(checkData);
+      // also publish the anonymized copy that the shared map reads
+      await PublicMeasurements.publish(savedRef.id, checkData);
 
       setState(() {
         detailedLog += 'Data saved to Firestore\n';
-        jitter = '-1';
-        packetLoss = '-1';
       });
 
       // TODO: Total points collected should be incremented here (lazy approach)
@@ -184,16 +240,27 @@ class SpeedTestPageState extends State<SpeedTestPage> {
         downloadSpeed = 'Failed';
         uploadSpeed = 'Failed';
         latency = 'Failed';
+        jitter = 'Failed';
+        packetLoss = 'Failed';
         errorLog = 'ERROR:\n${e.toString()}\n\nStack trace:\n${stackTrace.toString()}';
         detailedLog += '\nTEST FAILED: $e\n';
       });
+    } finally {
+      // the button comes back whether the test worked or not
+      if (mounted) setState(() => _running = false);
     }
+  }
+
+  // "12.34 ms", or "Not available" when the server did not report the value
+  String _formatMetric(dynamic value, String unit) {
+    if (value is! num) return 'Not available';
+    return '${value.toStringAsFixed(2)} $unit';
   }
 
   // constructor for UI elements
   Widget _buildMetricsCard(String label, String value) {
     return Card.outlined(
-      color: Colors.white,
+      color: context.paperColor,
       borderOnForeground: true,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0), // Optional: set corner radius
@@ -209,7 +276,10 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             fontWeight: FontWeight.bold,
             color: const Color(0xFF440154)
           ),),
-        trailing: Text(value, style:
+        // while a measurement is being recorded the dots after "Testing" animate, so the player can see it is working
+        trailing: value == testingValue
+            ? const AnimatedEllipsis('Testing', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20))
+            : Text(value, style:
         const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20)),
@@ -222,7 +292,6 @@ class SpeedTestPageState extends State<SpeedTestPage> {
   Widget build(BuildContext context) {
     final userData = Provider.of<UserDataProvider>(context);
     loggingService.logEvent('User is in speed-test control page.', email: userData.email);
-    SessionManager.startGame('Speed Tester', userData.email);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -243,15 +312,15 @@ class SpeedTestPageState extends State<SpeedTestPage> {
           _buildMetricsCard('Upload Speed', uploadSpeed),
           _buildMetricsCard('Latency', latency),
           _buildMetricsCard('Jitter', jitter),
-          _buildMetricsCard('Packet Loss', packetLoss),
+          _buildMetricsCard('Packet Loss (estimated)', packetLoss),
           if (errorLog.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Container(
                 padding: const EdgeInsets.all(8.0),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.black),
+                  color: context.paperColor,
+                  border: Border.all(color: context.inkColor),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: SelectableText(
@@ -265,13 +334,16 @@ class SpeedTestPageState extends State<SpeedTestPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF440154),
               foregroundColor: Colors.white,
+              // grey while a test is running, so it is clear the button can't be pressed again yet
+              disabledBackgroundColor: Colors.grey.shade400,
+              disabledForegroundColor: Colors.grey.shade700,
               padding: const EdgeInsets.all(20),
             ),
-            onPressed: _runSpeedTest,
-            child: const Text('Run Test',
-            style: TextStyle(
+            onPressed: _running ? null : _runSpeedTest,
+            child: Text(_running ? 'Running...' : 'Run Test',
+            // no fixed text color: the button's own (enabled or greyed-out) color applies
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
               fontSize: 20)),
           ),
           const SizedBox(height: 20),

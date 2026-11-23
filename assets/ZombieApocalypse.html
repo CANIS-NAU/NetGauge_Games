@@ -335,7 +335,94 @@ body.zombie-theme {
 	border: 2px solid white;
 }
 
+/* CENTERED LAYOUT: centers buttons and images/figures on every screen size.
+   Display-only rules; no story text or links are touched. */
+.passage button:not(.button-link),
+.passage input[type="button"],
+.passage input[type="submit"] {
+  display: block;
+  margin: 0.6em auto;
+}
 
+.passage img:not(.icon-image) {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* the passage only has left padding, which shifts content right of center; mirror it on the right */
+.passage { padding-right: 15px !important; }
+/* END CENTERED LAYOUT */
+
+/* TAP-FRIENDLY CONTROLS (Zombie Apocalypse): players were accidentally scrolling or sliding the screen
+   when trying to tap buttons. Display-only; no story text or links are touched. */
+/* only allow vertical scrolling: no sideways sliding, no pinch/double-tap zoom, no rubber-band bounce */
+html, body {
+  touch-action: pan-y;
+  overscroll-behavior: none;
+  overflow-x: hidden;
+}
+
+/* bigger targets with more space between them, so a slightly off or drifting tap still lands on one button */
+.passage button:not(.button-link):not(.error-toggle),
+.passage input[type="button"],
+.passage input[type="submit"] {
+  min-height: 56px;
+  min-width: 140px;
+  margin: 1em auto;
+}
+
+.passage .button-link {
+  margin: 10px auto;
+}
+
+.passage button,
+.passage a,
+.passage input[type="button"],
+.passage input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* END TAP-FRIENDLY CONTROLS */
+
+/* CENTERED LINKS: [[links]] that are not inside a button are centered, with extra padding to tap */
+.passage a.link-internal {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.6em auto;
+  padding: 0.5em 0.25em;
+  text-align: center;
+}
+/* END CENTERED LINKS */
+
+/* FULL-WIDTH HEADERS: the passage has 15px of padding on each side, and the headers only cancelled the left
+   one, so they stopped short of the right edge of the screen. Cancel both. */
+.scientistHeader,
+.zombieHeader {
+  width: calc(100% + 30px) !important;
+  max-width: none !important; /* the zombie header caps itself at 100%, which would undo the wider width */
+  margin-left: -15px !important;
+  margin-right: -15px !important;
+}
+/* END FULL-WIDTH HEADERS */
+
+/* COMPACT BUTTON SPACING: each button already sits on its own line with its own margin, so the line break
+   written after it only added a blank line. On narrow phones that pushed the next button (e.g. Skip Tutorial)
+   below the first screen. Hide only that extra break; text and links are untouched. */
+.passage span[class^="button"] + br {
+  display: none;
+}
+
+/* extra room at the bottom of every screen so the last button can always be scrolled clear of the bar */
+.passage {
+  padding-bottom: 2em !important;
+}
+/* END COMPACT BUTTON SPACING */
 </style><script role="script" id="twine-user-script" type="text/twine-javascript">Config.passages.nobr = true;
 // FUNCTIONS RELATED TO DETERMINING PLAYER SPACE //
 // Function to compute vertices of a hexagonal plane given a center point and desired area in km^2

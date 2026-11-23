@@ -2,17 +2,24 @@
 // https://firebase.google.com/docs/firestore/query-data/aggregation-queries#dart
 
 // importing libraries and packages
+import 'mlab_info.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'poi_generator.dart';
 import 'user_data_manager.dart';
 import 'package:uuid/uuid.dart';
 import 'vibration_controller.dart';
-import 'package:vpn_connection_detector/vpn_connection_detector.dart';
-import 'package:detect_fake_location/detect_fake_location.dart';
+import 'integrity_checks.dart';
+import 'network_context.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'activity_logs.dart';
+import 'location_logger.dart';
+import 'poi_logic.dart';
+import 'screen_awake.dart';
+import 'public_sessions.dart';
+import 'badge_announcement.dart';
+import 'location_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'dart:math';
@@ -21,11 +28,21 @@ import 'dart:math';
 class InternetMeasurement {
   final double uploadSpeed;
   final double downloadSpeed;
-  final double jitters;
+  final double? jitters;
+  // estimated share of data that had to be re-sent, in percent (see ndt7_tcp_stats.dart)
+  final double? packetLoss;
   final double latency;
+  // the connection type it ran on (see network_context.dart)
+  final String networkType;
+  // whether it was taken on a VPN / with a faked position (null = could not tell; see integrity_checks.dart)
+  final bool? vpnUsed;
+  final bool? mockLocation;
+  // M-Lab test IDs and server (see mlab_info.dart), used to match this test to M-Lab's own records
+  final MlabTestInfo? mlab;
 
   InternetMeasurement({required this.uploadSpeed, required this.downloadSpeed,
-    required this.jitters, required this.latency});
+    required this.jitters, this.packetLoss, required this.latency, this.networkType = 'unknown',
+    this.vpnUsed, this.mockLocation, this.mlab});
 }
 
 final loggingService = GetIt.instance<LoggingService>();
@@ -33,6 +50,9 @@ final loggingService = GetIt.instance<LoggingService>();
 // used to track data that needs to be accessible across files/functions
 class SessionManager {
   static String? _sessionId;
+  // the session that has already been written, so closing a game (route pop, widget dispose, end-of-game message)
+  // cannot save the same play more than once
+  static String? _savedSessionId;
   //static String? _playerName;
   static String? _currentGame;
   static List<PointOfInterest> _poiList = [];
@@ -45,31 +65,26 @@ class SessionManager {
   static void addMeasurement(InternetMeasurement m) => _measurements.add(m);
   static DateTime _startTime = DateTime.now();
   static DateTime get startTime =>_startTime;
-  static bool vpnStatus = false;
-  static bool fakeLocationStatus = false;
+  // whether the last saved session involved a VPN / a faked position (null = could not tell)
+  static bool? vpnStatus;
+  static bool? fakeLocationStatus;
   String userEmail = "";
 
   static String? get sessionId => _sessionId;
  // static String? get playerName => _playerName;
   static String? get currentGame => _currentGame;
   static List<PointOfInterest> get poiList => _poiList;
+  // true when there are POIs for the player to find; otherwise the games use the "move a distance" fallback
+  static bool get hasPois => _poiList.isNotEmpty;
+
+  // progress in the "move a distance" fallback, for the game being played
+  static final FallbackTracker fallback = FallbackTracker();
 
   // sets the session ID
   static void setSessionId() {
     // unique session ID for games
     var gameSessionID = Uuid().v4();
     _sessionId = gameSessionID;
-  }
-
-  // security things
-  Future<bool> checkVPN() async {
-    bool isVpnConnected = await VpnConnectionDetector.isVpnActive();
-    return isVpnConnected;
-  }
-
-  Future<bool> checkFakeLocation() async {
-    bool isFakeLocation = await DetectFakeLocation().detectFakeLocation();
-    return isFakeLocation;
   }
 
   // updates current game when game is started
@@ -79,7 +94,11 @@ class SessionManager {
     loggingService.logEvent('Starting $gameTitle at $startTime', email: userEmail);
     _measurements.clear();
     sessionLocationPoints.clear();
+    // progress in the fallback belongs to one game, so a new game must not inherit the last one's position
+    fallback.reset();
     _currentGame = gameTitle;
+    // the player is now in a game, so the screen must not go to sleep until it ends
+    ScreenAwake.enable();
     setSessionId();
     debugPrint('[SESSION_MANAGER] Game started: $_currentGame');
   }
@@ -90,9 +109,13 @@ class SessionManager {
     DateTime endTime = DateTime.now();
     loggingService.logEvent('Ending $_currentGame at $endTime', email: userEmail);
 
+    // the game is over: let the screen sleep normally again (done first so nothing below can leave it awake)
+    ScreenAwake.disable();
+
     // Trigger the WebView's session recording logic if the bridge is plugged in
     await onWebViewClose?.call();
     VibrationController.stop();
+    LocationLogger.stop();
 
     _currentGame = null;
     debugPrint('[SESSION_MANAGER] Session cleared.');
@@ -134,10 +157,31 @@ class SessionManager {
   }
 
 
+  // true if any value is true, null if none could tell, otherwise false
+  static bool? _anyTrue(Iterable<bool?> values) {
+    var sawFalse = false;
+    for (final v in values) {
+      if (v == true) return true;
+      if (v == false) sawFalse = true;
+    }
+    return sawFalse ? false : null;
+  }
+
   static Future<void> saveCurrentSession(String userEmail, UserDataProvider provider) async {
     VibrationController.stop();
-    vpnStatus = await SessionManager().checkVPN();
-    fakeLocationStatus = await SessionManager().checkFakeLocation();
+    // each play is saved once; every way of closing a game funnels through here
+    final playId = _sessionId;
+    if (playId != null && playId == _savedSessionId) {
+      debugPrint('[SESSION_MANAGER] Session $playId already saved, not saving again.');
+      return;
+    }
+    _savedSessionId = playId;
+    // The session is flagged if any measurement in it was, or if the phone is on a VPN / has a faked position now.
+    // These checks never fail the save: a check that cannot run just leaves the flag empty.
+    final endNetwork = await NetworkContext.capture();
+    final endSignals = await IntegrityChecks.instance.capture(network: endNetwork);
+    vpnStatus = _anyTrue(measurements.map((m) => m.vpnUsed).followedBy([endSignals.vpnUsed]));
+    fakeLocationStatus = _anyTrue(measurements.map((m) => m.mockLocation).followedBy([endSignals.mockLocation]));
     double distanceTraveled = calculateDistance(sessionLocationPoints);
     provider.updateDistanceTraveled(distanceTraveled, userEmail);
     //provider.updateTotalPointsCollected(measurements.length, userEmail);
@@ -157,13 +201,19 @@ class SessionManager {
       'end_time': endTime,
       'session_id': SessionManager.sessionId,
       'vpn_used' : vpnStatus,
+      'fake_location': fakeLocationStatus,
       'session_distance': distanceTraveled,
       'radius_gyration': radiusGyration,
       'collected_measurements': measurements.map((p) => {
         'upload_speed': p.uploadSpeed,
         'download_speed': p.downloadSpeed,
         'latency': p.latency,
-        'jitters': p.jitters
+        'jitters': p.jitters,
+        'packet_loss': p.packetLoss,
+        'network_type': p.networkType,
+        'vpn_used': p.vpnUsed,
+        'mock_location': p.mockLocation,
+        if (p.mlab != null) 'mlab': p.mlab!.toMeasurementField(),
       }).toList(),
       'location_points': sessionLocationPoints.map((p) => {
         'latitude': p.latitude,
@@ -186,6 +236,28 @@ class SessionManager {
     } catch (e) {
       debugPrint("Firestore Error: $e");
     }
+
+    // also record the play, anonymously, for the community statistics
+    try {
+      final play = Map<String, dynamic>.from(checkData);
+      // a short play may end before any location point was logged, so use where the player is now
+      if (sessionLocationPoints.isEmpty) {
+        try {
+          final loc = await determineLocationData().timeout(const Duration(seconds: 3));
+          play['location_points'] = [
+            {'latitude': loc.position.latitude, 'longitude': loc.position.longitude},
+          ];
+        } catch (e) {
+          debugPrint("[SESSION_MANAGER] No location for this play, so it is not shared: $e");
+        }
+      }
+      await PublicSessions.publish(play);
+    } catch (e) {
+      debugPrint("[SESSION_MANAGER] Could not record the play: $e");
+    }
+
+    // the session is saved, so count it toward badges and tell the player about any new ones
+    announceBadges(await provider.awardNewBadges(refreshSessions: true));
   }
 
   /* // stores the nickname of the current player

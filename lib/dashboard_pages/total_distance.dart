@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../user_data_manager.dart';
+import '../app_theme.dart';
 
 
 class TotalDistance extends StatefulWidget {
@@ -29,8 +30,8 @@ class _TotalDistanceState extends State<TotalDistance> {
         ),
         backgroundColor: Colors.red,
       ),
-      body: const SingleChildScrollView( // Allows scrolling if list is long
-        padding: EdgeInsets.all(16.0),
+      body: SingleChildScrollView( // Allows scrolling if list is long
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -39,7 +40,7 @@ class _TotalDistanceState extends State<TotalDistance> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: context.inkColor,
                 letterSpacing: 1.5,
               ),
             ),
@@ -48,7 +49,7 @@ class _TotalDistanceState extends State<TotalDistance> {
               'Distances per Session: TBD',
               style: TextStyle(
                 fontSize: 20,
-                color: Colors.black,
+                color: context.inkColor,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,

@@ -39,17 +39,19 @@ class _SurveyState extends State<SurveyState> {
 
   List<Question> _initialData = [];
   bool _isLoading = true;
+  bool _submitting = false;
 
   @override
   void initState() {
     super.initState();
     _fetchQuestions().then((questions) {
+      if (!mounted) return;
       setState(() {
         _initialData = questions;
         _isLoading = false;
       });
     }).catchError((e) {
-      setState(() { _isLoading = false; });
+      if (mounted) setState(() { _isLoading = false; });
     });
   }
 
@@ -72,6 +74,21 @@ class _SurveyState extends State<SurveyState> {
       body:
       _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _initialData.isEmpty
+          // never show a survey with nothing to answer
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('This survey is not available right now.', textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                  ],
+                ),
+              ),
+            )
           : Form(
         key: _formKey,
         child: Survey(
@@ -79,7 +96,7 @@ class _SurveyState extends State<SurveyState> {
           initialData: _initialData,
         ),
       ),
-      bottomNavigationBar: Column(
+      bottomNavigationBar: (_isLoading || _initialData.isEmpty) ? null : Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 5),
@@ -96,20 +113,30 @@ class _SurveyState extends State<SurveyState> {
                       color: Colors.white,
                       fontSize: 20)),
 
-                onPressed: () async {
+                onPressed: _submitting ? null : () async {
                   loggingService.logEvent('Clicked submit survey.', email: userData.email);
+                  if (!_formKey.currentState!.validate()) return;
+                  setState(() => _submitting = true);
+                  final messenger = ScaffoldMessenger.of(context);
+                  final navigator = Navigator.of(context);
+                  // the answers are saved first; the survey only counts as done once they are safely stored
+                  final saved = await addUserData(userData.email, _questionResults, widget.surveyDocId);
+                  if (!saved) {
+                    messenger.showSnackBar(const SnackBar(content: Text('Could not submit the survey. Please try again.')));
+                    if (mounted) setState(() => _submitting = false);
+                    return;
+                  }
                   if (widget.surveyDocId == 'demographic') {
-                    userData.setDemographicStatus();
+                    await userData.setDemographicStatus();
+                  } else {
+                    // only the remote-config survey (METUX etc.) counts as this wave's survey being seen;
+                    // recording it for the demographic survey would stop METUX from ever being shown
+                    await userData.recordSurveyToken(userData.email);
                   }
-                  if (_formKey.currentState!.validate()) {
-                    await userData.recordSurveyToken(userData.email); // replaces recordSurveyShown
-                    addUserData(userData.email, _questionResults, widget.surveyDocId).then((_) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
-                      );
-                    });
-                  }
+                  // the messenger belongs to the app, so the message stays visible after this page closes
+                  messenger.showSnackBar(const SnackBar(content: Text('Survey submitted')));
+                  // return to the screen that opened the survey, which can then show the next one
+                  navigator.pop();
                 }
             ),
           ),
@@ -164,7 +191,8 @@ class _SurveyState extends State<SurveyState> {
 
 
 // method for uploading data to the DB
-Future<void> addUserData(String userID, List<QuestionResult> results, String surveyDocId) async {
+// Returns whether the answers were stored.
+Future<bool> addUserData(String userID, List<QuestionResult> results, String surveyDocId) async {
   final userData = {
     "ID": userID,
     "responses": results.map((r) => {
@@ -177,7 +205,9 @@ Future<void> addUserData(String userID, List<QuestionResult> results, String sur
   try {
     await db.collection('responses').doc(surveyDocId).collection('submissions').add(userData);
     print("User added successfully!");
+    return true;
   } catch (e) {
     print("Error adding user: $e");
+    return false;
   }
 }

@@ -104,7 +104,45 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="4Corners Template" startnode="1" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="c56bc60a-fd50-418a-a5ed-32ee0c1bd255" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-tag name="Important/Needed" color="red"></tw-tag><tw-tag name="Example" color="yellow"></tw-tag><tw-tag name="StudentTemplate" color="blue"></tw-tag><tw-passagedata pid="1" name="Story innit" tags="Important/Needed" position="2400,0" size="100,100">/*
+	<tw-storydata name="4Corners Template" startnode="1" creator="Twine" creator-version="2.10.0" format="SugarCube" format-version="2.37.3" ifid="c56bc60a-fd50-418a-a5ed-32ee0c1bd255" options="" tags="" zoom="0.6" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">
+
+/* CENTERED LAYOUT: centers buttons and images/figures on every screen size.
+   Display-only rules; no story text or links are touched. */
+.passage button:not(.button-link),
+.passage input[type="button"],
+.passage input[type="submit"] {
+  display: block;
+  margin: 0.6em auto;
+}
+
+.passage img:not(.icon-image) {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 100%;
+  height: auto;
+}
+/* END CENTERED LAYOUT */
+
+/* CENTERED COLUMN: on phones SugarCube leaves room for the stowed side bar on the left only,
+   which pushes everything right of true center. Mirror it on the right so content is centered. */
+@media screen and (max-width: 768px) {
+  #story { margin-right: 3.5em; }
+}
+/* END CENTERED COLUMN */
+
+/* TAP-FRIENDLY CONTROLS: stops double-tap zoom and text selection from interfering when tapping
+   buttons and links. Display-only; no story text or links are touched. */
+.passage button,
+.passage a,
+.passage input[type="button"],
+.passage input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* END TAP-FRIENDLY CONTROLS */
+</style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-tag name="Important/Needed" color="red"></tw-tag><tw-tag name="Example" color="yellow"></tw-tag><tw-tag name="StudentTemplate" color="blue"></tw-tag><tw-passagedata pid="1" name="Story innit" tags="Important/Needed" position="2400,0" size="100,100">/*
 SYSTEM CODE — STORY INIT (Initialization)
 
 What this does:
